@@ -37,17 +37,27 @@ class MagicLinkService
      *
      * Expired, already-used and never-existed all return null so a caller cannot probe which
      * case it hit — that would leak whether a token was ever real.
+     *
+     * The redemption itself is a single conditional UPDATE — `WHERE used_at IS NULL AND
+     * expires_at > now()` — rather than a read-then-write. That makes the claim atomic: the
+     * database applies the write to at most one of two concurrent callers racing the same raw
+     * token, so only one can ever get a non-null result back. A separate isValid() check
+     * followed by an unconditional write would leave a window where both callers read
+     * "unused" before either writes, letting both redeem the same single-use link.
      */
     public function consume(string $rawToken): ?MagicLink
     {
-        $link = MagicLink::where('token', hash('sha256', $rawToken))->first();
+        $hash = hash('sha256', $rawToken);
 
-        if (! $link || ! $link->isValid()) {
+        $claimed = MagicLink::where('token', $hash)
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->update(['used_at' => now()]);
+
+        if ($claimed === 0) {
             return null;
         }
 
-        $link->consume();
-
-        return $link;
+        return MagicLink::where('token', $hash)->first();
     }
 }

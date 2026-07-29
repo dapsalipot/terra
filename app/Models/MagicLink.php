@@ -27,9 +27,4 @@ class MagicLink extends Model
     {
         return $this->used_at === null && $this->expires_at->isFuture();
     }
-
-    public function consume(): void
-    {
-        $this->update(['used_at' => now()]);
-    }
 }

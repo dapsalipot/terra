@@ -480,8 +480,11 @@ git commit -m "feat: separate booker from travelers with reservation_participant
 - Consumes: nothing from Task 1.
 - Produces: `MagicLinkService::issue(string $purpose, array $attrs, int $ttlMinutes = 30): array`
   returning `['link' => MagicLink, 'url' => string]`, and
-  `MagicLinkService::consume(string $rawToken): ?MagicLink`. `MagicLink` has
-  `isValid(): bool` and `consume(): void`. Purposes used in this plan: `'login'`, `'attach'`.
+  `MagicLinkService::consume(string $rawToken): ?MagicLink`. `MagicLink` has `isValid(): bool`.
+  Redemption itself is a single atomic conditional `UPDATE ... WHERE used_at IS NULL AND
+  expires_at > now()` inside the service — there is no separate `MagicLink::consume()` write
+  method, so there is nowhere for an unconditional write to creep back in. Purposes used in
+  this plan: `'login'`, `'attach'`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -545,7 +548,67 @@ it('records the purpose and target so a consumer can act on it', function () {
         ->and($link->email)->toBe('ada@example.com')
         ->and($link->isValid())->toBeTrue();
 });
+
+it('will not re-stamp a token that was already used', function () {
+    $user = User::factory()->create();
+    ['link' => $link, 'url' => $url] = $this->svc->issue('login', ['user_id' => $user->id]);
+    $raw = str($url)->afterLast('/')->toString();
+
+    $firstUse = now()->subMinutes(5);
+    $link->forceFill(['used_at' => $firstUse])->save();
+
+    expect($this->svc->consume($raw))->toBeNull()
+        // The old unconditional update would move used_at to now().
+        ->and($link->fresh()->used_at->timestamp)->toBe($firstUse->timestamp);
+});
+
+it('lets only one of two concurrent redemptions of the same token win', function () {
+    $user = User::factory()->create();
+    ['url' => $url] = $this->svc->issue('login', ['user_id' => $user->id]);
+    $raw = str($url)->afterLast('/')->toString();
+    $hash = hash('sha256', $raw);
+
+    // Simulate a second request racing this one for the same raw token by re-entering
+    // consume() from a query listener, right as this call's first database statement
+    // completes. A read-then-write implementation issues a SELECT before it decides
+    // anything, leaving a window where a second, interleaved caller can also read
+    // "unused" and also go on to redeem it. An atomic conditional UPDATE has no such
+    // window: its first (and decisive) statement is the guarded write itself, so a
+    // caller that interleaves at that same point is already too late.
+    $reentered = false;
+    $innerResult = null;
+
+    DB::listen(function ($query) use (&$reentered, &$innerResult, $hash, $raw) {
+        if ($reentered || ! str_contains($query->sql, 'select') || ! in_array($hash, $query->bindings, true)) {
+            return;
+        }
+
+        $reentered = true;
+        $innerResult = $this->svc->consume($raw);
+    });
+
+    $outerResult = $this->svc->consume($raw);
+
+    $winners = collect([$outerResult, $innerResult])->filter(fn ($r) => $r instanceof MagicLink)->count();
+
+    expect($reentered)->toBeTrue()
+        ->and($winners)->toBe(1);
+});
 ```
+
+Note: `DB::listen()` requires `use Illuminate\Support\Facades\DB;` at the top of the test
+file, alongside the existing `App\Models\MagicLink`, `App\Models\User`, and
+`App\Services\MagicLinkService` imports.
+
+A tempting simpler regression test is to pre-mark a link used (`$link->forceFill(['used_at'
+=> ...])->save()`) and then assert `consume()` returns null and doesn't move the
+timestamp — the first test above. It's worth keeping, but on its own it will **pass against
+the old, unguarded read-then-write implementation too**: `isValid()` re-reads the row inside
+`consume()` and already rejects an already-used token when nothing is racing it. It only
+distinguishes the two implementations when a second caller's read and write are
+genuinely interleaved with this one's, which is what the second test forces via query-listener
+reentrancy. Verify any race regression test actually fails against the old implementation —
+don't trust a test like the first one to prove it on its own.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -619,13 +682,15 @@ class MagicLink extends Model
     {
         return $this->used_at === null && $this->expires_at->isFuture();
     }
-
-    public function consume(): void
-    {
-        $this->update(['used_at' => now()]);
-    }
 }
 ```
+
+Note: there is deliberately no `consume(): void` method here. Redemption is a
+check-and-write in one step, and the only place that step may happen is the guarded
+`UPDATE` inside `MagicLinkService::consume()` below. A model method that does
+`$this->update(['used_at' => now()])` unconditionally would be a second, unguarded way to
+stamp a link as used — exactly the shape of the race condition this task exists to avoid —
+so don't add one back.
 
 - [ ] **Step 5: Write the service**
 
@@ -671,18 +736,32 @@ class MagicLinkService
      *
      * Expired, already-used and never-existed all return null so a caller cannot probe which
      * case it hit — that would leak whether a token was ever real.
+     *
+     * The redemption is a single conditional UPDATE — `WHERE used_at IS NULL AND
+     * expires_at > now()` — not a read-then-write. Do NOT rewrite this as a `first()` /
+     * `isValid()` check followed by an unconditional save: that shape has a window between
+     * the read and the write where two concurrent requests for the same raw token (an email
+     * prefetcher plus the user's own click, a double-submit, a client retry) can both read
+     * "unused" and both go on to redeem it. The atomic UPDATE closes that window — the
+     * database applies the write to at most one of two racing callers, so only one can ever
+     * get a non-null result back. Also do NOT reach for `lockForUpdate()` here instead: it is
+     * a no-op on SQLite, which is what the test suite runs on, so a test built to catch this
+     * regression would pass even with the race still open.
      */
     public function consume(string $rawToken): ?MagicLink
     {
-        $link = MagicLink::where('token', hash('sha256', $rawToken))->first();
+        $hash = hash('sha256', $rawToken);
 
-        if (! $link || ! $link->isValid()) {
+        $claimed = MagicLink::where('token', $hash)
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->update(['used_at' => now()]);
+
+        if ($claimed === 0) {
             return null;
         }
 
-        $link->consume();
-
-        return $link;
+        return MagicLink::where('token', $hash)->first();
     }
 }
 ```
@@ -705,7 +784,7 @@ Run:
 ```bash
 php artisan migrate && php artisan test --filter=MagicLinkTest
 ```
-Expected: PASS, 5 tests.
+Expected: PASS, 7 tests.
 
 - [ ] **Step 8: Commit** *(gated — see Global Constraints)*
 
