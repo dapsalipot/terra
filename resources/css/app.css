@@ -1,0 +1,316 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: 'Fraunces';
+    src: url('/fonts/fraunces.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+body {
+    background: #FBF9F4;
+    color: #1F1C15;
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #F1EBDD, #F7F4EC, #F1EBDD);
+    background-size: 200% 100%;
+    animation: sk 1.4s infinite;
+}
+
+@keyframes sk {
+    to { background-position: -200% 0; }
+}
+
+@keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.reveal { animation: reveal .7s cubic-bezier(.2,.7,.2,1) both; }
+
+/* the trail line drawing itself across the ridge — a brand signature */
+@keyframes trail-draw { to { stroke-dashoffset: 0; } }
+.trail-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: trail-draw 2.6s cubic-bezier(.4,.6,.2,1) .45s forwards; }
+
+/* Mountain divider band. It is full-bleed, so neutralise the reveal slide/fade — but keep
+   [data-reveal] on it purely so the observer's .in-view starts the trail wipe in frame. */
+.trail-band[data-reveal] { opacity: 1; transform: none; transition: none; }
+
+/* The divider's trail is a broken line, so it is revealed by wiping a clip rect across it
+   rather than by stroke-dashoffset (which the dash pattern already occupies). */
+@keyframes trail-wipe { to { transform: scaleX(1); } }
+.trail-wipe { transform: scaleX(0); transform-box: fill-box; transform-origin: left center; }
+.trail-band.in-view .trail-wipe { animation: trail-wipe 2.4s cubic-bezier(.35,.6,.2,1) .15s forwards; }
+
+/* editorial small-caps marker label */
+.marker { font-feature-settings: "smcp" 1; letter-spacing: .22em; text-transform: uppercase; }
+
+/* fluid display type for the masthead — scales with the viewport */
+.display { font-size: clamp(3.1rem, 9.2vw, 8rem); line-height: .92; letter-spacing: -0.02em; }
+
+/* film grain — tactile texture so surfaces read photographic, not vector */
+.grain-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: .5;
+    mix-blend-mode: soft-light;
+}
+
+/* ── cinematic hero atmosphere ─────────────────────────────── */
+
+/* drifting mist bands — huge blurred ellipses crossing the hero on long loops */
+@keyframes mist-a { from { transform: translateX(-12%); } 50% { transform: translateX(9%); } to { transform: translateX(-12%); } }
+@keyframes mist-b { from { transform: translateX(10%); } 50% { transform: translateX(-8%); } to { transform: translateX(10%); } }
+.mist { position: absolute; pointer-events: none; filter: blur(60px); will-change: transform; }
+.mist-a { animation: mist-a 38s ease-in-out infinite; }
+.mist-b { animation: mist-b 52s ease-in-out infinite; }
+
+/* dawn glow that slowly breathes */
+@keyframes glow-breathe { from { opacity: .55; transform: scale(1); } 50% { opacity: .8; transform: scale(1.06); } to { opacity: .55; transform: scale(1); } }
+.glow-breathe { animation: glow-breathe 9s ease-in-out infinite; transform-origin: center; will-change: transform, opacity; }
+
+/* slow drifting stars/embers in the hero sky */
+@keyframes ember { from { transform: translateY(0); opacity: 0; } 12% { opacity: .9; } 88% { opacity: .5; } to { transform: translateY(-46px); opacity: 0; } }
+.ember { animation: ember 7s linear infinite; }
+
+/* ── destination marquee ───────────────────────────────────── */
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee-track { display: flex; width: max-content; animation: marquee 36s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+/* ── scroll-triggered reveals (IntersectionObserver adds .in-view) ── */
+[data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); transition-delay: var(--reveal-delay, 0s); }
+[data-reveal].in-view { opacity: 1; transform: none; }
+
+/* card hover physics — a touch of lift + tilt on the featured card */
+.lift { transition: transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s cubic-bezier(.2,.7,.2,1); }
+.lift:hover { transform: translateY(-6px); }
+
+/* ── site nav: transparent over a photo hero, solid once scrolled ── */
+.site-nav { transition: background-color .35s ease, color .35s ease, border-color .35s ease; }
+.nav-link { opacity: .72; }
+.nav-link:hover, .nav-link.is-current { opacity: 1; }
+
+.site-nav[data-nav="transparent"] {
+    color: #F7F4EC;
+    background: transparent;
+    border-bottom: 1px solid transparent;
+    /* no scrim — legibility comes from a soft shadow on the glyphs themselves */
+    text-shadow: 0 1px 12px rgba(12, 16, 8, .45);
+}
+.site-nav[data-nav="transparent"] .wordmark-badge { background: rgba(247,244,236,.2); }
+.site-nav[data-nav="transparent"] .nav-cta { background: #F7F4EC; color: #2C3826; }
+
+.site-nav[data-nav="transparent"].nav-solid {
+    color: #1F1C15;
+    /* glass rather than a flat panel: the hero photo keeps refracting through as it scrolls */
+    background: rgba(247, 244, 236, .72);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-bottom-color: rgba(255, 255, 255, .45);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 4px 24px -12px rgba(31, 28, 21, .3);
+    text-shadow: none;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .site-nav[data-nav="transparent"].nav-solid {
+        background: #FBF9F4;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+.site-nav[data-nav="transparent"].nav-solid .wordmark-badge { background: #2C3826; }
+.site-nav[data-nav="transparent"].nav-solid .nav-cta { background: #2C3826; color: #F7F4EC; }
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal { animation: none; }
+    .trail-draw { animation: none; stroke-dashoffset: 0; }
+    .trail-wipe, .trail-band.in-view .trail-wipe { animation: none; transform: scaleX(1); }
+    .mist-a, .mist-b, .glow-breathe, .ember, .marquee-track { animation: none; }
+    [data-reveal] { opacity: 1; transform: none; transition: none; }
+}
+
+[x-cloak] { display: none !important; }
+
+/* ══════════════════ LIQUID GLASS ══════════════════
+   A material that blurs and refracts what sits behind it, catches a specular highlight
+   on its top edge, and (when interactive) responds to press.
+
+   Only used where something real is behind it — photography, gradients, layered chrome.
+   Over flat canvas there is nothing to refract, so glass there would be decoration
+   pretending to be material. Tiers differ by how much text they must carry:
+     .glass       heavy veil  — surfaces with body text
+     .glass-thin  light veil  — chips/badges carrying their own contrast
+     .glass-dark  ink veil    — cream text over photography
+     .glass-pine  pine veil   — host console chrome
+*/
+.glass,
+.glass-thin,
+.glass-dark,
+.glass-pine {
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .55),   /* specular edge, lit from above */
+        inset 0 -1px 0 rgba(31, 28, 21, .05),
+        0 8px 32px -14px rgba(31, 28, 21, .38);
+}
+
+/* .82, not .74: this tier carries body text over host-uploaded photos we cannot control.
+   At .74 the worst case (a very dark photo) lands on 4.56:1 — technically AA, no real margin. */
+.glass       { background: rgba(247, 244, 236, .82); border: 1px solid rgba(255, 255, 255, .40); }
+.glass-thin  { background: rgba(247, 244, 236, .30); border: 1px solid rgba(255, 255, 255, .30); }
+
+.glass-dark  {
+    background: rgba(31, 28, 21, .42);
+    border: 1px solid rgba(247, 244, 236, .18);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .22),
+        0 8px 32px -14px rgba(0, 0, 0, .5);
+}
+
+/* .88, not .78: this panel floats over *light* console content, which lightens the veil and
+   drops cream/70 nav text to 3.77:1. Solid pine passed; glass over canvas does not. */
+.glass-pine {
+    background: rgba(44, 56, 38, .88);
+    border: 1px solid rgba(247, 244, 236, .12);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .14),
+        0 8px 32px -14px rgba(0, 0, 0, .5);
+}
+
+/* Opt-in interaction, per the material's own rule: only controls should respond. */
+.glass-interactive {
+    transition: background-color .25s ease, backdrop-filter .25s ease, transform .18s ease, box-shadow .25s ease;
+}
+.glass-interactive:hover {
+    -webkit-backdrop-filter: blur(26px) saturate(210%);
+    backdrop-filter: blur(26px) saturate(210%);
+}
+.glass-interactive:active { transform: scale(.985); }
+
+/* Without backdrop-filter the veil alone is too sheer to read against — go opaque. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass, .glass-thin { background: rgba(247, 244, 236, .96); }
+    .glass-dark { background: rgba(31, 28, 21, .86); }
+    .glass-pine { background: #2C3826; }
+}
+
+/* Respect the OS-level "reduce transparency" accessibility setting. */
+@media (prefers-reduced-transparency: reduce) {
+    .glass, .glass-thin, .glass-dark, .glass-pine {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+    .glass, .glass-thin { background: #FBF9F4; }
+    .glass-dark { background: rgba(31, 28, 21, .92); }
+    .glass-pine { background: #2C3826; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .glass-interactive { transition: none; }
+    .glass-interactive:active { transform: none; }
+}
+
+/* ── Form fields ──────────────────────────────────────────────────────────
+   One class, so every input in the host console is the same generous size.
+   The wizard used to mix px-2 py-1.5 text-xs with px-4 py-3 text-lg, which is
+   what made it read as cramped: 14 different input sizes on one screen. */
+@layer components {
+    .field {
+        @apply w-full rounded-xl border-ink/15 bg-surface px-4 py-3 text-base
+               placeholder:text-ink/40 focus:border-moss focus:ring-1 focus:ring-moss;
+    }
+
+    /* Only for genuinely narrow numerics (nights, capacity) — same height, less width. */
+    .field-narrow {
+        @apply rounded-xl border-ink/15 bg-surface px-3 py-3 text-base text-center
+               focus:border-moss focus:ring-1 focus:ring-moss;
+    }
+
+    .field-label {
+        @apply block text-sm font-semibold text-ink/70 mb-2;
+    }
+}
+
+/* ── HOST CONSOLE ─────────────────────────────────────────────────────────────
+   Two decisions live here.
+
+   1. No display serif. Fraunces is the brand's voice for marketing surfaces; inside a
+      working tool it reads as decoration and slows scanning. Rather than strip
+      `font-serif` from a hundred call sites, the console re-points that one family to
+      the sans stack — the class keeps its semantic meaning ("display"), the face changes.
+
+   2. Glass needs something behind it. The note further up this file is right that glass
+      over flat canvas is decoration pretending to be material, so the console gets a soft
+      ambient wash for its cards to actually refract. Fixed attachment keeps the wash
+      still while content scrolls, which is what sells the depth. */
+.host-ui {
+    background-image:
+        radial-gradient(58rem 38rem at 10% -12%, rgba(94, 107, 68, .11), transparent 62%),
+        radial-gradient(48rem 34rem at 102% -4%, rgba(168, 118, 31, .09), transparent 58%),
+        radial-gradient(40rem 30rem at 50% 108%, rgba(44, 56, 38, .06), transparent 60%);
+    background-attachment: fixed;
+}
+
+.host-ui .font-serif {
+    font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.015em;   /* the sans runs wider than Fraunces at display sizes */
+}
+
+@layer components {
+    /* Console card. Lighter veil than .glass because it sits over a pale wash rather
+       than over host photography, so it needs less body to stay legible. */
+    .glass-card {
+        @apply rounded-2xl;
+        background: rgba(255, 255, 255, .58);
+        border: 1px solid rgba(255, 255, 255, .70);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, .75),
+            0 8px 30px -18px rgba(31, 28, 21, .40);
+    }
+
+    /* The trip card in the calendar. Deliberately the loudest surface in the console:
+       it is the one thing a host is scanning the grid for. */
+    .glass-moss {
+        background: rgba(94, 107, 68, .30);
+        border: 1px solid rgba(94, 107, 68, .42);
+        -webkit-backdrop-filter: blur(16px) saturate(190%);
+        backdrop-filter: blur(16px) saturate(190%);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, .45),
+            0 4px 14px -8px rgba(44, 56, 38, .55);
+    }
+    .glass-moss:hover {
+        background: rgba(94, 107, 68, .42);
+        border-color: rgba(94, 107, 68, .60);
+    }
+
+    /* Full schedule — terracotta so a host spots it without reading the numbers. */
+    .glass-terra {
+        background: rgba(188, 75, 38, .20);
+        border: 1px solid rgba(188, 75, 38, .34);
+        -webkit-backdrop-filter: blur(16px) saturate(190%);
+        backdrop-filter: blur(16px) saturate(190%);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, .45),
+            0 4px 14px -8px rgba(188, 75, 38, .45);
+    }
+    .glass-terra:hover { background: rgba(188, 75, 38, .30); }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-card  { background: rgba(255, 255, 255, .95); }
+    .glass-moss  { background: rgba(212, 219, 200, 1); }
+    .glass-terra { background: rgba(245, 216, 206, 1); }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .glass-card  { background: rgba(255, 255, 255, .97); backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .glass-moss  { background: rgba(212, 219, 200, 1); backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .glass-terra { background: rgba(245, 216, 206, 1); backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .host-ui     { background-image: none; }
+}
