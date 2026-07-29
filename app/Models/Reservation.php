@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Reservation extends Model
 {
@@ -22,6 +23,13 @@ class Reservation extends Model
 
     /** States that occupy a seat against departure capacity. */
     public const HOLDING = ['pending', 'awaiting_payment', 'payment_submitted', 'confirmed'];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Reservation $reservation) {
+            $reservation->public_token ??= (string) Str::uuid();
+        });
+    }
 
     public function departure()
     {
@@ -43,9 +51,54 @@ class Reservation extends Model
         return $this->hasOne(PaymentSubmission::class)->latestOfMany();
     }
 
+    public function participants()
+    {
+        return $this->hasMany(ReservationParticipant::class)->orderBy('position');
+    }
+
+    /**
+     * The traveler who is also the booker — null when the booker took no seat.
+     *
+     * There is deliberately no `lead()` relation: "lead" fused who pays with who travels,
+     * and separating those is the point of this table.
+     */
+    public function bookerParticipant()
+    {
+        return $this->hasOne(ReservationParticipant::class)->where('is_booker', true);
+    }
+
+    public function contactName(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->contact_first_name, $this->contact_middle_name, $this->contact_last_name,
+        ])));
+    }
+
+    public function bookerIsTraveling(): bool
+    {
+        return $this->participants()->where('is_booker', true)->exists();
+    }
+
+    /** Travelers under 18 on the departure date. Drives the host's guardian-consent flag. */
+    public function minors()
+    {
+        $date = $this->departure?->starts_at;
+
+        return $date === null
+            ? collect()
+            : $this->participants->filter(fn ($p) => $p->isMinorAt($date))->values();
+    }
+
+    /** Travelers still owing permit details. Drives "3 of 5 details pending". */
+    public function incompleteParticipants()
+    {
+        return $this->participants->reject->isComplete()->values();
+    }
+
     public function displayName(): string
     {
-        return $this->joiner?->name ?? $this->guest_name ?? 'Guest';
+        return $this->contactName()
+            ?: ($this->joiner?->name ?? $this->guest_name ?? 'Guest');
     }
 
     /**
