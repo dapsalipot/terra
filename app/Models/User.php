@@ -20,12 +20,17 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'middle_name',
+        'last_name',
         'email',
         'password',
         'role',
         'handle',
         'avatar',
         'phone',
+        'birthday',
+        'gender',
     ];
 
     /**
@@ -62,6 +67,16 @@ class User extends Authenticatable
         return strtoupper(mb_substr($parts[0] ?? '', 0, 1).(count($parts) > 1 ? mb_substr(end($parts), 0, 1) : ''));
     }
 
+    /** Name parts when we have them, falling back to the display name. */
+    public function getFullNameAttribute(): string
+    {
+        $parts = trim(implode(' ', array_filter([
+            $this->first_name, $this->middle_name, $this->last_name,
+        ])));
+
+        return $parts ?: (string) $this->name;
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -72,6 +87,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birthday' => 'date',
         ];
     }
 
