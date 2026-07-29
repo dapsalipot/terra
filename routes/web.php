@@ -20,6 +20,10 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
+// Magic links. The controller arrives in Task 7; this reserves the route name so
+// MagicLinkService::issue() can build URLs.
+Route::get('/magic/{token}', fn (string $token) => abort(404))->name('magic.consume');
+
 
 // Reservation flow + host roster (Plan 02)
 Route::middleware('auth')->group(function () {
