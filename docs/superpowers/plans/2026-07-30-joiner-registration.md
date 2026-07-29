@@ -861,7 +861,10 @@ Create `database/migrations/2026_07_30_100200_add_profile_fields_to_users_table.
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -883,6 +886,14 @@ return new class extends Migration
 
     public function down(): void
     {
+        // A passwordless account cannot survive this column becoming NOT NULL. Give those rows
+        // an unusable hash first: the account stays intact and is recoverable through a password
+        // reset, whereas letting the ALTER fail would drop the columns and leave the schema
+        // disagreeing with the migrations ledger (MySQL DDL does not roll back).
+        DB::table('users')->whereNull('password')->update([
+            'password' => Hash::make(Str::random(64)),
+        ]);
+
         Schema::table('users', function (Blueprint $t) {
             $t->dropColumn(['first_name', 'middle_name', 'last_name', 'birthday', 'gender']);
             $t->string('password')->nullable(false)->change();
