@@ -76,7 +76,7 @@ class Reservation extends Model
 
     public function bookerIsTraveling(): bool
     {
-        return $this->participants()->where('is_booker', true)->exists();
+        return $this->participants->contains('is_booker', true);
     }
 
     /** Travelers under 18 on the departure date. Drives the host's guardian-consent flag. */

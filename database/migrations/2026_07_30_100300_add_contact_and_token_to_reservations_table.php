@@ -20,10 +20,17 @@ return new class extends Migration
         });
 
         // Existing rows predate the token. Backfill so every booking is reachable by URL.
-        DB::table('reservations')->whereNull('public_token')->orderBy('id')
-            ->each(fn ($row) => DB::table('reservations')
-                ->where('id', $row->id)
-                ->update(['public_token' => (string) Str::uuid()]));
+        // Every row is null right after the ALTER above, so no WHERE filter is needed — and
+        // none should be added: chunking with offset-based pagination (Builder::each()) while
+        // writing to the very column being filtered on would skip whole pages of rows as the
+        // matching set shrinks underneath the offset. chunkById() paginates by primary key
+        // instead, which is unaffected by that mutation.
+        DB::table('reservations')->orderBy('id')->chunkById(1000, function ($rows) {
+            foreach ($rows as $row) {
+                DB::table('reservations')->where('id', $row->id)
+                    ->update(['public_token' => (string) Str::uuid()]);
+            }
+        });
     }
 
     public function down(): void

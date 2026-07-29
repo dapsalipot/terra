@@ -3,6 +3,8 @@
 use App\Models\Reservation;
 use App\Models\ReservationParticipant;
 use App\Models\TripDeparture;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 it('generates a public token on create', function () {
     $reservation = Reservation::factory()->create();
@@ -79,4 +81,32 @@ it('reports which travelers still owe details', function () {
     ReservationParticipant::factory()->blank()->create(['reservation_id' => $reservation->id, 'position' => 2]);
 
     expect($reservation->incompleteParticipants())->toHaveCount(2);
+});
+
+it('backfills a public token for every pre-existing row, past the first chunk', function () {
+    $departure = TripDeparture::factory()->create(['capacity' => 5000]);
+
+    // Insert straight to the table so the model's creating hook does not set tokens.
+    $rows = collect(range(1, 1200))->map(fn ($i) => [
+        'trip_departure_id' => $departure->id,
+        'party_size' => 1,
+        'status' => 'pending',
+        'public_token' => null,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ])->all();
+
+    DB::table('reservations')->insert($rows);
+    expect(DB::table('reservations')->whereNull('public_token')->count())->toBe(1200);
+
+    // Same statement the migration runs.
+    DB::table('reservations')->orderBy('id')->chunkById(1000, function ($chunk) {
+        foreach ($chunk as $row) {
+            DB::table('reservations')->where('id', $row->id)
+                ->update(['public_token' => (string) Str::uuid()]);
+        }
+    });
+
+    expect(DB::table('reservations')->whereNull('public_token')->count())->toBe(0)
+        ->and(DB::table('reservations')->distinct()->count('public_token'))->toBe(1200);
 });
