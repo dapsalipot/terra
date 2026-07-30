@@ -63,7 +63,7 @@ class Roster extends Component
         $priority = ['payment_submitted' => 0, 'awaiting_payment' => 1, 'pending' => 2, 'confirmed' => 3, 'cancelled' => 4];
 
         $reservations = $this->departure->reservations()
-            ->with('joiner', 'latestPayment')
+            ->with('joiner', 'latestPayment', 'participants')
             ->get()
             ->sortBy(fn ($r) => $priority[$r->status] ?? 9)
             ->values();

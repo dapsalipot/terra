@@ -125,6 +125,48 @@
                             @endif
                             @if($r->latestPayment?->method)<span class="capitalize">{{ $r->latestPayment->method }}</span>@endif
                         </div>
+
+                        {{-- Who is actually travelling. The booker may not be among them. --}}
+                        @if($r->participants->isNotEmpty())
+                            @php($pending = $r->incompleteParticipants())
+                            @php($minors = $r->minors())
+
+                            <div class="mt-3 pt-3 border-t border-ink/8">
+                                <div class="flex flex-wrap items-center gap-2 mb-2">
+                                    <span class="marker text-[10px] font-semibold text-ink/65">Travelling</span>
+                                    @if($pending->isNotEmpty())
+                                        <span class="rounded-full bg-amber/15 text-amber px-2.5 py-0.5 text-xs font-bold">
+                                            {{ $pending->count() }} of {{ $r->participants->count() }} still need details
+                                        </span>
+                                    @endif
+                                    @if($minors->isNotEmpty())
+                                        <span class="rounded-full bg-terra/15 text-terra px-2.5 py-0.5 text-xs font-bold">
+                                            {{ $minors->count() }} {{ \Illuminate\Support\Str::plural('minor', $minors->count()) }} · guardian consent
+                                        </span>
+                                    @endif
+                                    @unless($r->bookerIsTraveling())
+                                        <span class="rounded-full bg-ink/[.06] text-ink/65 px-2.5 py-0.5 text-xs font-bold">Booker not travelling</span>
+                                    @endunless
+                                </div>
+
+                                <ol class="text-sm space-y-1">
+                                    @foreach($r->participants as $p)
+                                        <li class="flex flex-wrap items-center gap-2">
+                                            <span class="text-ink/45 tabular-nums w-4">{{ $loop->iteration }}</span>
+                                            @if($p->isComplete())
+                                                <span>{{ $p->fullName() }}</span>
+                                                <span class="text-ink/55 text-xs">{{ $p->birthday->age }}y</span>
+                                                @if($p->gender)<span class="text-ink/55 text-xs capitalize">{{ $p->gender }}</span>@endif
+                                                @if($p->is_booker)<span class="text-xs font-semibold text-moss">booker</span>@endif
+                                                @if($p->phone)<a href="tel:{{ $p->phone }}" class="text-xs font-semibold text-moss hover:underline">{{ $p->phone }}</a>@endif
+                                            @else
+                                                <span class="text-ink/45 italic">Details still needed</span>
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="text-right shrink-0">
