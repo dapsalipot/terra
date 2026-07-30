@@ -8,6 +8,7 @@ use App\Models\TripDeparture;
 use App\Models\User;
 use App\Support\AccountOutcome;
 use App\Support\RegistrationResult;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 class RegistrationService
@@ -99,28 +100,35 @@ class RegistrationService
         $existing = User::where('email', $contact['email'])->first();
 
         if ($existing) {
-            // Never auto-attach: that would let anyone create a booking that shows up inside
-            // a stranger's account. Send a link the real owner must click.
-            ['url' => $url] = $this->magicLinks->issue('attach', [
-                'user_id' => $existing->id,
-                'email' => $existing->email,
-                'reservation_id' => $reservation->id,
-            ]);
-
-            return [AccountOutcome::EmailTaken, $url];
+            return $this->emailTaken($existing, $reservation);
         }
 
         // The account is always the booker — they supplied the email and will pay.
-        $user = User::create([
-            'name' => trim(($contact['first_name'] ?? '').' '.($contact['last_name'] ?? '')),
-            'first_name' => $contact['first_name'] ?? null,
-            'middle_name' => $contact['middle_name'] ?? null,
-            'last_name' => $contact['last_name'] ?? null,
-            'email' => $contact['email'],
-            'phone' => $contact['phone'] ?? null,
-            'password' => null,
-            'role' => 'joiner',
-        ]);
+        try {
+            $user = User::create([
+                'name' => trim(($contact['first_name'] ?? '').' '.($contact['last_name'] ?? '')),
+                'first_name' => $contact['first_name'] ?? null,
+                'middle_name' => $contact['middle_name'] ?? null,
+                'last_name' => $contact['last_name'] ?? null,
+                'email' => $contact['email'],
+                'phone' => $contact['phone'] ?? null,
+                'password' => null,
+                'role' => 'joiner',
+            ]);
+        } catch (QueryException $e) {
+            // Lost a race: between the check above and this insert, someone claimed the address.
+            // A double-tapped submit button is enough to get here, and letting it through would
+            // roll back the whole registration and show a 500 over a recoverable situation.
+            // Re-query rather than trust the exception's shape, which differs by driver — if the
+            // address is still free, this was some other failure and must not be swallowed.
+            $raced = User::where('email', $contact['email'])->first();
+
+            if (! $raced) {
+                throw $e;
+            }
+
+            return $this->emailTaken($raced, $reservation);
+        }
 
         $this->backfillProfile($user, $data);
         $reservation->update(['joiner_id' => $user->id]);
@@ -132,6 +140,25 @@ class RegistrationService
         ]);
 
         return [AccountOutcome::AccountCreated, $url];
+    }
+
+    /**
+     * The address already belongs to an account, so the booking stays a guest booking.
+     *
+     * Never auto-attach: that would let anyone create a booking that shows up inside a
+     * stranger's account. The real owner has to click a link we send to their address.
+     *
+     * @return array{0: AccountOutcome, 1: ?string}
+     */
+    private function emailTaken(User $owner, Reservation $reservation): array
+    {
+        ['url' => $url] = $this->magicLinks->issue('attach', [
+            'user_id' => $owner->id,
+            'email' => $owner->email,
+            'reservation_id' => $reservation->id,
+        ]);
+
+        return [AccountOutcome::EmailTaken, $url];
     }
 
     /**

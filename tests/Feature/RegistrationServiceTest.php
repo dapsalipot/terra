@@ -5,6 +5,7 @@ use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\RegistrationService;
 use App\Support\AccountOutcome;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->svc = app(RegistrationService::class);
@@ -145,3 +146,27 @@ it('still cannot oversell through the new path', function () {
     $this->svc->register($small, regData(['party_size' => 2, 'participants' => [[], []]]));
     $this->svc->register($small, regData(['party_size' => 1, 'participants' => [[]]]));
 })->throws(TripFullException::class);
+
+it('falls back to EmailTaken when it loses a race to the same brand-new email', function () {
+    // DB::listen fires *after* a query runs but *before* the calling code inspects the result,
+    // which is precisely the race window: the existence check has already returned "free" when
+    // the rival account appears. Real-world trigger is a double-tapped submit button.
+    $planted = false;
+
+    DB::listen(function ($query) use (&$planted) {
+        if ($planted || ! str_contains($query->sql, 'from "users"')) {
+            return;
+        }
+
+        $planted = true;
+        User::factory()->create(['email' => 'ada@example.com', 'role' => 'joiner']);
+    });
+
+    $result = $this->svc->register($this->departure, regData(['create_account' => true]));
+
+    expect($planted)->toBeTrue()                                  // the race actually happened
+        ->and($result->outcome)->toBe(AccountOutcome::EmailTaken)
+        ->and($result->reservation->joiner_id)->toBeNull()         // stays a guest booking
+        ->and($result->magicUrl)->toContain('/magic/')
+        ->and(User::where('email', 'ada@example.com')->count())->toBe(1);
+});

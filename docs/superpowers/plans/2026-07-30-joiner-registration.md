@@ -1311,6 +1311,11 @@ class RegistrationService
         }
 
         // The account is always the booker — they supplied the email and will pay.
+        // NOTE: this create MUST be wrapped in a try/catch for QueryException that re-queries
+        // and falls back to the EmailTaken path. The existence check above is unlocked, so a
+        // double-tapped submit can lose the race to the users.email unique constraint; letting
+        // that propagate rolls back the entire registration and shows a 500. See
+        // RegistrationService::emailTaken().
         $user = User::create([
             'name' => trim(($contact['first_name'] ?? '').' '.($contact['last_name'] ?? '')),
             'first_name' => $contact['first_name'] ?? null,
