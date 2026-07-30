@@ -38,7 +38,7 @@
                 <span class="grid place-items-center w-12 h-12 rounded-full bg-pine text-cream font-serif font-semibold text-lg">{{ strtoupper(substr($trip->host->name,0,1)) }}</span>
                 <div>
                     <div class="font-semibold">Hosted by
-                        @if($trip->host->handle)<a href="{{ route('hosts.show', $trip->host) }}" class="underline decoration-ink/20 hover:decoration-ink">{{ $trip->host->name }}</a>@else{{ $trip->host->name }}@endif
+                        @if($trip->host->handle)<a href="{{ route('hosts.show', $trip->host) }}" class="inline-flex items-center py-1.5 -my-1.5 underline decoration-ink/20 hover:decoration-ink">{{ $trip->host->name }}</a>@else{{ $trip->host->name }}@endif
                     </div>
                     <div class="text-sm text-ink/70">{{ $trip->host->hostProfile?->trips_count }} trips led · {{ $trip->host->hostProfile?->rating ?? '—' }} ★</div>
                 </div>

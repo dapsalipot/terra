@@ -29,7 +29,7 @@
                 @endif
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="nav-link text-sm font-semibold transition-opacity">Log out</button></form>
             @else
-                <a href="{{ route('login') }}" class="text-sm font-semibold">Log in</a>
+                <a href="{{ route('login') }}" class="inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold">Log in</a>
                 <a href="{{ route('register') }}" class="nav-cta text-sm font-semibold text-cream bg-pine rounded-full px-4 py-2.5 transition-colors">Sign up</a>
             @endauth
         </div>

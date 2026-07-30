@@ -11,15 +11,15 @@
                 <input wire:model.live.debounce.300ms="search" placeholder="Search destinations"
                        class="w-full rounded-full border border-ink/12 bg-surface pl-11 pr-5 py-3 focus:border-moss focus:ring-moss">
             </div>
-            <select wire:model.live="category" class="rounded-full border border-ink/12 bg-surface px-4 py-3 text-sm capitalize focus:border-moss focus:ring-moss">
+            <select wire:model.live="category" aria-label="Filter by trip type" class="rounded-full border border-ink/12 bg-surface px-4 py-3 text-sm capitalize focus:border-moss focus:ring-moss">
                 <option value="">All trip types</option>
                 @foreach($categories as $cat)<option value="{{ $cat }}" class="capitalize">{{ ucfirst($cat) }}</option>@endforeach
             </select>
-            <select wire:model.live="country" class="rounded-full border border-ink/12 bg-surface px-4 py-3 text-sm focus:border-moss focus:ring-moss">
+            <select wire:model.live="country" aria-label="Filter by country" class="rounded-full border border-ink/12 bg-surface px-4 py-3 text-sm focus:border-moss focus:ring-moss">
                 <option value="">All countries</option>
                 @foreach($countries as $c)<option value="{{ $c }}">{{ $c }}</option>@endforeach
             </select>
-            <select wire:model.live="difficulty" class="rounded-full border border-ink/12 bg-surface px-4 py-3 text-sm focus:border-moss focus:ring-moss">
+            <select wire:model.live="difficulty" aria-label="Filter by difficulty" class="rounded-full border border-ink/12 bg-surface px-4 py-3 text-sm focus:border-moss focus:ring-moss">
                 <option value="">Any difficulty</option>
                 <option value="easy">Easy</option>
                 <option value="challenging">Challenging</option>

@@ -129,7 +129,7 @@
             <span class="font-serif italic text-terra text-xl leading-none">02</span>
             <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">Departing soon</h2>
             <span class="hidden sm:block h-px flex-1 bg-ink/12 self-center"></span>
-            <a href="{{ route('trips.index') }}" class="text-sm font-semibold text-terra whitespace-nowrap">Browse all →</a>
+            <a href="{{ route('trips.index') }}" class="inline-flex items-center py-1.5 -my-1.5 text-sm font-semibold text-terra whitespace-nowrap">Browse all →</a>
         </div>
 
         @if($featured)
@@ -210,7 +210,7 @@
                 <span class="font-serif italic text-amber text-xl leading-none">04</span>
                 <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">Fresh off a trip</h2>
                 <span class="hidden sm:block h-px flex-1 bg-cream/20 self-center"></span>
-                <a href="{{ route('hosts.index') }}" class="text-sm font-semibold text-cream/75 hover:text-cream whitespace-nowrap">Meet the hosts →</a>
+                <a href="{{ route('hosts.index') }}" class="inline-flex items-center py-1.5 -my-1.5 text-sm font-semibold text-cream/75 hover:text-cream whitespace-nowrap">Meet the hosts →</a>
             </div>
 
             @if($reviews->isNotEmpty())

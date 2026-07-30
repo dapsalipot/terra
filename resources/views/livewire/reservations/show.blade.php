@@ -134,12 +134,12 @@
         </div>
 
         <form wire:submit="submit" class="mt-5">
-            <label class="block text-sm font-semibold text-ink/70 mb-1">Reference number</label>
-            <input wire:model="reference_no" name="reference_no" dusk="reference_no" class="w-full rounded-xl border border-ink/15 px-4 py-3 font-mono" placeholder="e.g. 9021 5567 3382">
+            <label for="reference_no" class="block text-sm font-semibold text-ink/70 mb-1">Reference number</label>
+            <input wire:model="reference_no" id="reference_no" name="reference_no" dusk="reference_no" class="w-full rounded-xl border border-ink/15 px-4 py-3 font-mono" placeholder="e.g. 9021 5567 3382">
             @error('reference_no')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
 
-            <label class="block text-sm font-semibold text-ink/70 mt-4 mb-1">Screenshot <span class="font-normal text-ink/50">— optional, seen only by your host</span></label>
-            <input type="file" wire:model="proof" dusk="proof" accept="image/*" class="block w-full text-sm">
+            <label for="proof" class="block text-sm font-semibold text-ink/70 mt-4 mb-1">Screenshot <span class="font-normal text-ink/50">— optional, seen only by your host</span></label>
+            <input type="file" id="proof" wire:model="proof" dusk="proof" accept="image/*" class="block w-full text-sm">
             @error('proof')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
 
             <button class="mt-5 w-full rounded-full bg-pine text-cream py-3 font-semibold">Submit proof of payment</button>

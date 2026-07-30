@@ -2,7 +2,7 @@
 @php($money = fn ($n) => $cur.' '.number_format($n))
 
 <div class="max-w-2xl mx-auto px-5 py-8">
-    <a href="{{ route('trips.show', $trip) }}" wire:navigate class="text-sm text-ink/65 hover:text-ink">← {{ $trip->title }}</a>
+    <a href="{{ route('trips.show', $trip) }}" wire:navigate class="inline-flex items-center py-1.5 -my-1.5 text-sm text-ink/65 hover:text-ink">← {{ $trip->title }}</a>
     <h1 class="font-serif font-semibold text-3xl mt-2 mb-6">Join this trip</h1>
 
     @if($closed)
@@ -145,7 +145,7 @@
                     </div>
                 @else
                     <button type="button" wire:click="toggleContactFor({{ $i }})"
-                            class="text-sm font-semibold text-moss hover:underline mt-3">+ add contact</button>
+                            class="inline-flex items-center py-1.5 -my-1.5 text-sm font-semibold text-moss hover:underline mt-3">+ add contact</button>
                 @endif
             </div>
         @endforeach
