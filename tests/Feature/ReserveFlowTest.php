@@ -64,7 +64,7 @@ it('joiner submits payment then host confirms', function () {
 
     // joiner pays
     Livewire::actingAs($joiner)
-        ->test(\App\Livewire\Reservations\Pay::class, ['reservation' => $reservation])
+        ->test(\App\Livewire\Reservations\Show::class, ['token' => $reservation->public_token])
         ->set('reference_no', '9021 5567 3382')
         ->call('submit');
     expect($reservation->fresh()->status)->toBe('payment_submitted');
@@ -83,7 +83,8 @@ it('a joiner cannot open someone else\'s pay page', function () {
     ]);
     $stranger = User::factory()->create(['role' => 'joiner']);
 
-    Livewire::actingAs($stranger)
-        ->test(\App\Livewire\Reservations\Pay::class, ['reservation' => $mine])
+    // The legacy integer-id URL must not convert a guessed id into the booking's token.
+    test()->actingAs($stranger)
+        ->get("/reservations/{$mine->id}/pay")
         ->assertForbidden();
 });

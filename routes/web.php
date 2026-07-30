@@ -25,9 +25,32 @@ Route::view('profile', 'profile')
 Route::get('/magic/{token}', fn (string $token) => abort(404))->name('magic.consume');
 
 
+/*
+ * Booking status and payment.
+ *
+ * Deliberately outside `auth`: a guest booking has no user to authenticate, so possession of
+ * the token is the credential. The page exposes exactly one booking and no account data.
+ */
+Route::get('/r/{token}', \App\Livewire\Reservations\Show::class)->name('reservations.show');
+
+/*
+ * Legacy URL kept alive so links already sent out keep working.
+ *
+ * Ownership-checked, unlike /r/{token} itself. This route takes a guessable integer id, so
+ * without the check it would hand the unguessable public_token to anyone who counted upwards —
+ * defeating the point of token authorization.
+ */
+Route::get('/reservations/{reservation}/pay', function (\App\Models\Reservation $reservation) {
+    // The null check is load-bearing, not defensive noise: a guest booking has joiner_id null
+    // and an unauthenticated auth()->id() is also null, so a bare === would compare null to
+    // null and pass. The auth middleware happens to stop that today; this does not depend on it.
+    abort_unless($reservation->joiner_id !== null && $reservation->joiner_id === auth()->id(), 403);
+
+    return redirect()->route('reservations.show', ['token' => $reservation->public_token]);
+})->middleware('auth')->name('reservations.pay');
+
 // Reservation flow + host roster (Plan 02)
 Route::middleware('auth')->group(function () {
-    Route::get('/reservations/{reservation}/pay', \App\Livewire\Reservations\Pay::class)->name('reservations.pay');
     Route::get('/chat/{departure}', \App\Livewire\Chat\Room::class)->name('chat.show');
 
     Route::post('/logout', function () {

@@ -46,7 +46,7 @@ it('stores a payment proof on the private disk, not the public one', function ()
     ]);
 
     Livewire::actingAs($joiner)
-        ->test(\App\Livewire\Reservations\Pay::class, ['reservation' => $reservation])
+        ->test(\App\Livewire\Reservations\Show::class, ['token' => $reservation->public_token])
         ->set('reference_no', '9021')
         ->set('proof', UploadedFile::fake()->image('proof.jpg'))
         ->call('submit');

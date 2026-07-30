@@ -4,23 +4,29 @@ namespace App\Livewire\Reservations;
 
 use App\Models\Reservation;
 use App\Services\ReservationService;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-class Pay extends Component
+class Show extends Component
 {
     use WithFileUploads;
 
-    public $proof = null;
     public Reservation $reservation;
+    public $proof = null;
     public string $method = '';
     public string $reference_no = '';
 
-    public function mount(Reservation $reservation): void
+    /**
+     * Authorized by token possession, not by session.
+     *
+     * A guest booking has no joiner_id, so ownership alone cannot gate this page. The token is a
+     * long random value scoped to exactly one booking — the standard guest order-status pattern.
+     */
+    public function mount(string $token): void
     {
-        abort_unless($reservation->joiner_id === Auth::id(), 403);
-        $this->reservation = $reservation->load('departure.trip.host.hostProfile', 'latestPayment');
+        $this->reservation = Reservation::where('public_token', $token)
+            ->with('departure.trip.host.hostProfile', 'latestPayment', 'participants')
+            ->firstOrFail();
     }
 
     public function submit(ReservationService $service): void
@@ -49,6 +55,6 @@ class Pay extends Component
 
     public function render()
     {
-        return view('livewire.reservations.pay')->layout('components.layouts.site');
+        return view('livewire.reservations.show')->layout('components.layouts.site');
     }
 }

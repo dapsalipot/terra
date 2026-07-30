@@ -4,8 +4,59 @@
 @php($perHead = $trip->current_price)
 @php($amount = $trip->payable_now * $reservation->party_size)
 @php($balance = ($perHead - $trip->payable_now) * $reservation->party_size)
+@php($pending = $reservation->incompleteParticipants())
 <div class="max-w-xl mx-auto px-6 py-10">
     <a href="{{ route('trips.show', $trip) }}" class="text-sm text-ink/60">‹ {{ $trip->title }}</a>
+
+    {{-- Leads the page when heads are unnamed: the host cannot file a permit without them. --}}
+    @if($pending->isNotEmpty())
+        <div class="mt-4 rounded-2xl bg-amber/12 p-5" dusk="pending-details">
+            <p class="font-semibold mb-1">
+                {{ $pending->count() }} of {{ $reservation->participants->count() }}
+                {{ Str::plural('traveller', $reservation->participants->count()) }} still need details
+            </p>
+            <p class="text-sm text-ink/70">
+                Your host needs each traveller's full name and birthday for permits. Send them this
+                page's link, or add the details before the trip.
+            </p>
+        </div>
+    @endif
+
+    {{-- Who this booking is for. A guest booking has no account, so the contact snapshot and the
+         traveller rows are the only record of who is coming. --}}
+    <div class="mt-4 rounded-2xl border border-ink/10 p-5">
+        <h2 class="font-serif font-semibold text-lg mb-1">{{ $reservation->contactName() ?: $reservation->displayName() }}</h2>
+        <p class="text-sm text-ink/65 mb-3">
+            {{ $reservation->party_size }} {{ Str::plural('seat', $reservation->party_size) }}
+            @unless($reservation->bookerIsTraveling()) · you are booking for others @endunless
+        </p>
+
+        @if($reservation->participants->isNotEmpty())
+            <ol class="space-y-1 text-sm">
+                @foreach($reservation->participants as $p)
+                    <li class="flex items-center gap-2">
+                        <span class="text-ink/45 tabular-nums w-4">{{ $loop->iteration }}</span>
+                        @if($p->isComplete())
+                            <span>{{ $p->fullName() }}</span>
+                            @if($p->is_booker)<span class="text-xs font-semibold text-moss">you</span>@endif
+                        @else
+                            <span class="text-ink/45 italic">Details still needed</span>
+                        @endif
+                    </li>
+                @endforeach
+            </ol>
+        @endif
+    </div>
+
+    {{-- The booking's own address. With no mail provider configured this is the only way back. --}}
+    <div class="mt-4 rounded-2xl bg-moss/10 p-5">
+        <p class="text-sm font-semibold mb-1.5">Save this link</p>
+        <p class="text-sm text-ink/70 mb-3">It's how you get back to this booking.</p>
+        <input readonly value="{{ route('reservations.show', ['token' => $reservation->public_token]) }}"
+               dusk="booking-link" aria-label="Link to this booking"
+               class="w-full rounded-lg border border-ink/15 px-3 py-2 text-sm font-mono bg-cream"
+               onclick="this.select()">
+    </div>
 
     @if($reservation->status === 'confirmed')
         <div class="mt-6 rounded-2xl bg-moss/10 p-8 text-center">
@@ -14,7 +65,12 @@
             </div>
             <h1 class="font-serif font-semibold text-2xl">You're confirmed</h1>
             <p class="text-ink/60 mt-2">{{ $host->name }} confirmed your spot on {{ $reservation->departure->starts_at->format('M j') }}.</p>
-            <a href="{{ route('chat.show', $reservation->departure) }}" class="inline-block mt-5 rounded-full bg-pine text-cream px-6 py-3 font-semibold">Open trip chat</a>
+            {{-- Trip chat sits behind auth, so a guest booking has nothing to open yet. --}}
+            @auth
+                <a href="{{ route('chat.show', $reservation->departure) }}" class="inline-block mt-5 rounded-full bg-pine text-cream px-6 py-3 font-semibold">Open trip chat</a>
+            @else
+                <p class="text-sm text-ink/60 mt-4">Create an account to join the trip chat with your group.</p>
+            @endauth
         </div>
     @elseif($reservation->status === 'payment_submitted')
         <div class="mt-6 rounded-2xl bg-amber/10 p-8 text-center">
