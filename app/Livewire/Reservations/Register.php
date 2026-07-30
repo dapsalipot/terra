@@ -72,17 +72,19 @@ class Register extends Component
         }
 
         if ($user = Auth::user()) {
+            [$first, $last] = $this->nameParts($user);
+
             $this->contact = [
-                'first_name' => $user->first_name ?? '',
+                'first_name' => $first,
                 'middle_name' => $user->middle_name ?? '',
-                'last_name' => $user->last_name ?? '',
+                'last_name' => $last,
                 'email' => $user->email,
                 'phone' => $user->phone ?? '',
             ];
             $this->participants[0] = array_merge(self::BLANK_PARTICIPANT, [
-                'first_name' => $user->first_name ?? '',
+                'first_name' => $first,
                 'middle_name' => $user->middle_name ?? '',
-                'last_name' => $user->last_name ?? '',
+                'last_name' => $last,
                 'birthday' => $user->birthday?->format('Y-m-d') ?? '',
                 'gender' => $user->gender ?? '',
             ]);
@@ -91,6 +93,26 @@ class Register extends Component
         $this->restoreDraft();
 
         return null;
+    }
+
+    /**
+     * First and last name, falling back to splitting the legacy single `name` column.
+     *
+     * Every account created before structured name parts existed has only `name`, so without
+     * this fallback a long-standing member would meet an empty form — worse than the guest
+     * experience. A split is a starting point they can correct, not a claim to be right.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function nameParts(\App\Models\User $user): array
+    {
+        if (filled($user->first_name) || filled($user->last_name)) {
+            return [$user->first_name ?? '', $user->last_name ?? ''];
+        }
+
+        $parts = preg_split('/\s+/', trim((string) $user->name)) ?: [];
+
+        return [$parts[0] ?? '', count($parts) > 1 ? (string) end($parts) : ''];
     }
 
     public function getIsSignedInProperty(): bool
@@ -194,10 +216,32 @@ class Register extends Component
             'participants.*.first_name' => ['nullable', 'string', 'max:80'],
             'participants.*.middle_name' => ['nullable', 'string', 'max:80'],
             'participants.*.last_name' => ['nullable', 'string', 'max:80'],
-            'participants.*.birthday' => ['nullable', 'date', 'before:today'],
+            'participants.*.birthday' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'participants.*.gender' => ['nullable', 'string', 'max:24'],
             'participants.*.email' => ['nullable', 'email', 'max:180'],
             'participants.*.phone' => ['nullable', 'string', 'max:32'],
+        ];
+    }
+
+    /** Laravel would otherwise surface the attribute path: "The contact.first name field...". */
+    protected function validationAttributes(): array
+    {
+        return [
+            'partySize' => 'number of seats',
+            'contact.first_name' => 'first name',
+            'contact.middle_name' => 'middle name',
+            'contact.last_name' => 'last name',
+            'contact.email' => 'email',
+            'contact.phone' => 'mobile number',
+        ];
+    }
+
+    protected function validationMessages(): array
+    {
+        return [
+            'participants.*.birthday.before' => 'A birthday has to be in the past.',
+            'participants.*.birthday.after' => 'That birthday looks like a typo — please check the year.',
+            'participants.*.email.email' => 'That traveller\'s email address does not look right.',
         ];
     }
 

@@ -39,7 +39,7 @@ class ReserveFlowTest extends DuskTestCase
         });
     }
 
-    public function test_a_guest_clicking_reserve_is_sent_to_login(): void
+    public function test_a_guest_clicking_join_reaches_registration_without_logging_in(): void
     {
         $departure = $this->publishedDeparture();
 
@@ -47,9 +47,9 @@ class ReserveFlowTest extends DuskTestCase
             $browser->visit('/t/'.$departure->trip->slug)
                 ->assertSee('Mount Rinjani Traverse')
                 ->assertSee('spots')
-                ->press('Reserve')
-                ->waitForLocation('/login')
-                ->assertPathIs('/login');
+                ->press('Join this trip')
+                ->waitForText('Who we contact about this booking')
+                ->assertPathIs('/t/'.$departure->trip->slug.'/join');
         });
     }
 
@@ -62,7 +62,13 @@ class ReserveFlowTest extends DuskTestCase
             // joiner reserves
             $browser->loginAs($joiner)
                 ->visit('/t/'.$departure->trip->slug)
-                ->press('Reserve')
+                ->press('Join this trip')
+                // Pre-fill splits the legacy `name`, but a mobile number and a birthday are
+                // still required — the account has neither.
+                ->waitForText('Who\'s going?')
+                ->type('@contact-phone', '09171234567')
+                ->keys('@seat-0-birthday', '05', '14', '1996')
+                ->click('@submit-registration')
                 ->waitForText('Pay your host')
                 ->assertSee('•••• 4821')                       // host payment method shows
                 ->type('reference_no', '9021 5567 3382')

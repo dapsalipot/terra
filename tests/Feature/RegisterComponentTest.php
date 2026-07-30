@@ -178,3 +178,39 @@ it('refuses to oversell and says how many seats are left', function () {
 
     expect(Reservation::where('contact_email', 'ada@example.com')->count())->toBe(0);
 });
+
+it('pre-fills name parts from a legacy account that only has a display name', function () {
+    // Every account predating structured name columns has only `name`. Without a fallback a
+    // long-standing member would meet an emptier form than a first-time guest.
+    $joiner = User::factory()->create([
+        'role' => 'joiner', 'name' => 'Mika Ramos',
+        'first_name' => null, 'last_name' => null,
+    ]);
+
+    Livewire::actingAs($joiner)
+        ->test(Register::class, ['trip' => $this->trip])
+        ->assertSet('contact.first_name', 'Mika')
+        ->assertSet('contact.last_name', 'Ramos');
+});
+
+it('rejects a birthday with an implausible year', function () {
+    // `before:today` alone accepts the year 0514, which a date input can produce from a typo.
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('contact.first_name', 'Ada')
+        ->set('contact.last_name', 'Reyes')
+        ->set('contact.email', 'ada@example.com')
+        ->set('contact.phone', '09171234567')
+        ->set('participants.0.birthday', '0514-09-12')
+        ->call('submit')
+        ->assertHasErrors(['participants.0.birthday']);
+});
+
+it('names fields in plain language when validation fails', function () {
+    // Laravel would otherwise render "The contact.first name field is required."
+    $component = Livewire::test(Register::class, ['trip' => $this->trip])->call('submit');
+
+    $messages = collect($component->errors()->all())->implode(' ');
+
+    expect($messages)->not->toContain('contact.')
+        ->and($messages)->toContain('first name');
+});
