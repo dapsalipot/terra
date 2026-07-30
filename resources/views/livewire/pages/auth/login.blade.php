@@ -69,21 +69,6 @@ new #[Layout('layouts.guest')] class extends Component
         </div>
     </form>
 
-    {{-- An account created during trip registration has no password at all — it signs in by
-         emailed link. Without this, its owner would type their email here, have nothing to put
-         in the password field, and be told their credentials are wrong with no way forward. --}}
-    <form method="POST" action="{{ route('magic.send') }}" class="mt-6 pt-6 border-t border-ink/10">
-        @csrf
-        <p class="text-sm text-ink/70 mb-2">{{ __('No password? We’ll email you a sign-in link.') }}</p>
-        <input type="email" name="email" required autocomplete="email" placeholder="you@example.com" dusk="magic-email"
-               aria-label="{{ __('Email for a sign-in link') }}"
-               class="w-full rounded-xl border-ink/15 px-3.5 py-2 text-sm focus:border-moss focus:ring-moss">
-        <button type="submit" dusk="send-magic"
-                class="mt-2 w-full rounded-full border border-ink/15 py-2.5 text-sm font-semibold hover:border-moss transition-colors">
-            {{ __('Email me a sign-in link') }}
-        </button>
-        @if(session('status'))
-            <p class="text-sm text-moss mt-2">{{ session('status') }}</p>
-        @endif
-    </form>
+    <x-social-auth label="Or continue with" />
+
 </div>

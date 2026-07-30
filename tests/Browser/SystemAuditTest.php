@@ -245,7 +245,7 @@ class SystemAuditTest extends DuskTestCase
             $browser->script('window.scrollTo(0, document.body.scrollHeight / 2);');
             $browser->pause(self::BEAT);
             $this->sweep($browser, '/t/'.$w['trip']->slug.'/join', 'registration form', 'Who we contact');
-            $this->sweep($browser, '/login', 'login', 'Email me a sign-in link');
+            $this->sweep($browser, '/login', 'login', 'Continue with Google');
             $this->sweep($browser, '/register', 'register', 'Name');
         });
 

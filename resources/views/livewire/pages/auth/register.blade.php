@@ -131,4 +131,6 @@ new #[Layout('layouts.guest')] class extends Component
             </x-primary-button>
         </div>
     </form>
+    <x-social-auth label="Or sign up with" />
+
 </div>

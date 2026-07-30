@@ -22,6 +22,17 @@ Route::view('profile', 'profile')
     ->name('profile');
 
 /*
+ * Social sign-in. Constrained to known providers so an unknown one 404s rather than reaching
+ * Socialite, and available while signed in so a user can attach a second provider.
+ */
+Route::get('/auth/{provider}/redirect', [\App\Http\Controllers\SocialAuthController::class, 'redirect'])
+    ->where('provider', \App\Support\SocialProviders::PATTERN)
+    ->name('social.redirect');
+Route::get('/auth/{provider}/callback', [\App\Http\Controllers\SocialAuthController::class, 'callback'])
+    ->where('provider', \App\Support\SocialProviders::PATTERN)
+    ->name('social.callback');
+
+/*
  * Magic links: passwordless sign-in, and attaching a guest booking to its rightful owner.
  * Issuance is throttled so the endpoint cannot be used to mail-bomb an address.
  */

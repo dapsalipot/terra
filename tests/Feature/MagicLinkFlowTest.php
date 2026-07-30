@@ -86,10 +86,16 @@ it('does not reveal whether an address is registered', function () {
     Mail::assertNothingSent();
 });
 
-it('offers a sign-in link on the login page', function () {
-    $this->get(route('login'))
-        ->assertOk()
-        ->assertSee('Email me a sign-in link');
+it('still issues sign-in links even though the login page no longer offers a form', function () {
+    // The login-page form was removed in favour of social sign-in, but the mechanism is still
+    // load-bearing: it backs the post-registration email and booking attachment.
+    Mail::fake();
+    $user = User::factory()->create(['role' => 'joiner']);
+
+    $this->post(route('magic.send'), ['email' => $user->email])->assertRedirect();
+
+    Mail::assertSent(MagicLinkMail::class);
+    expect(App\Models\MagicLink::where('purpose', 'login')->count())->toBe(1);
 });
 
 it('does not lose a booking when the mail transport fails', function () {

@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+
+    /*
+     * Social sign-in. Credentials live in .env and are never committed. A provider with no
+     * client_id is simply not offered to users — see App\Support\SocialProviders::enabled().
+     */
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL').'/auth/google/callback'),
+    ],
+
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT_URI', env('APP_URL').'/auth/facebook/callback'),
+    ],
+
 ];
