@@ -19,28 +19,27 @@ function publishedTripWithDeparture(): TripDeparture
     return TripDeparture::factory()->for($trip)->create(['capacity' => 10, 'starts_at' => now()->addWeek()]);
 }
 
-it('a guest is sent to login when reserving', function () {
+it('a guest goes straight to registration without logging in', function () {
+    // Was: guests were bounced to login. Joining without an account is now the point.
     $departure = publishedTripWithDeparture();
 
     Livewire::test(\App\Livewire\Trips\Show::class, ['trip' => $departure->trip])
         ->call('reserve')
-        ->assertRedirect(route('login'));
+        ->assertRedirect(route('trips.join', $departure->trip));
 });
 
-it('a joiner reserves and lands on the pay page', function () {
+it('a joiner is sent to registration and no seat is taken yet', function () {
+    // The trip page no longer creates the booking: registration does, once it knows who is
+    // travelling. Holding a seat before that would let an abandoned form block a real joiner.
     $departure = publishedTripWithDeparture();
     $joiner = User::factory()->create(['role' => 'joiner']);
 
     Livewire::actingAs($joiner)
         ->test(\App\Livewire\Trips\Show::class, ['trip' => $departure->trip])
-        ->set('party', 2)
         ->call('reserve')
-        ->assertRedirect();
+        ->assertRedirect(route('trips.join', $departure->trip));
 
-    $reservation = Reservation::first();
-    expect($reservation->joiner_id)->toBe($joiner->id)
-        ->and($reservation->party_size)->toBe(2)
-        ->and($reservation->status)->toBe('pending');
+    expect(Reservation::count())->toBe(0);
 });
 
 it('a host cannot reserve a trip', function () {

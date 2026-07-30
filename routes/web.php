@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', \App\Livewire\Home::class)->name('home');
 Route::get('/trips', \App\Livewire\Trips\Index::class)->name('trips.index');
 Route::get('/t/{trip:slug}', \App\Livewire\Trips\Show::class)->name('trips.show');
+Route::get('/t/{trip:slug}/join', \App\Livewire\Reservations\Register::class)->name('trips.join');
 Route::get('/hosts', \App\Livewire\Hosts\Index::class)->name('hosts.index');
 Route::get('/@{user:handle}', \App\Livewire\Hosts\Show::class)->name('hosts.show');
 

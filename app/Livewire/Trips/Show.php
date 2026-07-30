@@ -2,11 +2,9 @@
 
 namespace App\Livewire\Trips;
 
-use App\Exceptions\TripFullException;
 use App\Models\Review;
 use App\Models\Trip;
 use App\Models\TripDeparture;
-use App\Services\ReservationService;
 use App\Services\ReviewGate;
 use App\Services\ReviewService;
 use Illuminate\Support\Facades\Auth;
@@ -33,30 +31,18 @@ class Show extends Component
         $this->departureId = $this->trip->openDepartures->first()?->id;
     }
 
-    public function reserve(ReservationService $service)
+    /** The trip page no longer books directly — registration collects who is travelling. */
+    public function reserve()
     {
-        if (! Auth::check()) {
-            return $this->redirectRoute('login', navigate: true);
-        }
-
-        if (Auth::user()->isHost()) {
+        // Answered here so a host gets a reason at the click point rather than a silent bounce
+        // off the join page. Register::mount() is the authoritative guard for direct URL hits.
+        if (Auth::user()?->isHost()) {
             $this->error = 'Host accounts cannot join trips. Sign up as a joiner to reserve.';
-            return;
+
+            return null;
         }
 
-        $departure = TripDeparture::findOrFail($this->departureId);
-
-        try {
-            $reservation = $service->reserve($departure, [
-                'joiner_id' => Auth::id(),
-                'party_size' => max(1, $this->party),
-            ]);
-        } catch (TripFullException $e) {
-            $this->error = $e->getMessage();
-            return;
-        }
-
-        return $this->redirectRoute('reservations.pay', ['reservation' => $reservation->id], navigate: true);
+        return $this->redirectRoute('trips.join', ['trip' => $this->trip], navigate: true);
     }
 
     public function submitReview(ReviewService $service): void

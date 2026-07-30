@@ -391,7 +391,7 @@
                             <input id="party-size" type="number" min="1" max="10" wire:model.live="party" aria-label="Number of guests" class="w-20 rounded-lg border border-ink/15 px-3 py-2 text-center">
                         </div>
                         <button wire:click="reserve" wire:loading.attr="disabled"
-                                class="mt-5 w-full rounded-full bg-pine text-cream py-3.5 font-semibold hover:bg-pine/90 transition-colors">Reserve</button>
+                                class="mt-5 w-full rounded-full bg-pine text-cream py-3.5 font-semibold hover:bg-pine/90 transition-colors">Join this trip</button>
                         <p class="mt-2.5 text-center text-xs text-ink/65">Spot held 24h · you pay the host directly</p>
                     @endif
                 </div>
