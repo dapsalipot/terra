@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\HostCannotJoinException;
+use App\Mail\MagicLinkMail;
 use App\Models\Reservation;
 use App\Models\TripDeparture;
 use App\Models\User;
@@ -10,6 +11,7 @@ use App\Support\AccountOutcome;
 use App\Support\RegistrationResult;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class RegistrationService
 {
@@ -139,6 +141,8 @@ class RegistrationService
             'reservation_id' => $reservation->id,
         ]);
 
+        $this->mailLink($user->email, $url, $user->full_name);
+
         return [AccountOutcome::AccountCreated, $url];
     }
 
@@ -158,7 +162,26 @@ class RegistrationService
             'reservation_id' => $reservation->id,
         ]);
 
+        $this->mailLink($owner->email, $url, $owner->full_name);
+
         return [AccountOutcome::EmailTaken, $url];
+    }
+
+    /**
+     * Send a magic link without ever letting mail failure cost someone their booking.
+     *
+     * This runs inside register()'s transaction, so an uncaught transport exception — a wrong
+     * SMTP host, a dead relay, a throttled provider — would roll back the reservation and the
+     * traveller rows along with it. The confirmation screen always shows a copyable link to the
+     * booking, so a failed send degrades the experience rather than destroying the record.
+     */
+    private function mailLink(string $to, string $url, string $name): void
+    {
+        try {
+            Mail::to($to)->send(new MagicLinkMail($url, $name));
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**

@@ -21,9 +21,13 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
-// Magic links. The controller arrives in Task 7; this reserves the route name so
-// MagicLinkService::issue() can build URLs.
-Route::get('/magic/{token}', fn (string $token) => abort(404))->name('magic.consume');
+/*
+ * Magic links: passwordless sign-in, and attaching a guest booking to its rightful owner.
+ * Issuance is throttled so the endpoint cannot be used to mail-bomb an address.
+ */
+Route::get('/magic/{token}', \App\Http\Controllers\MagicLinkController::class)->name('magic.consume');
+Route::post('/magic', \App\Http\Controllers\SendMagicLinkController::class)
+    ->middleware('throttle:5,1')->name('magic.send');
 
 
 /*
