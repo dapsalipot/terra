@@ -8,8 +8,19 @@ use App\Models\Place;
 use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
+
+/*
+ * Pin the clock. These tests seed departures at now()+N days and assert they appear in the
+ * current month's grid, which only holds when the month has room left — the grid renders whole
+ * weeks, so late in a month now()+3 can fall past its final cell. Mid-month keeps the fixtures
+ * meaningful; individual tests travel elsewhere when the date is the point.
+ */
+beforeEach(function () {
+    $this->travelTo(Carbon::parse('2026-07-15 09:00:00'));
+});
 
 function dashHost(): User
 {
@@ -318,4 +329,22 @@ it('drops a selection that is not in the month being viewed', function () {
         ->call('shiftMonth', 6)
         // the old date is not in this month, so it must not leak trips into the panel
         ->assertViewHas('selectedDepartures', fn ($d) => $d->isEmpty());
+});
+
+it('shows the right month even when today is the 31st', function () {
+    // Carbon fills unparsed fields from today, so parsing "2026-06" on a 31st yields 31 June,
+    // which overflows into July. Short months were silently unreachable a few days each month.
+    $this->travelTo(Carbon::parse('2026-07-31 09:00:00'));
+
+    $host = dashHost();
+
+    Livewire::actingAs($host)->test(Dashboard::class)
+        ->set('month', '2026-06')
+        ->assertSee('June 2026')
+        ->assertDontSee('July 2026');
+
+    // February from a 31st is the harshest case: three days of overflow.
+    Livewire::actingAs($host)->test(Dashboard::class)
+        ->set('month', '2026-02')
+        ->assertSee('February 2026');
 });

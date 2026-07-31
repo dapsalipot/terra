@@ -60,7 +60,10 @@ class Dashboard extends Component
     private function cursor(): Carbon
     {
         try {
-            return Carbon::createFromFormat('Y-m', $this->month)->startOfMonth();
+            // The `!` matters: without it Carbon fills unparsed fields from today, so on the
+            // 31st "2026-06" parses as 31 June and overflows to 1 July — the dashboard would
+            // silently show the wrong month for any short month, a few days every month.
+            return Carbon::createFromFormat('!Y-m', $this->month)->startOfMonth();
         } catch (\Throwable) {
             return now()->startOfMonth();
         }
