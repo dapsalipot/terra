@@ -25,7 +25,7 @@
                 @if(auth()->user()->isHost())
                     <a href="{{ route('host.dashboard') }}" class="text-sm font-semibold">Dashboard</a>
                 @else
-                    <a href="{{ route('trips.index') }}" class="text-sm font-semibold">Explore</a>
+                    <a href="{{ route('my.trips') }}" class="text-sm font-semibold" dusk="nav-my-trips">Your trips</a>
                 @endif
                 <form method="POST" action="{{ route('logout') }}">@csrf<button class="nav-link text-sm font-semibold transition-opacity">Log out</button></form>
             @else

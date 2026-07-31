@@ -10,12 +10,17 @@ Route::get('/t/{trip:slug}/join', \App\Livewire\Reservations\Register::class)->n
 Route::get('/hosts', \App\Livewire\Hosts\Index::class)->name('hosts.index');
 Route::get('/@{user:handle}', \App\Livewire\Hosts\Show::class)->name('hosts.show');
 
-// After login/registration, route by role instead of the stock Breeze dashboard.
+// After login/registration, route by role instead of the stock Breeze dashboard. Hosts get the
+// console; joiners get their own trips, which until now had no home at all — their bookings were
+// reachable only through the /r/{token} link they were told to save.
 Route::get('dashboard', function () {
-    return auth()->user()?->isHost()
-        ? redirect()->route('host.dashboard')
-        : redirect()->route('home');
-})->middleware(['auth', 'verified'])->name('dashboard');
+    return redirect()->route(auth()->user()?->isHost() ? 'host.dashboard' : 'my.trips');
+})->middleware(['auth'])->name('dashboard');
+
+// A joiner's own trips. Their own URL rather than a bare /dashboard, so it can be linked and
+// bookmarked like anything else on the site.
+Route::get('/my-trips', \App\Livewire\Joiner\Dashboard::class)
+    ->middleware('auth')->name('my.trips');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
