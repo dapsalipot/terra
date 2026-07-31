@@ -15,7 +15,15 @@ class Register extends Component
     public Trip $trip;
     public TripDeparture $departure;
 
-    public int $partySize = 1;
+    /**
+     * Seats. Deliberately untyped.
+     *
+     * A `public int` cannot hold the empty string Livewire sends when someone clears the number
+     * field to retype it. PHP leaves the typed property uninitialized, then routes the next read
+     * to __get(), where Livewire throws PropertyNotFoundException — a 500 for the ordinary act of
+     * backspacing over a number.
+     */
+    public $partySize = 1;
     public array $contact = [
         'first_name' => '', 'middle_name' => '', 'last_name' => '', 'email' => '', 'phone' => '',
     ];
@@ -141,6 +149,13 @@ class Register extends Component
     /** Seats drive the traveller list; one row per seat, always. */
     public function updatedPartySize(): void
     {
+        // Mid-edit the field is legitimately empty: select-all-and-retype, or backspace before
+        // typing "12". Clamping to 1 here would rewrite the box under the user's cursor and make
+        // a two-digit number impossible to type. Leave it be; validation catches it on submit.
+        if (blank($this->partySize)) {
+            return;
+        }
+
         $this->partySize = max(1, min(20, (int) $this->partySize));
 
         while (count($this->participants) < $this->partySize) {
@@ -255,7 +270,7 @@ class Register extends Component
 
         try {
             $result = $service->register($this->departure, [
-                'party_size' => $this->partySize,
+                'party_size' => (int) $this->partySize,
                 'contact' => $this->normalisedContact(),
                 'booker_is_traveling' => $this->bookerIsTraveling,
                 'participants' => $this->normalisedParticipants(),
@@ -264,7 +279,7 @@ class Register extends Component
             ]);
         } catch (TripFullException $e) {
             $this->error = $e->getMessage();
-            $this->partySize = max(1, $this->departure->fresh()->spotsLeft());
+            $this->partySize = max(1, (int) $this->departure->fresh()->spotsLeft());
 
             return null;
         }
@@ -352,10 +367,14 @@ class Register extends Component
 
     public function render()
     {
+        // Seats can be blank while the field is being retyped, so the totals fall back to one
+        // rather than rendering a price of zero.
+        $seats = max(1, (int) $this->partySize);
+
         return view('livewire.reservations.register', [
             'spotsLeft' => $this->closed ? 0 : $this->departure->spotsLeft(),
-            'total' => $this->trip->current_price * $this->partySize,
-            'payableNow' => $this->trip->payable_now * $this->partySize,
+            'total' => $this->trip->current_price * $seats,
+            'payableNow' => $this->trip->payable_now * $seats,
         ])->layout('components.layouts.site');
     }
 }

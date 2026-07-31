@@ -117,11 +117,23 @@ class JoinerRegistrationTest extends DuskTestCase
                 ->waitForText('Join this trip')
                 ->assertVisible('@seat-0')
                 ->assertMissing('@seat-2')
-                ->clear('@party-size')
-                ->type('@party-size', '3')
-                ->waitFor('@seat-2')
+                // Real keystrokes, not clear()+type(): clear() sets the value without firing an
+                // input event, so the empty-field state never reached the server and a 500 on
+                // backspacing over the number went unnoticed by this test.
+                // The pause is the point. Debouncing coalesces a fast backspace-then-digit, so
+                // the empty value never reaches the server; someone who clears the box and thinks
+                // for a moment does send "", which is what crashed the component.
+                ->keys('@party-size', '{backspace}')
+                ->pause(900)
+                ->keys('@party-size', '3')
+                ->waitFor('@seat-2', 10)
                 ->assertVisible('@seat-1')
-                ->assertVisible('@seat-2');
+                ->assertVisible('@seat-2')
+                // Two digits, typed one at a time — impossible if the field snaps to a clamped
+                // value on every keystroke.
+                ->keys('@party-size', '{backspace}', '1', '2')
+                ->waitFor('@seat-11', 10)
+                ->assertVisible('@seat-11');
         });
     }
 }

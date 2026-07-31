@@ -214,3 +214,49 @@ it('names fields in plain language when validation fails', function () {
     expect($messages)->not->toContain('contact.')
         ->and($messages)->toContain('first name');
 });
+
+it('survives the seat field being cleared mid-edit', function () {
+    // A `public int` cannot hold the "" Livewire sends when the box is emptied; PHP leaves the
+    // typed property uninitialized and routes the next read to __get(), which threw a 500 for
+    // the ordinary act of backspacing over a number.
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('partySize', '')
+        ->assertOk()
+        // The box stays empty rather than snapping to 1, which would rewrite it under the cursor.
+        ->assertSet('partySize', '')
+        // Totals still render, falling back to one seat rather than showing a price of zero.
+        ->assertSee('3,500');
+});
+
+it('lets a two-digit seat count be typed a digit at a time', function () {
+    // Snapping to a clamped value on every keystroke makes "12" impossible: clearing rewrites the
+    // box to 1, so the next digit produces 11, not 12.
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('partySize', '')
+        ->set('partySize', '1')
+        ->set('partySize', '12')
+        ->assertSet('partySize', 12)
+        ->assertCount('participants', 12);
+});
+
+it('clamps a seat count beyond the allowed range', function () {
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('partySize', '99')
+        ->assertSet('partySize', 20)
+        ->set('partySize', '0')
+        ->assertSet('partySize', 1);
+});
+
+it('refuses to submit with an empty seat field', function () {
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('partySize', '')
+        ->set('contact.first_name', 'Ada')
+        ->set('contact.last_name', 'Reyes')
+        ->set('contact.email', 'ada@example.com')
+        ->set('contact.phone', '09171234567')
+        ->call('submit')
+        ->assertHasErrors(['partySize'])
+        ->assertNoRedirect();
+
+    expect(Reservation::count())->toBe(0);
+});

@@ -23,7 +23,7 @@
         <h2 class="font-serif font-semibold text-lg mb-3">How many seats?</h2>
 
         <div class="flex items-center gap-4">
-            <input type="number" min="1" max="20" wire:model.live="partySize" dusk="party-size"
+            <input type="number" min="1" max="20" wire:model.live.debounce.500ms="partySize" dusk="party-size"
                    aria-label="Number of seats" class="field-narrow w-24 text-center">
             <div class="text-sm text-ink/70">
                 <div>{{ $money($total) }} total</div>
