@@ -338,7 +338,6 @@ it('groups the card view by month', function () {
 
     $html = Livewire::actingAs($user)->test(Dashboard::class)
         ->set('view', 'grid')
-        ->set('filter', 'all')
         ->html();
 
     expect($html)->toContain('September 2026')
@@ -480,4 +479,49 @@ it('keeps the weekend columns at the outer edges', function () {
     expect($first[0]['isWeekend'])->toBeTrue()
         ->and($first[6]['isWeekend'])->toBeTrue()
         ->and($first[1]['isWeekend'])->toBeFalse();
+});
+
+// ─────────────────────────────────────────────────── simplified controls
+
+it('offers only upcoming and past', function () {
+    // Four filters behind a funnel icon let a joiner hide every upcoming trip and never see why.
+    Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->call('setFilter', 'action')
+        ->assertSet('filter', 'upcoming')
+        ->call('setFilter', 'all')
+        ->assertSet('filter', 'upcoming')
+        ->call('setFilter', 'past')
+        ->assertSet('filter', 'past');
+});
+
+it('has no sorting surface at all', function () {
+    $component = Livewire::actingAs(joiner())->test(Dashboard::class);
+
+    expect(method_exists($component->instance(), 'setSort'))->toBeFalse()
+        ->and(property_exists($component->instance(), 'sort'))->toBeFalse()
+        ->and(property_exists($component->instance(), 'showFilters'))->toBeFalse();
+});
+
+it('always orders bookings by date', function () {
+    $user = joiner();
+    bookingFor($user, [], ['starts_at' => now()->addWeeks(6), 'trip' => ['title' => 'Later Trip']]);
+    bookingFor($user, [], ['starts_at' => now()->addWeeks(2), 'trip' => ['title' => 'Sooner Trip']]);
+
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->set('view', 'grid')->html();
+
+    expect(strpos($html, 'Sooner Trip'))->toBeLessThan(strpos($html, 'Later Trip'));
+});
+
+it('shows the tabs in cards view and hides them in calendar', function () {
+    // In calendar the month is the scope, so a filter tab there would contradict the grid,
+    // which deliberately shows every booking regardless of filter.
+    $user = joiner();
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('view', 'grid')
+        ->assertSeeHtml('dusk="tab-upcoming"');
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('view', 'calendar')
+        ->assertDontSeeHtml('dusk="tab-upcoming"');
 });

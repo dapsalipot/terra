@@ -69,37 +69,8 @@
                     </button>
                 @endforeach
             </div>
-            <button type="button" wire:click="toggleFilters"
-                    class="rounded-xl border border-ink/15 px-3 py-2 text-sm font-semibold hover:border-ink/30 transition-colors min-h-[44px] {{ $showFilters ? 'bg-ink/5 border-ink/30' : '' }}"
-                    aria-label="Toggle filters"
-                    aria-expanded="{{ $showFilters ? 'true' : 'false' }}">
-                <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            </button>
         </div>
     </div>
-
-    {{-- ═══ FILTERS ═══ --}}
-    @if($showFilters)
-        <div class="flex flex-wrap items-center gap-2 mb-8 p-4 rounded-2xl bg-ink/[.03] border border-ink/8" dusk="filter-bar">
-            <span class="text-xs font-semibold text-ink/50 uppercase tracking-wide mr-1">Filter</span>
-            @foreach(['upcoming' => 'Upcoming', 'past' => 'Past', 'all' => 'All', 'action' => 'Needs action'] as $key => $label)
-                <button type="button" wire:click="setFilter('{{ $key }}')"
-                        class="rounded-full px-4 py-2 text-sm font-semibold transition-all min-h-[40px]
-                               {{ $filter === $key ? 'bg-pine text-cream shadow-sm' : 'bg-surface border border-ink/15 hover:border-ink/30 hover:bg-ink/[.02]' }}">
-                    {{ $label }}
-                </button>
-            @endforeach
-            <span class="w-px h-6 bg-ink/15 mx-1"></span>
-            <span class="text-xs font-semibold text-ink/50 uppercase tracking-wide mr-1">Sort</span>
-            @foreach(['date' => 'Date', 'booked' => 'Booked', 'status' => 'Status', 'host' => 'Host'] as $key => $label)
-                <button type="button" wire:click="setSort('{{ $key }}')"
-                        class="rounded-full px-4 py-2 text-sm font-semibold transition-all min-h-[40px]
-                               {{ $sort === $key ? 'bg-pine text-cream shadow-sm' : 'bg-surface border border-ink/15 hover:border-ink/30 hover:bg-ink/[.02]' }}">
-                    {{ $label }}
-                </button>
-            @endforeach
-        </div>
-    @endif
 
     {{-- Two columns once there is room for them. Below xl this collapses to one, and the
          aside comes first in the DOM so "Needs you" still leads on a phone. --}}
@@ -192,15 +163,26 @@
         </aside>
 
         <div class="xl:col-start-1 xl:row-start-1 min-w-0">
+        {{-- Two tabs, always visible. Cards and List only: in Calendar the month is the scope, and
+             the grid deliberately shows every booking, so a filter tab there would contradict it. --}}
+        @if($view !== 'calendar')
+            <div class="flex items-center gap-2 mb-4" role="group" aria-label="Filter trips">
+                @foreach(['upcoming' => 'Upcoming', 'past' => 'Past'] as $key => $label)
+                    <button type="button" wire:click="setFilter('{{ $key }}')" dusk="tab-{{ $key }}"
+                            aria-pressed="{{ $filter === $key ? 'true' : 'false' }}"
+                            class="rounded-full px-4 min-h-[40px] text-sm font-semibold transition-colors
+                                   {{ $filter === $key ? 'bg-pine text-cream' : 'border border-ink/15 hover:border-ink/35' }}">
+                        {{ $label }}
+                    </button>
+                @endforeach
+            </div>
+        @endif
+
         {{-- ═══ BOOKINGS ═══ --}}
         <section class="mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="marker text-[11px] font-semibold text-ink/60">
-                    @if($filter === 'past') Past
-                    @elseif($filter === 'all') All trips
-                    @elseif($filter === 'action') Needs action
-                    @else Upcoming
-                    @endif
+                    {{ $view === 'calendar' ? 'Your calendar' : ($filter === 'past' ? 'Past' : 'Upcoming') }}
                 </h2>
                 <span class="text-xs text-ink/50 font-medium">{{ $filtered->count() }} {{ \Illuminate\Support\Str::plural('booking', $filtered->count()) }}</span>
             </div>

@@ -18,13 +18,8 @@ class Dashboard extends Component
     public bool $showClaim = false;
     public ?string $claimStatus = null;
 
-    public bool $showFilters = false;
-
     #[Url]
-    public string $filter = 'upcoming'; // upcoming | past | all | action
-
-    #[Url]
-    public string $sort = 'date'; // date | booked | status | host
+    public string $filter = 'upcoming'; // upcoming | past
 
     /*
      * Calendar leads: a joiner's trips are dates first and foremost, and a month grid answers
@@ -91,11 +86,6 @@ class Dashboard extends Component
         $this->dismissedAttention = array_values(array_unique($this->dismissedAttention));
     }
 
-    public function toggleFilters(): void
-    {
-        $this->showFilters = ! $this->showFilters;
-    }
-
     public function mount(): void
     {
         $this->month = $this->month ?: now()->format('Y-m');
@@ -103,12 +93,9 @@ class Dashboard extends Component
 
     public function setFilter(string $filter): void
     {
-        $this->filter = in_array($filter, ['upcoming', 'past', 'all', 'action'], true) ? $filter : 'upcoming';
-    }
-
-    public function setSort(string $sort): void
-    {
-        $this->sort = in_array($sort, ['date', 'booked', 'status', 'host'], true) ? $sort : 'date';
+        // Two options only. A hidden four-way filter that persisted in the URL is how a joiner
+        // lost sight of every upcoming trip with nothing on screen to explain it.
+        $this->filter = $filter === 'past' ? 'past' : 'upcoming';
     }
 
     public function setView(string $view): void
@@ -282,19 +269,10 @@ class Dashboard extends Component
         $upcoming = $reservations->filter(fn (Reservation $r) => ! $r->departure->starts_at->isPast())->values();
         $past = $reservations->filter(fn (Reservation $r) => $r->departure->starts_at->isPast())->values();
 
-        $filtered = match ($this->filter) {
-            'past' => $past,
-            'all' => $reservations,
-            'action' => $upcoming->filter(fn ($r) => in_array($r->status, ['pending', 'awaiting_payment', 'payment_submitted'])),
-            default => $upcoming,
-        };
+        $filtered = $this->filter === 'past' ? $past : $upcoming;
 
-        $sorted = match ($this->sort) {
-            'booked' => $filtered->sortByDesc(fn (Reservation $r) => $r->created_at),
-            'status' => $filtered->sortBy(fn (Reservation $r) => $r->status),
-            'host' => $filtered->sortBy(fn (Reservation $r) => $r->departure->trip->host->name),
-            default => $filtered->sortBy(fn (Reservation $r) => $r->departure->starts_at),
-        };
+        // Always by date. A trip is an event; nothing else is a meaningful order for six rows.
+        $sorted = $filtered->sortBy(fn (Reservation $r) => $r->departure->starts_at);
 
         $orphaned = Reservation::whereNull('joiner_id')
             ->where('contact_email', $user->email)
