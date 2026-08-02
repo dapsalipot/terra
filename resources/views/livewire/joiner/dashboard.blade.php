@@ -98,11 +98,13 @@
                                     <p class="font-semibold leading-snug">{{ $item['title'] }}</p>
                                     <p class="text-sm text-ink/70 mt-1">{{ $item['detail'] }}</p>
                                 </div>
-                                <button type="button" wire:click="dismissAttention('{{ $item['kind'] }}')"
-                                        class="shrink-0 -mt-1 -mr-1 text-ink/35 hover:text-ink/70 p-2 rounded-lg hover:bg-ink/5 transition-colors"
-                                        aria-label="Dismiss">
-                                    <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                </button>
+                                @unless($item["urgent"])
+                                    <button type="button" wire:click="dismissAttention('{{ $item['kind'] }}')"
+                                            class="shrink-0 -mt-1 -mr-1 text-ink/35 hover:text-ink/70 p-2 rounded-lg hover:bg-ink/5 transition-colors"
+                                            aria-label="Dismiss">
+                                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                @endunless
                             </div>
                             <a href="{{ $item['href'] }}" wire:navigate
                                class="mt-3 flex items-center justify-center rounded-full px-5 min-h-[44px] text-sm font-semibold transition-colors

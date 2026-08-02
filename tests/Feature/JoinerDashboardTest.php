@@ -582,3 +582,58 @@ it('normalises an invalid view arriving from the query string, view control incl
 
     expect($html)->toMatch('/dusk="view-calendar"\s+aria-pressed="true"/');
 });
+
+// ───────────────────────────────────────────────────────── dismissals
+
+it('keeps a soft nudge dismissed across a re-render', function () {
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed'], [
+        'starts_at' => now()->subWeeks(2), 'status' => 'completed',
+        'trip' => ['title' => 'Taal Sunrise'],
+    ]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->assertSee('How was Taal Sunrise?')
+        ->call('dismissAttention', 'review')
+        ->assertDontSee('How was Taal Sunrise?');
+
+    // A dismiss button that forgets on reload is a button that does nothing.
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->assertDontSee('How was Taal Sunrise?');
+});
+
+it('refuses to dismiss an expiring hold', function () {
+    // Hiding an unpaid hold is how someone loses the seat while believing it is held.
+    $user = joiner();
+    bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)],
+        ['trip' => ['title' => 'Mount Pulag']]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('dismissAttention', 'pay')
+        ->assertSee('Pay for Mount Pulag');
+});
+
+it('offers no dismiss control on an urgent item', function () {
+    // Substring-windowing the card proved fragile: the window collapsed to six characters and
+    // the assertion passed regardless of the markup. Counting across a page that holds exactly
+    // one kind of item is blunt but cannot lie.
+    $user = joiner();
+    bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)]);
+
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->html();
+
+    expect(substr_count($html, 'dismissAttention'))->toBe(0);
+});
+
+it('does offer a dismiss control on a soft nudge', function () {
+    // The other half of the pair. Without this, the assertion above would also pass if the
+    // dismiss control were deleted everywhere.
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed'], [
+        'starts_at' => now()->subWeeks(2), 'status' => 'completed',
+    ]);
+
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->html();
+
+    expect(substr_count($html, 'dismissAttention'))->toBeGreaterThan(0);
+});

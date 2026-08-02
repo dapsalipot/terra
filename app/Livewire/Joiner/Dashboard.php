@@ -39,6 +39,14 @@ class Dashboard extends Component
     public array $dismissedAttention = [];
 
     /**
+     * Kinds a joiner may hide.
+     *
+     * Anything time-sensitive is deliberately absent. An unpaid hold expires and releases the
+     * seat, so a control that hides it is an affordance that costs someone their place on a trip.
+     */
+    private const DISMISSIBLE = ['review'];
+
+    /**
      * Email an attach link for any guest bookings made with this account's address.
      */
     public function claimGuestBookings(MagicLinkService $links): void
@@ -83,8 +91,26 @@ class Dashboard extends Component
 
     public function dismissAttention(string $kind): void
     {
-        $this->dismissedAttention[] = $kind;
-        $this->dismissedAttention = array_values(array_unique($this->dismissedAttention));
+        // Guarded server-side, not just by hiding the button: the method is reachable from the
+        // browser regardless of what the markup renders.
+        if (! in_array($kind, self::DISMISSIBLE, true)) {
+            return;
+        }
+
+        $this->dismissedAttention = array_values(array_unique([...$this->dismissedAttention, $kind]));
+
+        session()->put($this->dismissKey(), $this->dismissedAttention);
+    }
+
+    /**
+     * Session, not a column: a dismissal is a per-visit preference rather than a fact about the
+     * booking, and the review nudge disappears for good once the review is actually written.
+     *
+     * Keyed per user so one account's dismissal cannot hide another's nudge on a shared browser.
+     */
+    private function dismissKey(): string
+    {
+        return 'joiner-dismissed.'.Auth::id();
     }
 
     public function mount(): void
@@ -101,6 +127,8 @@ class Dashboard extends Component
         // single definition of validity the property's own setter already has.
         $this->setFilter($this->filter);
         $this->setView($this->view);
+
+        $this->dismissedAttention = session($this->dismissKey(), []);
     }
 
     public function setFilter(string $filter): void
