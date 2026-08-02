@@ -3,11 +3,11 @@
 namespace App\Livewire\Joiner;
 
 use App\Mail\MagicLinkMail;
-use Carbon\CarbonInterface;
 use App\Models\Reservation;
 use App\Models\Review;
 use App\Models\Trip;
 use App\Services\MagicLinkService;
+use App\Services\ReservationService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -18,12 +18,32 @@ class Dashboard extends Component
     public bool $showClaim = false;
     public ?string $claimStatus = null;
 
+    public bool $showFilters = false;
+
+    #[Url]
+    public string $filter = 'upcoming'; // upcoming | past | all | action
+
+    #[Url]
+    public string $sort = 'date'; // date | booked | status | host
+
+    /*
+     * Calendar leads: a joiner's trips are dates first and foremost, and a month grid answers
+     * "when am I away?" at a glance in a way a list cannot.
+     */
+    #[Url]
+    public string $view = 'calendar'; // calendar | grid | list
+
+    /** Month on screen as YYYY-MM, in the URL so a month can be linked. */
+    #[Url]
+    public string $month = '';
+
+    /** Which day the phone calendar is listing. Not in the URL — it is a transient tap. */
+    public string $selectedDate = '';
+
+    public array $dismissedAttention = [];
+
     /**
      * Email an attach link for any guest bookings made with this account's address.
-     *
-     * The link is emailed rather than acted on directly: someone signed in could otherwise claim
-     * a booking simply by having typed the right address into a guest registration form. Clicking
-     * a link we sent to the mailbox is what proves control of it.
      */
     public function claimGuestBookings(MagicLinkService $links): void
     {
@@ -34,8 +54,6 @@ class Dashboard extends Component
             ->whereNotIn('status', ['cancelled'])
             ->first();
 
-        // The response is identical either way, so this cannot be used to probe which addresses
-        // have guest bookings against them.
         $this->claimStatus = 'If any bookings were made with '.$user->email.', we have emailed a link to attach them.';
         $this->showClaim = false;
 
@@ -56,14 +74,81 @@ class Dashboard extends Component
         }
     }
 
+    public function cancelBooking(int $reservationId, ReservationService $service): void
+    {
+        $reservation = Reservation::where('joiner_id', Auth::id())
+            ->where('id', $reservationId)
+            ->firstOrFail();
+
+        $service->cancel($reservation, 'Cancelled by joiner');
+
+        $this->dispatch('notify', 'Booking cancelled.');
+    }
+
+    public function dismissAttention(string $kind): void
+    {
+        $this->dismissedAttention[] = $kind;
+        $this->dismissedAttention = array_values(array_unique($this->dismissedAttention));
+    }
+
+    public function toggleFilters(): void
+    {
+        $this->showFilters = ! $this->showFilters;
+    }
+
+    public function mount(): void
+    {
+        $this->month = $this->month ?: now()->format('Y-m');
+    }
+
+    public function setFilter(string $filter): void
+    {
+        $this->filter = in_array($filter, ['upcoming', 'past', 'all', 'action'], true) ? $filter : 'upcoming';
+    }
+
+    public function setSort(string $sort): void
+    {
+        $this->sort = in_array($sort, ['date', 'booked', 'status', 'host'], true) ? $sort : 'date';
+    }
+
+    public function setView(string $view): void
+    {
+        $this->view = in_array($view, ['calendar', 'grid', 'list'], true) ? $view : 'calendar';
+    }
+
+    public function shiftMonth(int $by): void
+    {
+        $this->month = $this->cursor()->addMonthsNoOverflow($by)->format('Y-m');
+        $this->selectedDate = '';
+    }
+
+    public function today(): void
+    {
+        $this->month = now()->format('Y-m');
+        $this->selectedDate = '';
+    }
+
+    public function selectDate(string $date): void
+    {
+        $this->selectedDate = $date;
+    }
+
     /**
-     * How long the seat is held.
+     * First day of the month being viewed.
      *
-     * An absolute diff, because diffForHumans() alone produces "held until 5 hours from now".
-     * Expired holds get their own wording: the sweep that cancels them runs on a schedule, so
-     * there is a window where a hold is past its time but still listed, and telling someone their
-     * seat is "held until 5 hours ago" is worse than telling them it lapsed.
+     * The `!` is load-bearing: without it Carbon fills unparsed fields from today, so parsing
+     * "2026-06" on a 31st yields 31 June and overflows into July. The host calendar shipped
+     * that bug and showed the wrong month for a few days every month.
      */
+    private function cursor(): \Illuminate\Support\Carbon
+    {
+        try {
+            return \Illuminate\Support\Carbon::createFromFormat('!Y-m', $this->month)->startOfMonth();
+        } catch (\Throwable) {
+            return now()->startOfMonth();
+        }
+    }
+
     private function holdWording(Reservation $r): string
     {
         if (! $r->expires_at) {
@@ -75,21 +160,17 @@ class Dashboard extends Component
         }
 
         return 'Your seat is held for another '
-            .$r->expires_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]);
+            .$r->expires_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]);
     }
 
     /**
-     * The things that cost the joiner something if ignored, in the order they bite.
+     * Grouped attention items keyed by kind.
      *
-     * An unpaid hold expires and releases the seat, so it leads. Missing traveller details block
-     * the host's permits. A balance is money owed. A review is the only item that is purely
-     * optional, so it sits last.
-     *
-     * @param  Collection<int, Reservation>  $reservations
+     * @return array<string, array<int, array{kind:string, urgent:bool, title:string, detail:string, cta:string, href:string, reservation_id:int}>>
      */
     private function attention(Collection $reservations, Collection $reviewedTripIds): array
     {
-        $items = [];
+        $groups = [];
 
         foreach ($reservations as $r) {
             $trip = $r->departure?->trip;
@@ -101,47 +182,49 @@ class Dashboard extends Component
             $link = route('reservations.show', ['token' => $r->public_token]);
 
             if (in_array($r->status, ['pending', 'awaiting_payment'], true)) {
-                $items[] = [
+                $groups['pay'][] = [
                     'kind' => 'pay',
                     'urgent' => true,
                     'title' => 'Pay for '.$trip->title,
                     'detail' => $this->holdWording($r),
                     'cta' => 'Pay now',
                     'href' => $link,
+                    'reservation_id' => $r->id,
                 ];
 
-                continue;   // paying comes before anything else on the same booking
+                continue;
             }
 
             if ($r->status === 'confirmed') {
                 $missing = $r->incompleteParticipants();
 
                 if ($missing->isNotEmpty()) {
-                    $items[] = [
+                    $groups['details'][] = [
                         'kind' => 'details',
                         'urgent' => false,
                         'title' => $missing->count().' of '.$r->participants->count().' travellers still need details',
                         'detail' => $trip->title.' — your host needs each name and birthday for permits',
                         'cta' => 'Add them',
                         'href' => $link,
+                        'reservation_id' => $r->id,
                     ];
                 }
 
                 if ($r->owesBalance()) {
                     $money = $r->money();
-                    $items[] = [
+                    $groups['balance'][] = [
                         'kind' => 'balance',
                         'urgent' => false,
                         'title' => 'Balance due on '.$trip->title,
                         'detail' => number_format($money['due']).' to settle with your host on the day',
                         'cta' => 'See booking',
                         'href' => $link,
+                        'reservation_id' => $r->id,
                     ];
                 }
             }
         }
 
-        // Reviews, once the trip has actually run.
         foreach ($reservations as $r) {
             $trip = $r->departure?->trip;
 
@@ -153,20 +236,18 @@ class Dashboard extends Component
                 continue;
             }
 
-            $items[] = [
+            $groups['review'][] = [
                 'kind' => 'review',
                 'urgent' => false,
                 'title' => 'How was '.$trip->title.'?',
                 'detail' => 'Your review helps the next group choose',
                 'cta' => 'Leave a review',
                 'href' => route('trips.show', $trip),
+                'reservation_id' => $r->id,
             ];
         }
 
-        // Urgent first, order otherwise preserved.
-        usort($items, fn ($a, $b) => ($b['urgent'] <=> $a['urgent']));
-
-        return $items;
+        return $groups;
     }
 
     public function render()
@@ -177,22 +258,150 @@ class Dashboard extends Component
             ->where('status', '!=', 'cancelled')
             ->with(['departure.trip.host', 'participants'])
             ->get()
-            ->filter(fn (Reservation $r) => $r->departure !== null)
-            ->sortBy(fn (Reservation $r) => $r->departure->starts_at)
-            ->values();
-
-        [$past, $upcoming] = $reservations->partition(
-            fn (Reservation $r) => $r->departure->starts_at->isPast()
-        );
+            ->filter(fn (Reservation $r) => $r->departure !== null);
 
         $reviewedTripIds = Review::where('joiner_id', $user->id)
             ->where('reviewable_type', Trip::class)
             ->pluck('reviewable_id');
 
+        $attention = $this->attention($reservations, $reviewedTripIds);
+
+        $reservations = $reservations->sortBy(fn (Reservation $r) => $r->departure->starts_at)->values();
+
+        $actionKinds = ['pay', 'details', 'balance'];
+        $needsAction = collect($attention)
+            ->filter(fn ($items) => in_array(key($attention) ?? '', $actionKinds))
+            ->flatten(1)
+            ->values();
+
+        $upcoming = $reservations->filter(fn (Reservation $r) => ! $r->departure->starts_at->isPast())->values();
+        $past = $reservations->filter(fn (Reservation $r) => $r->departure->starts_at->isPast())->values();
+
+        $filtered = match ($this->filter) {
+            'past' => $past,
+            'all' => $reservations,
+            'action' => $upcoming->filter(fn ($r) => in_array($r->status, ['pending', 'awaiting_payment', 'payment_submitted'])),
+            default => $upcoming,
+        };
+
+        $sorted = match ($this->sort) {
+            'booked' => $filtered->sortByDesc(fn (Reservation $r) => $r->created_at),
+            'status' => $filtered->sortBy(fn (Reservation $r) => $r->status),
+            'host' => $filtered->sortBy(fn (Reservation $r) => $r->departure->trip->host->name),
+            default => $filtered->sortBy(fn (Reservation $r) => $r->departure->starts_at),
+        };
+
+        $orphaned = Reservation::whereNull('joiner_id')
+            ->where('contact_email', $user->email)
+            ->whereNotIn('status', ['cancelled'])
+            ->with('departure.trip')
+            ->get();
+
+        $recommended = Trip::published()
+            ->whereHas('place', fn ($p) => $p->whereIn('category', function ($q) use ($user) {
+                $q->select('category')->from('places')
+                    ->join('trip_destinations', 'places.id', '=', 'trip_destinations.place_id')
+                    ->join('trips', 'trip_destinations.trip_id', '=', 'trips.id')
+                    ->join('trip_departures', 'trips.id', '=', 'trip_departures.trip_id')
+                    ->join('reservations', 'trip_departures.id', '=', 'reservations.trip_departure_id')
+                    ->where('reservations.joiner_id', $user->id)
+                    ->where('reservations.status', '!=', 'cancelled');
+            }))
+            ->with('place', 'host.hostProfile')
+            ->latest()
+            ->take(3)
+            ->get();
+
+        /*
+         * Calendar data.
+         *
+         * Built from every booking, not the filtered set: a month grid that hid trips because a
+         * filter chip was set would be lying about where you are going. The grid renders whole
+         * weeks from Monday, so it spills into the neighbouring months.
+         */
+        $cursor = $this->cursor();
+        // Sunday-first, which is how a Philippine wall calendar reads.
+        $gridStart = $cursor->copy()->startOfWeek(\Illuminate\Support\Carbon::SUNDAY);
+        $gridEnd = $cursor->copy()->endOfMonth()->endOfWeek(\Illuminate\Support\Carbon::SATURDAY);
+
+        $byDate = $reservations->groupBy(fn (Reservation $r) => $r->departure->starts_at->toDateString());
+
+        // Default the phone's day list to the soonest day in view that has something on it.
+        $daysWithTrips = $byDate->keys()
+            ->filter(fn ($d) => $d >= $gridStart->toDateString() && $d <= $gridEnd->toDateString())
+            ->sort()
+            ->values();
+
+        /*
+         * Only default when nothing has been chosen. The old condition also reset whenever the
+         * selected day held no booking, which made picking a free square impossible: a free day
+         * is by definition absent from $byDate, so every such click was overwritten on render.
+         * shiftMonth() clears the selection, so a stale cross-month value cannot linger.
+         */
+        if ($this->selectedDate === '') {
+            $this->selectedDate = $daysWithTrips->first(fn ($d) => $d >= now()->toDateString())
+                ?? $daysWithTrips->last()
+                ?? '';
+        }
+
+        // Holidays for the visible range. Fails silently — a planning hint must never be able to
+        // stop someone reaching their own bookings.
+        $holidays = app(\App\Services\PhilippineHolidays::class)->between($gridStart, $gridEnd);
+
+        $days = collect();
+        for ($day = $gridStart->copy(); $day->lte($gridEnd); $day->addDay()) {
+            $iso = $day->toDateString();
+            $days->push([
+                'date' => $day->copy(),
+                'inMonth' => $day->month === $cursor->month,
+                'isToday' => $day->isToday(),
+                'isWeekend' => $day->isWeekend(),
+                'holiday' => $holidays[$iso] ?? null,
+                'bookings' => $byDate->get($iso, collect()),
+            ]);
+        }
+
+        /*
+         * What is on offer on the tapped day. Clicking an empty square should answer "could I go
+         * somewhere on this date?" rather than doing nothing.
+         */
+        $availableOnDate = collect();
+
+        if ($this->selectedDate !== '' && $byDate->get($this->selectedDate, collect())->isEmpty()) {
+            $availableOnDate = \App\Models\TripDeparture::query()
+                ->whereDate('starts_at', $this->selectedDate)
+                ->where('status', 'open')
+                ->whereHas('trip', fn ($t) => $t->where('status', 'published'))
+                ->with('trip.host')
+                ->get()
+                // Excludes anything already booked, and anything with no seat left to sell.
+                ->reject(fn ($d) => $reservations->contains(fn (Reservation $r) => $r->trip_departure_id === $d->id))
+                ->filter(fn ($d) => $d->spotsLeft() > 0)
+                ->take(6)
+                ->values();
+        }
+
+        // Card view groups by month so a long list reads as a year rather than a wall of rows.
+        $byMonth = $sorted->values()->groupBy(fn (Reservation $r) => $r->departure->starts_at->format('F Y'));
+
         return view('livewire.joiner.dashboard', [
-            'attention' => $this->attention($reservations, $reviewedTripIds),
-            'upcoming' => $upcoming->values(),
-            'past' => $past->sortByDesc(fn (Reservation $r) => $r->departure->starts_at)->values(),
+            'attention' => $attention,
+            'needsAction' => $needsAction,
+            'upcoming' => $upcoming,
+            'past' => $past,
+            'filtered' => $sorted->values(),
+            'byMonth' => $byMonth,
+            'cursor' => $cursor,
+            'weeks' => $days->chunk(7),
+            'selectedBookings' => $byDate->get($this->selectedDate, collect()),
+            'availableOnDate' => $availableOnDate,
+            'selectedHoliday' => $holidays[$this->selectedDate] ?? null,
+            'monthCount' => $byDate->flatten()->filter(
+                fn (Reservation $r) => $r->departure->starts_at->isSameMonth($cursor)
+            )->count(),
+            'orphaned' => $orphaned,
+            'recommended' => $recommended,
+            'hasAnyBookings' => $reservations->isNotEmpty(),
         ])->layout('components.layouts.site');
     }
 }

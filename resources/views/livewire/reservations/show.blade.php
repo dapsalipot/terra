@@ -34,13 +34,29 @@
         @if($reservation->participants->isNotEmpty())
             <ol class="space-y-1 text-sm">
                 @foreach($reservation->participants as $p)
-                    <li class="flex items-center gap-2">
+                    <li class="flex items-center gap-2 py-1">
                         <span class="text-ink/45 tabular-nums w-4">{{ $loop->iteration }}</span>
                         @if($p->isComplete())
                             <span>{{ $p->fullName() }}</span>
                             @if($p->is_booker)<span class="text-xs font-semibold text-moss">you</span>@endif
+                            @if($p->gender)<span class="text-xs text-ink/50 capitalize">{{ $p->gender }}</span>@endif
+                            @if($p->email)<span class="text-xs text-ink/40">{{ $p->email }}</span>@endif
                         @else
                             <span class="text-ink/45 italic">Details still needed</span>
+                        @endif
+                        @if($this->canEdit())
+                            <div class="flex items-center gap-1.5 ml-auto">
+                                <button type="button" wire:click="editParticipant({{ $p->id }})" dusk="edit-participant-{{ $p->id }}"
+                                        class="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-pine hover:text-pine hover:border-pine/30 transition-colors">
+                                    <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                    Edit
+                                </button>
+                                <button type="button" wire:click="confirmRemove({{ $p->id }})" dusk="remove-participant-{{ $p->id }}"
+                                        class="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-terra/80 hover:text-terra hover:border-terra/30 transition-colors">
+                                    <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                    Remove
+                                </button>
+                            </div>
                         @endif
                     </li>
                 @endforeach
@@ -146,5 +162,110 @@
         </form>
         <button wire:click="cancel" class="mt-3 w-full text-center text-sm text-terra">Cancel reservation</button>
         <p class="mt-4 text-center text-xs text-ink/50">Peeps never holds your money — you pay {{ $host->name }} directly.</p>
+    @endif
+
+    @if($showEditModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4" dusk="edit-modal">
+            <div class="absolute inset-0 bg-ink/40 sm:bg-ink/30" wire:click="closeModal"></div>
+            <div class="relative bg-cream sm:bg-cream/90 w-full h-full sm:h-auto sm:max-h-[90vh] sm:rounded-2xl sm:border sm:border-ink/15 sm:shadow-2xl sm:max-w-xl sm:w-full overflow-y-auto">
+                <div class="p-5 sm:p-6">
+                    <div class="flex items-center justify-between mb-5">
+                        <h3 class="font-serif font-semibold text-lg">Edit traveller</h3>
+                        <button type="button" wire:click="closeModal" class="text-ink/40 hover:text-ink/70 p-1 rounded-lg hover:bg-ink/5 transition-colors" aria-label="Close">
+                            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="grid sm:grid-cols-3 gap-3">
+                        <label class="block"><span class="field-label">First name</span>
+                            <input wire:model="edit_first_name" dusk="edit-first-name" class="field">
+                            @error('edit_first_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
+                        <label class="block"><span class="field-label">Middle name <span class="text-ink/45">optional</span></span>
+                            <input wire:model="edit_middle_name" class="field">
+                        </label>
+                        <label class="block"><span class="field-label">Last name</span>
+                            <input wire:model="edit_last_name" dusk="edit-last-name" class="field">
+                            @error('edit_last_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-3 mt-3">
+                        <label class="block"><span class="field-label">Birthday</span>
+                            <input type="date" max="{{ now()->toDateString() }}" wire:model="edit_birthday" dusk="edit-birthday" class="field">
+                            @error('edit_birthday')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
+                        <label class="block"><span class="field-label">Gender</span>
+                            <div class="flex gap-2">
+                                @foreach(['male' => 'Male', 'female' => 'Female', 'other' => 'Other', 'undisclosed' => 'Prefer not to say'] as $value => $label)
+                                    <button type="button" wire:click="$set('edit_gender', '{{ $value }}')"
+                                            class="flex-1 rounded-xl border px-4 min-h-[44px] text-sm font-semibold transition-colors
+                                                   {{ $edit_gender === $value ? 'bg-pine text-cream border-pine' : 'border-ink/15 hover:border-ink/30' }}">
+                                        {{ $label }}
+                                    </button>
+                                @endforeach
+                            </div>
+                            @error('edit_gender')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-3 mt-3">
+                        <label class="block"><span class="field-label">Email <span class="text-ink/45">optional</span></span>
+                            <input type="email" wire:model="edit_email" dusk="edit-email" class="field">
+                            @error('edit_email')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
+                        <label class="block"><span class="field-label">Mobile <span class="text-ink/45">optional</span></span>
+                            <input type="tel" wire:model="edit_phone" dusk="edit-phone" class="field">
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-end gap-2 mt-5">
+                        <button type="button" wire:click="closeModal" dusk="cancel-edit"
+                                class="rounded-full border border-ink/20 px-5 min-h-[44px] text-sm font-semibold hover:border-ink/40 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="button" wire:click="updateParticipant" wire:loading.attr="disabled" dusk="update-participant"
+                                class="rounded-full bg-pine text-cream px-5 min-h-[44px] text-sm font-semibold hover:bg-pine/90 transition-colors">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($removingId)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4" dusk="remove-confirm-modal">
+            <div class="absolute inset-0 bg-ink/40 sm:bg-ink/30" wire:click="cancelRemove"></div>
+            <div class="relative bg-cream w-full h-full sm:h-auto sm:rounded-2xl sm:border sm:border-ink/15 sm:shadow-2xl sm:max-w-sm sm:w-full sm:mx-auto flex flex-col">
+                <div class="p-5 sm:p-6 flex-1 flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-terra/10 text-terra grid place-items-center shrink-0">
+                            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-serif font-semibold text-base">Remove traveller</h3>
+                            <p class="text-sm text-ink/65">This action cannot be undone.</p>
+                        </div>
+                    </div>
+                    @if($removingLast)
+                        <p class="text-sm text-ink/70 mb-5">
+                            Removing <b>{{ $removingName }}</b> is your last traveller. This will also
+                            <b class="text-terra">cancel the entire booking</b> and release the seat.
+                        </p>
+                    @else
+                        <p class="text-sm text-ink/70 mb-5">
+                            Remove <b>{{ $removingName }}</b> from this booking? The seat will be freed.
+                        </p>
+                    @endif
+                    <div class="flex items-center justify-end gap-2 mt-auto pt-4 border-t border-ink/8">
+                        <button type="button" wire:click="cancelRemove" dusk="cancel-remove"
+                                class="rounded-full border border-ink/20 px-5 min-h-[44px] text-sm font-semibold hover:border-ink/40 transition-colors">
+                            Keep traveller
+                        </button>
+                        <button type="button" wire:click="removeParticipant({{ $removingId }})" wire:loading.attr="disabled" dusk="confirm-remove"
+                                class="rounded-full bg-terra text-cream px-5 min-h-[44px] text-sm font-semibold hover:bg-terra/90 transition-colors">
+                            Yes, remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     @endif
 </div>

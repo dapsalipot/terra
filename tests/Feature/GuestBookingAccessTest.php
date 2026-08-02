@@ -2,6 +2,7 @@
 
 use App\Livewire\Reservations\Show;
 use App\Models\Reservation;
+use App\Models\ReservationParticipant;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -61,8 +62,6 @@ it('leads with the outstanding-details prompt when travellers are unnamed', func
 });
 
 it('will not trade a guessable reservation id for the booking token', function () {
-    // /r/{token} is authorized by possession of an unguessable value. The legacy integer-id URL
-    // must therefore never hand that token to someone who merely counted upwards.
     $owner = User::factory()->create(['role' => 'joiner']);
     $stranger = User::factory()->create(['role' => 'joiner']);
     $reservation = Reservation::factory()->create(['joiner_id' => $owner->id]);
@@ -71,10 +70,139 @@ it('will not trade a guessable reservation id for the booking token', function (
         ->get("/reservations/{$reservation->id}/pay")
         ->assertForbidden();
 
-    // A guest booking (joiner_id null) must not match an unauthenticated null id either.
     $guestBooking = Reservation::factory()->create(['joiner_id' => null]);
 
     $this->actingAs($stranger)
         ->get("/reservations/{$guestBooking->id}/pay")
         ->assertForbidden();
+});
+
+it('lets the joiner edit participant details', function () {
+    $user = User::factory()->create(['role' => 'joiner']);
+    $reservation = Reservation::factory()->create(['joiner_id' => $user->id, 'party_size' => 1]);
+    $participant = ReservationParticipant::factory()->create([
+        'reservation_id' => $reservation->id,
+        'position' => 0,
+        'first_name' => 'Ada',
+        'last_name' => 'Reyes',
+        'birthday' => '1998-04-02',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('editParticipant', $participant->id)
+        ->set('edit_first_name', 'Maria')
+        ->set('edit_last_name', 'Santos')
+        ->call('updateParticipant');
+
+    expect($participant->fresh()->first_name)->toBe('Maria')
+        ->and($participant->fresh()->last_name)->toBe('Santos');
+});
+
+it('lets a guest edit participant details', function () {
+    $reservation = Reservation::factory()->create(['joiner_id' => null, 'party_size' => 1]);
+    $participant = ReservationParticipant::factory()->create([
+        'reservation_id' => $reservation->id,
+        'position' => 0,
+        'first_name' => 'Ada',
+        'last_name' => 'Reyes',
+        'birthday' => '1998-04-02',
+    ]);
+
+    Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('editParticipant', $participant->id)
+        ->set('edit_first_name', 'Maria')
+        ->set('edit_last_name', 'Santos')
+        ->call('updateParticipant');
+
+    expect($participant->fresh()->first_name)->toBe('Maria')
+        ->and($participant->fresh()->last_name)->toBe('Santos');
+});
+
+it('refuses an unrelated user from editing participant details', function () {
+    $owner = User::factory()->create(['role' => 'joiner']);
+    $stranger = User::factory()->create(['role' => 'joiner']);
+    $reservation = Reservation::factory()->create(['joiner_id' => $owner->id, 'party_size' => 1]);
+    $participant = ReservationParticipant::factory()->create([
+        'reservation_id' => $reservation->id,
+        'position' => 0,
+        'first_name' => 'Ada',
+        'last_name' => 'Reyes',
+        'birthday' => '1998-04-02',
+    ]);
+
+    $this->actingAs($stranger);
+
+    Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('editParticipant', $participant->id)
+        ->assertStatus(403);
+});
+
+it('validates required fields when updating a participant', function () {
+    $user = User::factory()->create(['role' => 'joiner']);
+    $reservation = Reservation::factory()->create(['joiner_id' => $user->id, 'party_size' => 1]);
+    $participant = ReservationParticipant::factory()->create([
+        'reservation_id' => $reservation->id,
+        'position' => 0,
+        'first_name' => 'Ada',
+        'last_name' => 'Reyes',
+        'birthday' => '1998-04-02',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('editParticipant', $participant->id)
+        ->set('edit_first_name', '')
+        ->set('edit_last_name', '')
+        ->set('edit_birthday', '')
+        ->call('updateParticipant')
+        ->assertHasErrors(['edit_first_name', 'edit_last_name', 'edit_birthday']);
+});
+
+it('lets the joiner remove a participant', function () {
+    $user = User::factory()->create(['role' => 'joiner']);
+    $reservation = Reservation::factory()->create(['joiner_id' => $user->id, 'party_size' => 2]);
+    $p1 = ReservationParticipant::factory()->create(['reservation_id' => $reservation->id, 'position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02']);
+    $p2 = ReservationParticipant::factory()->create(['reservation_id' => $reservation->id, 'position' => 1, 'first_name' => 'Ben', 'last_name' => 'Reyes', 'birthday' => '2000-01-01']);
+
+    $this->actingAs($user);
+
+    Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('confirmRemove', $p2->id)
+        ->call('removeParticipant', $p2->id);
+
+    expect($reservation->fresh()->participants->count())->toBe(1)
+        ->and($reservation->fresh()->party_size)->toBe(1)
+        ->and(ReservationParticipant::find($p2->id))->toBeNull();
+});
+
+it('cancels the reservation when the last participant is removed', function () {
+    $user = User::factory()->create(['role' => 'joiner']);
+    $reservation = Reservation::factory()->create(['joiner_id' => $user->id, 'party_size' => 1]);
+    $p1 = ReservationParticipant::factory()->create(['reservation_id' => $reservation->id, 'position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02']);
+
+    $this->actingAs($user);
+
+    Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('confirmRemove', $p1->id)
+        ->call('removeParticipant', $p1->id);
+
+    expect($reservation->fresh()->status)->toBe('cancelled')
+        ->and(ReservationParticipant::find($p1->id))->toBeNull();
+});
+
+it('refuses an unrelated user from removing a participant', function () {
+    $owner = User::factory()->create(['role' => 'joiner']);
+    $stranger = User::factory()->create(['role' => 'joiner']);
+    $reservation = Reservation::factory()->create(['joiner_id' => $owner->id, 'party_size' => 2]);
+    $p1 = ReservationParticipant::factory()->create(['reservation_id' => $reservation->id, 'position' => 0]);
+    $p2 = ReservationParticipant::factory()->create(['reservation_id' => $reservation->id, 'position' => 1]);
+
+    $this->actingAs($stranger);
+
+    Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('removeParticipant', $p1->id)
+        ->assertStatus(403);
 });

@@ -9,6 +9,8 @@ use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\MagicLinkService;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
@@ -60,13 +62,13 @@ it('shows a joiner only their own bookings', function () {
 
 it('leads with an unpaid hold, because the seat is released when it expires', function () {
     $user = joiner();
-    bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)],
+    $booking = bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)],
         ['trip' => ['title' => 'Mount Pulag']]);
 
     Livewire::actingAs($user)->test(Dashboard::class)
         ->assertSee('Pay for Mount Pulag')
         ->assertSee('Pay now')
-        ->assertSeeHtml('dusk="attention-pay"');
+        ->assertSeeHtml('dusk="attention-pay-'.$booking->id.'"');
 });
 
 it('asks for the traveller details the host needs for permits', function () {
@@ -77,7 +79,7 @@ it('asks for the traveller details the host needs for permits', function () {
 
     Livewire::actingAs($user)->test(Dashboard::class)
         ->assertSee('1 of 2 travellers still need details')
-        ->assertSeeHtml('dusk="attention-details"');
+        ->assertSeeHtml('dusk="attention-details-'.$r->id.'"');
 });
 
 it('does not nag when every traveller is accounted for', function () {
@@ -91,14 +93,14 @@ it('does not nag when every traveller is accounted for', function () {
 
 it('invites a review once the trip has actually run', function () {
     $user = joiner();
-    bookingFor($user, ['status' => 'confirmed'], [
+    $r = bookingFor($user, ['status' => 'confirmed'], [
         'starts_at' => now()->subWeeks(2), 'status' => 'completed',
         'trip' => ['title' => 'Taal Sunrise'],
     ]);
 
     Livewire::actingAs($user)->test(Dashboard::class)
         ->assertSee('How was Taal Sunrise?')
-        ->assertSeeHtml('dusk="attention-review"');
+        ->assertSeeHtml('dusk="attention-review-'.$r->id.'"');
 });
 
 it('stops asking once the review is written', function () {
@@ -238,4 +240,244 @@ it('says a lapsed hold has lapsed rather than held until the past', function () 
     Livewire::actingAs($user)->test(Dashboard::class)
         ->assertSee('This hold has lapsed')
         ->assertDontSee('held for another');
+});
+
+// ─────────────────────────────────────────────────────────────── calendar
+
+it('opens on the calendar', function () {
+    Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->assertSet('view', 'calendar')
+        ->assertSeeHtml('dusk="calendar"');
+});
+
+it('puts a booking on its own day, with the trip photo as the cell', function () {
+    $user = joiner();
+    $r = bookingFor($user, [], [
+        'starts_at' => now()->addMonth()->startOfMonth()->addDays(9),
+        'trip' => ['title' => 'Pulag Sunrise'],
+    ]);
+    $day = $r->departure->starts_at;
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $day->format('Y-m'))
+        ->assertSeeHtml('dusk="cal-day-'.$day->toDateString().'"')
+        ->assertSee('Pulag Sunrise')
+        ->assertSeeHtml($r->departure->trip->cover_url);
+});
+
+it('moves between months and back to today', function () {
+    $user = joiner();
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->assertSet('month', now()->format('Y-m'))
+        ->call('shiftMonth', 1)
+        ->assertSet('month', now()->addMonthNoOverflow()->format('Y-m'))
+        ->call('shiftMonth', -1)
+        ->assertSet('month', now()->format('Y-m'))
+        ->call('shiftMonth', 3)
+        ->call('today')
+        ->assertSet('month', now()->format('Y-m'));
+});
+
+it('shows the right month even when today is the 31st', function () {
+    // Carbon fills unparsed fields from today, so a bare 'Y-m' parse of "2026-06" on a 31st
+    // yields 31 June and overflows into July. The host calendar shipped exactly that bug.
+    $this->travelTo(Carbon::parse('2026-07-31 09:00:00'));
+
+    Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->set('month', '2026-06')
+        ->assertSee('June 2026')
+        ->assertDontSee('July 2026');
+
+    // February from a 31st is the harshest case: three days of overflow.
+    Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->set('month', '2026-02')
+        ->assertSee('February 2026');
+});
+
+it('survives a malformed month in the URL', function () {
+    Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->set('month', 'not-a-month')
+        ->assertSee(now()->format('F Y'));
+});
+
+it('counts only the trips that fall in the month on screen', function () {
+    $user = joiner();
+    $month = now()->addMonth()->startOfMonth();
+
+    bookingFor($user, [], ['starts_at' => $month->copy()->addDays(3)]);
+    bookingFor($user, [], ['starts_at' => $month->copy()->addDays(10)]);
+    bookingFor($user, [], ['starts_at' => $month->copy()->addMonthNoOverflow()->addDays(2)]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $month->format('Y-m'))
+        ->assertViewHas('monthCount', 2);
+});
+
+it('shows the calendar whatever the filter chip says', function () {
+    // A month grid that hid trips because a filter was set would be lying about where you go.
+    $user = joiner();
+    $r = bookingFor($user, [], ['starts_at' => now()->addWeeks(2), 'trip' => ['title' => 'Still Listed']]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('filter', 'past')
+        ->set('month', $r->departure->starts_at->format('Y-m'))
+        ->assertSee('Still Listed');
+});
+
+it('rejects a made-up view rather than rendering nothing', function () {
+    Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->call('setView', 'hologram')
+        ->assertSet('view', 'calendar');
+});
+
+it('groups the card view by month', function () {
+    $user = joiner();
+    bookingFor($user, [], ['starts_at' => Carbon::parse('2026-09-04'), 'trip' => ['title' => 'September Trip']]);
+    bookingFor($user, [], ['starts_at' => Carbon::parse('2026-10-12'), 'trip' => ['title' => 'October Trip']]);
+
+    $html = Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('view', 'grid')
+        ->set('filter', 'all')
+        ->html();
+
+    expect($html)->toContain('September 2026')
+        ->and($html)->toContain('October 2026')
+        // The month heading precedes its bookings.
+        ->and(strpos($html, 'September 2026'))->toBeLessThan(strpos($html, 'September Trip'));
+});
+
+// ──────────────────────────────────────────── clickable cells & planning
+
+it('sends a booked day straight to that booking', function () {
+    $user = joiner();
+    $r = bookingFor($user, [], ['starts_at' => now()->addMonth()->startOfMonth()->addDays(9)]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $r->departure->starts_at->format('Y-m'))
+        ->assertSeeHtml(route('reservations.show', ['token' => $r->public_token]));
+});
+
+it('answers an empty day with what leaves that day', function () {
+    $user = joiner();
+    $free = now()->addMonth()->startOfMonth()->addDays(14);
+
+    $trip = Trip::factory()->create(['status' => 'published', 'title' => 'Siargao Surf']);
+    TripDeparture::factory()->create([
+        'trip_id' => $trip->id, 'starts_at' => $free, 'capacity' => 8, 'status' => 'open',
+    ]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $free->format('Y-m'))
+        ->call('selectDate', $free->toDateString())
+        ->assertSee('Siargao Surf')
+        ->assertSeeHtml('dusk="cal-free-panel"');
+});
+
+it('keeps a free day selected instead of snapping back to a booked one', function () {
+    // render() used to reset the selection whenever the chosen day held no booking, which made
+    // picking a free square impossible — a free day is by definition absent from that lookup.
+    $user = joiner();
+    $month = now()->addMonth()->startOfMonth();
+    bookingFor($user, [], ['starts_at' => $month->copy()->addDays(9)]);
+    $free = $month->copy()->addDays(20)->toDateString();
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $month->format('Y-m'))
+        ->call('selectDate', $free)
+        ->assertSet('selectedDate', $free);
+});
+
+it('does not offer a trip the joiner has already booked', function () {
+    $user = joiner();
+    $r = bookingFor($user, [], ['starts_at' => now()->addMonth()->startOfMonth()->addDays(9)]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $r->departure->starts_at->format('Y-m'))
+        ->call('selectDate', $r->departure->starts_at->toDateString())
+        // A booked day shows the booking, never the "what's on offer" panel.
+        ->assertDontSeeHtml('dusk="cal-free-panel"');
+});
+
+it('leaves a full departure off the offers', function () {
+    $user = joiner();
+    $free = now()->addMonth()->startOfMonth()->addDays(14);
+
+    $trip = Trip::factory()->create(['status' => 'published', 'title' => 'Sold Out Trip']);
+    $dep = TripDeparture::factory()->create([
+        'trip_id' => $trip->id, 'starts_at' => $free, 'capacity' => 2, 'status' => 'open',
+    ]);
+    Reservation::factory()->create([
+        'trip_departure_id' => $dep->id, 'party_size' => 2, 'status' => 'confirmed',
+        'joiner_id' => joiner()->id,
+    ]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $free->format('Y-m'))
+        ->call('selectDate', $free->toDateString())
+        ->assertDontSee('Sold Out Trip')
+        ->assertSee('Nothing leaves on this day yet');
+});
+
+it('marks weekends and Philippine holidays on the grid', function () {
+    Http::swap(new Illuminate\Http\Client\Factory());
+    Http::fake(['date.nager.at/*' => Http::response([
+        ['date' => '2026-08-21', 'localName' => 'Ninoy Aquino Day', 'name' => 'Ninoy Aquino Day'],
+    ], 200)]);
+
+    $page = Livewire::actingAs(joiner())->test(Dashboard::class)->set('month', '2026-08');
+
+    $weeks = $page->viewData('weeks')->flatten(1);
+    $sat15 = $weeks->firstWhere(fn ($d) => $d['date']->toDateString() === '2026-08-15');
+    $mon17 = $weeks->firstWhere(fn ($d) => $d['date']->toDateString() === '2026-08-17');
+    $hol = $weeks->firstWhere(fn ($d) => $d['date']->toDateString() === '2026-08-21');
+
+    expect($sat15['isWeekend'])->toBeTrue()
+        ->and($mon17['isWeekend'])->toBeFalse()
+        ->and($hol['holiday'])->toBe('Ninoy Aquino Day');
+
+    $page->assertSee('Ninoy Aquino Day');
+});
+
+it('still renders the calendar when the holiday API is unreachable', function () {
+    Http::swap(new Illuminate\Http\Client\Factory());
+    Http::fake(fn () => throw new RuntimeException('offline'));
+
+    Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->assertOk()
+        ->assertSeeHtml('dusk="calendar"');
+});
+
+it('starts each week on Sunday, with every date under its own column', function () {
+    // The grid's start day and the column headings are set in two different files, so they can
+    // drift apart silently — every date would then render one column off.
+    $page = Livewire::actingAs(joiner())->test(Dashboard::class)->set('month', '2026-08');
+    $weeks = $page->viewData('weeks');
+
+    $headings = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    foreach ($weeks as $week) {
+        expect($week)->toHaveCount(7);
+
+        foreach ($week->values() as $column => $day) {
+            expect($day['date']->format('D'))->toBe($headings[$column]);
+        }
+    }
+
+    // First cell of the grid is a Sunday, last is a Saturday.
+    expect($weeks->first()->first()['date']->dayOfWeek)->toBe(Carbon::SUNDAY)
+        ->and($weeks->last()->last()['date']->dayOfWeek)->toBe(Carbon::SATURDAY);
+});
+
+it('keeps the weekend columns at the outer edges', function () {
+    $weeks = Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->set('month', '2026-08')
+        ->viewData('weeks');
+
+    $first = $weeks->first()->values();
+
+    // Sunday-first puts the weekend at column 0 and column 6, not 5 and 6.
+    expect($first[0]['isWeekend'])->toBeTrue()
+        ->and($first[6]['isWeekend'])->toBeTrue()
+        ->and($first[1]['isWeekend'])->toBeFalse();
 });

@@ -20,6 +20,20 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        /*
+         * No feature test may reach the network.
+         *
+         * The holiday lookup is the only outbound call in the app, and CACHE_STORE=array means it
+         * would otherwise re-fetch on every single test — turning the suite slow, flaky and
+         * dependent on a third party being up. Tests that care about holidays override this fake
+         * with their own.
+         */
+        Illuminate\Support\Facades\Http::preventStrayRequests();
+        Illuminate\Support\Facades\Http::fake([
+            'date.nager.at/*' => Illuminate\Support\Facades\Http::response([], 200),
+        ]);
+    })
     ->in('Feature');
 
 /*
