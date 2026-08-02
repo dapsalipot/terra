@@ -11,6 +11,7 @@ use App\Services\ReservationService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Dashboard extends Component

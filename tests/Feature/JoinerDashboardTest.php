@@ -525,3 +525,30 @@ it('shows the tabs in cards view and hides them in calendar', function () {
         ->set('view', 'calendar')
         ->assertDontSeeHtml('dusk="tab-upcoming"');
 });
+
+// ──────────────────────────────────────────────────────── #[Url] binding
+
+it('picks up filter, view and month from the query string on load', function () {
+    // #[Url] only works with `use Livewire\Attributes\Url;` imported. Setting the property
+    // directly with ->set() would pass even without that import — this has to arrive via
+    // an actual query string, the same way a shared link or a reload would deliver it.
+    Livewire::actingAs(joiner())
+        ->withQueryParams(['filter' => 'past', 'view' => 'grid', 'month' => '2026-03'])
+        ->test(Dashboard::class)
+        ->assertSet('filter', 'past')
+        ->assertSet('view', 'grid')
+        ->assertSet('month', '2026-03');
+});
+
+it('reflects a filter arriving from the query string in the visible tabs', function () {
+    // The whole point of this task: the filter can no longer be applied invisibly. If it
+    // arrives via a shared/reloaded URL, the Past tab must visibly show as selected rather
+    // than silently hiding upcoming trips with no on-screen indicator.
+    $html = Livewire::actingAs(joiner())
+        ->withQueryParams(['filter' => 'past', 'view' => 'grid'])
+        ->test(Dashboard::class)
+        ->html();
+
+    expect($html)->toMatch('/dusk="tab-past"\s+aria-pressed="true"/')
+        ->and($html)->toMatch('/dusk="tab-upcoming"\s+aria-pressed="false"/');
+});
