@@ -567,3 +567,18 @@ it('normalises an invalid filter arriving from the query string, tabs included',
 
     expect($html)->toMatch('/dusk="tab-upcoming"\s+aria-pressed="true"/');
 });
+
+it('normalises an invalid view arriving from the query string, view control included', function () {
+    // Same defect class as the filter, in the view switcher: #[Url] hydration bypasses
+    // setView() too, and it has no enum type either. Content degrades safely into the list
+    // branch, but every Calendar/Cards/List button would render aria-pressed="false" — none
+    // highlighted — misrepresenting which view is active. Asserting the button, not just the
+    // property, is what actually catches that: the property alone was already safe.
+    $html = Livewire::actingAs(joiner())
+        ->withQueryParams(['view' => 'xyz'])
+        ->test(Dashboard::class)
+        ->assertSet('view', 'calendar')
+        ->html();
+
+    expect($html)->toMatch('/dusk="view-calendar"\s+aria-pressed="true"/');
+});

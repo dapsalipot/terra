@@ -91,13 +91,16 @@ class Dashboard extends Component
     {
         $this->month = $this->month ?: now()->format('Y-m');
 
-        // #[Url] hydration writes the raw query value straight to the property via data_set(),
-        // bypassing setFilter() entirely — there is no enum type to coerce it. A stray
-        // ?filter=action left over from before this task (or a hand-edited link) would leave
-        // both tabs showing unselected, which is exactly the invisible filter state this task
-        // exists to remove. SupportAttributes hydrates before SupportLifecycleHooks runs mount(),
-        // so re-running it through setFilter() here catches it before render().
+        // #[Url] hydration writes the raw query value straight onto the property via
+        // data_set(), bypassing setFilter()/setView() entirely — neither has an enum type to
+        // coerce it. A stray ?filter=action or ?view=xyz left over from before this task (or a
+        // hand-edited link) would leave every tab/view button showing unselected, which is
+        // exactly the invisible state this task exists to remove. SupportAttributes hydrates
+        // before SupportLifecycleHooks runs mount(), so re-running each value through its own
+        // setter here catches it before render() — one call per #[Url] property, using the same
+        // single definition of validity the property's own setter already has.
         $this->setFilter($this->filter);
+        $this->setView($this->view);
     }
 
     public function setFilter(string $filter): void
