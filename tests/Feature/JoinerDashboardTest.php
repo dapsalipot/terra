@@ -2,6 +2,7 @@
 
 use App\Livewire\Joiner\Dashboard;
 use App\Mail\MagicLinkMail;
+use App\Models\Holiday;
 use App\Models\MagicLink;
 use App\Models\Reservation;
 use App\Models\Review;
@@ -419,10 +420,9 @@ it('leaves a full departure off the offers', function () {
 });
 
 it('marks weekends and Philippine holidays on the grid', function () {
-    Http::swap(new Illuminate\Http\Client\Factory());
-    Http::fake(['date.nager.at/*' => Http::response([
-        ['date' => '2026-08-21', 'localName' => 'Ninoy Aquino Day', 'name' => 'Ninoy Aquino Day'],
-    ], 200)]);
+    // Seeded, not faked: holidays now come from our own table, so the dashboard makes no
+    // HTTP call for them at all.
+    Holiday::create(['date' => '2026-08-21', 'name' => 'Ninoy Aquino Day']);
 
     $page = Livewire::actingAs(joiner())->test(Dashboard::class)->set('month', '2026-08');
 
@@ -438,13 +438,16 @@ it('marks weekends and Philippine holidays on the grid', function () {
     $page->assertSee('Ninoy Aquino Day');
 });
 
-it('still renders the calendar when the holiday API is unreachable', function () {
-    Http::swap(new Illuminate\Http\Client\Factory());
-    Http::fake(fn () => throw new RuntimeException('offline'));
+it('still renders the calendar when no holidays have been imported', function () {
+    // Previously this asserted the calendar survived an unreachable API. There is no API call
+    // on this path any more, so the real question is whether an empty table breaks the grid.
+    Http::preventStrayRequests();
 
     Livewire::actingAs(joiner())->test(Dashboard::class)
         ->assertOk()
         ->assertSeeHtml('dusk="calendar"');
+
+    Http::assertNothingSent();
 });
 
 it('starts each week on Sunday, with every date under its own column', function () {

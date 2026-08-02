@@ -1,99 +1,69 @@
 <?php
 
+use App\Models\Holiday;
 use App\Services\PhilippineHolidays;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
-beforeEach(function () {
-    /*
-     * Fresh HTTP factory per test.
-     *
-     * Pest.php registers a catch-all fake so no test can reach the network, and Laravel
-     * evaluates stubs in registration order — so that catch-all would win over the stubs these
-     * tests define. Swapping the factory gives each test a clean slate.
-     */
-    Http::swap(new Illuminate\Http\Client\Factory());
-});
-
-function holidayPayload(): array
-{
-    return [
-        ['date' => '2026-06-12', 'localName' => 'Araw ng Kalayaan', 'name' => 'Independence Day'],
-        ['date' => '2026-08-31', 'localName' => 'Araw ng mga Bayani', 'name' => 'National Heroes Day'],
-        ['date' => '2026-12-25', 'localName' => 'Pasko', 'name' => 'Christmas Day'],
-    ];
-}
-
-it('maps holidays to their local names', function () {
-    Http::fake(['date.nager.at/*' => Http::response(holidayPayload(), 200)]);
+it('reads holidays from our own table', function () {
+    Holiday::create(['date' => '2026-06-12', 'name' => 'Araw ng Kalayaan']);
+    Holiday::create(['date' => '2026-08-31', 'name' => 'Araw ng mga Bayani']);
 
     $holidays = app(PhilippineHolidays::class)->forYear(2026);
 
     expect($holidays)->toHaveKey('2026-06-12')
-        ->and($holidays['2026-06-12'])->toBe('Araw ng Kalayaan')
         ->and($holidays['2026-08-31'])->toBe('Araw ng mga Bayani');
 });
 
-it('caches so a page render is not one API call each', function () {
-    Http::fake(['date.nager.at/*' => Http::response(holidayPayload(), 200)]);
-    $svc = app(PhilippineHolidays::class);
+it('makes no network call at all', function () {
+    // The whole point of owning the table: a page render must never wait on a third party.
+    Http::preventStrayRequests();
+    Holiday::create(['date' => '2026-06-12', 'name' => 'Araw ng Kalayaan']);
 
-    $svc->forYear(2026);
-    $svc->forYear(2026);
-    $svc->forYear(2026);
+    expect(app(PhilippineHolidays::class)->forYear(2026))->toHaveCount(1);
 
-    Http::assertSentCount(1);
-});
-
-it('returns nothing rather than exploding when the API is down', function () {
-    // A joiner's own bookings must never fail to load because a holiday service is unreachable.
-    Http::fake(['date.nager.at/*' => Http::response('', 503)]);
-
-    expect(app(PhilippineHolidays::class)->forYear(2026))->toBe([]);
-});
-
-it('survives the API throwing outright', function () {
-    Http::fake(fn () => throw new RuntimeException('connection refused'));
-
-    expect(app(PhilippineHolidays::class)->forYear(2026))->toBe([]);
+    Http::assertNothingSent();
 });
 
 it('spans a year boundary, because the grid does', function () {
-    // A December grid renders into January, so the range crosses years.
-    Http::fake([
-        'date.nager.at/api/v3/PublicHolidays/2026/PH' => Http::response([
-            ['date' => '2026-12-25', 'localName' => 'Pasko', 'name' => 'Christmas Day'],
-        ], 200),
-        'date.nager.at/api/v3/PublicHolidays/2027/PH' => Http::response([
-            ['date' => '2027-01-01', 'localName' => 'Bagong Taon', 'name' => "New Year's Day"],
-        ], 200),
-    ]);
+    Holiday::create(['date' => '2026-12-25', 'name' => 'Pasko']);
+    Holiday::create(['date' => '2027-01-01', 'name' => 'Bagong Taon']);
 
     $range = app(PhilippineHolidays::class)->between(
-        Carbon\Carbon::parse('2026-11-30'),
-        Carbon\Carbon::parse('2027-01-03'),
+        Carbon::parse('2026-11-30'),
+        Carbon::parse('2027-01-03'),
     );
 
     expect($range)->toHaveKeys(['2026-12-25', '2027-01-01']);
 });
 
 it('leaves out holidays beyond the range asked for', function () {
-    Http::fake(['date.nager.at/*' => Http::response(holidayPayload(), 200)]);
+    Holiday::create(['date' => '2026-06-12', 'name' => 'Araw ng Kalayaan']);
+    Holiday::create(['date' => '2026-08-31', 'name' => 'Araw ng mga Bayani']);
 
     $range = app(PhilippineHolidays::class)->between(
-        Carbon\Carbon::parse('2026-08-01'),
-        Carbon\Carbon::parse('2026-08-31'),
+        Carbon::parse('2026-08-01'),
+        Carbon::parse('2026-08-31'),
     );
 
     expect($range)->toHaveKey('2026-08-31')
-        ->and($range)->not->toHaveKey('2026-06-12')
-        ->and($range)->not->toHaveKey('2026-12-25');
+        ->and($range)->not->toHaveKey('2026-06-12');
 });
 
-it('ignores an entry with no date', function () {
-    Http::fake(['date.nager.at/*' => Http::response([
-        ['localName' => 'Nameless', 'name' => 'Nameless'],
-        ['date' => '2026-06-12', 'localName' => 'Araw ng Kalayaan', 'name' => 'Independence Day'],
-    ], 200)]);
+it('returns nothing for a year nobody has imported', function () {
+    expect(app(PhilippineHolidays::class)->forYear(2030))->toBe([]);
+});
 
-    expect(app(PhilippineHolidays::class)->forYear(2026))->toHaveCount(1);
+it('includes a holiday on the last day of the range', function () {
+    // whereBetween compares strings against a `Y-m-d H:i:s` serialisation, so the final day fell
+    // outside the range. New Year's Eve and 31 December vanished from forYear().
+    Holiday::create(['date' => '2026-12-31', 'name' => 'Bisperas ng Bagong Taon']);
+
+    expect(app(PhilippineHolidays::class)->forYear(2026))->toHaveKey('2026-12-31');
+});
+
+it('includes a holiday on the first day of the range', function () {
+    Holiday::create(['date' => '2026-01-01', 'name' => 'Bagong Taon']);
+
+    expect(app(PhilippineHolidays::class)->forYear(2026))->toHaveKey('2026-01-01');
 });
