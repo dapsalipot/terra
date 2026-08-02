@@ -511,7 +511,7 @@
         </section>
 
         {{-- ═══ PAST ═══ --}}
-        @if($filter !== 'past' && $filter !== 'action' && $past->isNotEmpty())
+        @if($filter !== 'past' && $past->isNotEmpty())
             <section class="mb-8">
                 <h2 class="marker text-[11px] font-semibold text-ink/60 mb-3">Past</h2>
 

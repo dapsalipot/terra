@@ -552,3 +552,18 @@ it('reflects a filter arriving from the query string in the visible tabs', funct
     expect($html)->toMatch('/dusk="tab-past"\s+aria-pressed="true"/')
         ->and($html)->toMatch('/dusk="tab-upcoming"\s+aria-pressed="false"/');
 });
+
+it('normalises an invalid filter arriving from the query string, tabs included', function () {
+    // #[Url] hydration writes the raw query value straight to the property, bypassing
+    // setFilter() entirely — there is no enum type to coerce it. A stray ?filter=action left
+    // over from before this task (or a hand-edited link) must not leave both tabs unselected,
+    // which is the invisible filter state this whole task exists to remove. Asserting the tab
+    // matters more than asserting the property: the property alone would already look safe.
+    $html = Livewire::actingAs(joiner())
+        ->withQueryParams(['filter' => 'action', 'view' => 'grid'])
+        ->test(Dashboard::class)
+        ->assertSet('filter', 'upcoming')
+        ->html();
+
+    expect($html)->toMatch('/dusk="tab-upcoming"\s+aria-pressed="true"/');
+});

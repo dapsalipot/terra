@@ -90,6 +90,14 @@ class Dashboard extends Component
     public function mount(): void
     {
         $this->month = $this->month ?: now()->format('Y-m');
+
+        // #[Url] hydration writes the raw query value straight to the property via data_set(),
+        // bypassing setFilter() entirely — there is no enum type to coerce it. A stray
+        // ?filter=action left over from before this task (or a hand-edited link) would leave
+        // both tabs showing unselected, which is exactly the invisible filter state this task
+        // exists to remove. SupportAttributes hydrates before SupportLifecycleHooks runs mount(),
+        // so re-running it through setFilter() here catches it before render().
+        $this->setFilter($this->filter);
     }
 
     public function setFilter(string $filter): void
