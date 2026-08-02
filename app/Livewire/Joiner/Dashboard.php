@@ -256,7 +256,12 @@ class Dashboard extends Component
 
         $reservations = Reservation::where('joiner_id', $user->id)
             ->where('status', '!=', 'cancelled')
-            ->with(['departure.trip.host', 'participants'])
+            // priceTiers and place are both load-bearing: owesBalance() -> money() ->
+            // current_price -> currentTier() reads $trip->priceTiers, and every card's
+            // cover image calls $trip->cover_url -> StockPhotos::cover() which reads
+            // $trip->place. Without either, every booking costs one extra query and the
+            // page degrades linearly with how much someone travels.
+            ->with(['departure.trip.host', 'departure.trip.priceTiers', 'departure.trip.place', 'participants'])
             ->get()
             ->filter(fn (Reservation $r) => $r->departure !== null);
 
@@ -297,27 +302,34 @@ class Dashboard extends Component
             ->with('departure.trip')
             ->get();
 
-        $recommended = Trip::published()
-            ->whereHas('place', fn ($p) => $p->whereIn('category', function ($q) use ($user) {
-                $q->select('category')->from('places')
-                    ->join('trip_destinations', 'places.id', '=', 'trip_destinations.place_id')
-                    ->join('trips', 'trip_destinations.trip_id', '=', 'trips.id')
-                    ->join('trip_departures', 'trips.id', '=', 'trip_departures.trip_id')
-                    ->join('reservations', 'trip_departures.id', '=', 'reservations.trip_departure_id')
-                    ->where('reservations.joiner_id', $user->id)
-                    ->where('reservations.status', '!=', 'cancelled');
-            }))
-            ->with('place', 'host.hostProfile')
-            ->latest()
-            ->take(3)
-            ->get();
+        /*
+         * Only computed for an empty dashboard, which is the only place it renders. This is a
+         * four-join correlated subquery; running it for every joiner who already has bookings
+         * costs a real query and shows nobody anything.
+         */
+        $recommended = $reservations->isEmpty()
+            ? Trip::published()
+                ->whereHas('place', fn ($p) => $p->whereIn('category', function ($q) use ($user) {
+                    $q->select('category')->from('places')
+                        ->join('trip_destinations', 'places.id', '=', 'trip_destinations.place_id')
+                        ->join('trips', 'trip_destinations.trip_id', '=', 'trips.id')
+                        ->join('trip_departures', 'trips.id', '=', 'trip_departures.trip_id')
+                        ->join('reservations', 'trip_departures.id', '=', 'reservations.trip_departure_id')
+                        ->where('reservations.joiner_id', $user->id)
+                        ->where('reservations.status', '!=', 'cancelled');
+                }))
+                ->with('place', 'host.hostProfile')
+                ->latest()
+                ->take(3)
+                ->get()
+            : collect();
 
         /*
          * Calendar data.
          *
          * Built from every booking, not the filtered set: a month grid that hid trips because a
          * filter chip was set would be lying about where you are going. The grid renders whole
-         * weeks from Monday, so it spills into the neighbouring months.
+         * weeks from Sunday, so it spills into the neighbouring months.
          */
         $cursor = $this->cursor();
         // Sunday-first, which is how a Philippine wall calendar reads.
