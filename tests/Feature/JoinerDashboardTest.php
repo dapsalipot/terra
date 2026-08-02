@@ -637,3 +637,37 @@ it('does offer a dismiss control on a soft nudge', function () {
 
     expect(substr_count($html, 'dismissAttention'))->toBeGreaterThan(0);
 });
+
+// ─────────────────────────────────────────────────────── shared markup
+
+it('renders one booking card component in both card and list views', function () {
+    $user = joiner();
+    bookingFor($user, [], ['trip' => ['title' => 'Shared Card Trip']]);
+
+    foreach (['grid', 'list'] as $view) {
+        Livewire::actingAs($user)->test(Dashboard::class)
+            ->set('view', $view)
+            ->assertSee('Shared Card Trip')
+            ->assertSeeHtml('dusk="booking-card"');
+    }
+});
+
+it('keeps the empty state in one place', function () {
+    // Counting rendered output alone cannot see this: the default calendar view renders only one
+    // of the three copies, so the assertion passed while all three still existed in the source.
+    // The duplication is the defect, so the source is what has to be asserted on.
+    $blade = file_get_contents(resource_path('views/livewire/joiner/dashboard.blade.php'));
+
+    expect(substr_count($blade, 'No trips booked yet'))->toBe(0)
+        ->and(file_exists(resource_path('views/components/no-trips.blade.php')))->toBeTrue();
+});
+
+it('shows exactly one empty state in each view', function () {
+    $user = joiner();
+
+    foreach (['calendar', 'grid', 'list'] as $view) {
+        $html = Livewire::actingAs($user)->test(Dashboard::class)->set('view', $view)->html();
+
+        expect(substr_count($html, 'No trips booked yet'))->toBe(1);
+    }
+});

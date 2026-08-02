@@ -352,12 +352,7 @@
                 {{-- Calendar is the default view, so a joiner with nothing booked lands on an empty
                      grid. Without this they get a month of blank squares and no way forward. --}}
                 @if($upcoming->isEmpty() && $past->isEmpty())
-                    <div class="mt-4 rounded-2xl border-2 border-dashed border-ink/15 px-6 py-10 text-center bg-ink/[.01]">
-                        <p class="font-semibold mb-1">No trips booked yet</p>
-                        <p class="text-ink/65 text-sm mb-5">Find a group heading somewhere you want to go.</p>
-                        <a href="{{ route('trips.index') }}" wire:navigate
-                           class="inline-flex items-center rounded-full bg-pine text-cream px-6 min-h-[48px] font-semibold hover:bg-pine/90 transition-colors shadow-sm">Explore trips</a>
-                    </div>
+                    <x-no-trips compact />
                 @endif
             @elseif($filtered->isNotEmpty())
                 @if($view === 'grid')
@@ -371,62 +366,7 @@
                             </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         @foreach($monthBookings as $r)
-                            @php($trip = $r->departure->trip)
-                            @php($st = $statusLabel[$r->status] ?? [ucfirst(str_replace('_', ' ', $r->status)), 'ink'])
-                            <div class="flex flex-col rounded-2xl border border-ink/10 overflow-hidden hover:border-ink/25 hover:shadow-[0_10px_30px_-18px_rgba(31,28,21,.35)] transition-all duration-300"
-                                 dusk="booking-{{ $r->id }}">
-                                <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
-                                   class="block relative group">
-                                    <img src="{{ $trip->cover_url }}" alt="" class="w-full h-36 object-cover transition-transform duration-[900ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.04]">
-                                    <div class="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-ink/60 to-transparent" aria-hidden="true"></div>
-                                    <span class="absolute top-3 left-3 grid place-items-center rounded-xl bg-cream/95 backdrop-blur-sm px-2.5 py-1 text-center shadow-sm">
-                                        <span class="block text-[10px] font-bold uppercase tracking-wide text-terra leading-none">{{ $r->departure->starts_at->format('M') }}</span>
-                                        <span class="block font-serif font-bold text-lg text-ink leading-none mt-0.5">{{ $r->departure->starts_at->format('j') }}</span>
-                                    </span>
-                                    <span class="absolute top-3 right-3 rounded-full px-3 py-1 text-xs font-bold backdrop-blur-sm
-                                                 {{ $st[1] === 'moss' ? 'bg-moss/90 text-cream' : ($st[1] === 'amber' ? 'bg-amber/90 text-cream' : 'bg-ink/70 text-cream/90') }}">
-                                        {{ $st[0] }}
-                                    </span>
-                                </a>
-                                <div class="p-4 flex-1 flex flex-col">
-                                    <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
-                                       class="block min-w-0 mb-1">
-                                        <p class="font-semibold truncate">{{ $trip->title }}</p>
-                                    </a>
-                                    <p class="text-sm text-ink/65 mb-3">
-                                        {{ $r->departure->starts_at->format('D j M Y') }}
-                                        <span class="text-ink/40">·</span> {{ $r->party_size }} {{ \Illuminate\Support\Str::plural('seat', $r->party_size) }}
-                                        <span class="text-ink/40">·</span> {{ $trip->host->name }}
-                                    </p>
-                                    @if($r->owesBalance())
-                                        @php($money = $r->money())
-                                        <div class="flex items-center gap-2 rounded-xl bg-amber/[.08] border border-amber/15 px-3 py-2 mb-3">
-                                            <svg viewBox="0 0 24 24" class="w-4 h-4 text-amber shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                            <p class="text-sm text-amber font-semibold">
-                                                {{ number_format($money['due']) }} balance due on the day
-                                            </p>
-                                        </div>
-                                    @endif
-                                    <div class="flex items-center justify-between mt-auto pt-3 border-t border-ink/8">
-                                        <div class="flex -space-x-2">
-                                            @foreach($participantInitials($r) as $init)
-                                                <span class="w-7 h-7 rounded-full bg-ink/10 text-ink/60 text-xs font-bold grid place-items-center border-2 border-surface">{{ $init }}</span>
-                                            @endforeach
-                                            @if($namedTravellers($r) > 3)
-                                                <span class="w-7 h-7 rounded-full bg-ink/5 text-ink/50 text-xs font-bold grid place-items-center border-2 border-surface">+{{ $namedTravellers($r) - 3 }}</span>
-                                            @endif
-                                        </div>
-                                        <div class="flex items-center gap-1">
-                                            <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
-                                               class="inline-flex items-center rounded-full border border-ink/20 text-sm font-semibold text-pine hover:text-pine/80 hover:border-ink/30 min-h-[40px] px-4 transition-colors">View</a>
-                                            @if(in_array($r->status, ['pending', 'awaiting_payment', 'payment_submitted']))
-                                                <button type="button" wire:click="cancelBooking({{ $r->id }})" wire:confirm="Are you sure you want to cancel this booking?"
-                                                        class="inline-flex items-center rounded-full border border-ink/20 text-sm font-semibold text-terra/80 hover:text-terra hover:border-terra/30 min-h-[40px] px-4 transition-colors">Cancel</button>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <x-booking-card :reservation="$r" variant="card" />
                         @endforeach
                     </div>
                         </div>
@@ -434,81 +374,12 @@
                 @else
                     <div class="space-y-2">
                         @foreach($filtered as $r)
-                            @php($trip = $r->departure->trip)
-                            @php($st = $statusLabel[$r->status] ?? [ucfirst(str_replace('_', ' ', $r->status)), 'ink'])
-                            <div class="flex items-center gap-4 rounded-2xl border border-ink/10 p-4 hover:border-ink/25 hover:shadow-[0_4px_12px_-8px_rgba(31,28,21,.2)] transition-all"
-                                 dusk="booking-{{ $r->id }}">
-                                <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate class="shrink-0">
-                                    <img src="{{ $trip->cover_url }}" alt="" class="w-16 h-16 rounded-xl object-cover">
-                                </a>
-                                <div class="min-w-0 flex-1">
-                                    <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate class="block">
-                                        <p class="font-semibold truncate">{{ $trip->title }}</p>
-                                        <p class="text-sm text-ink/65">
-                                            {{ $r->departure->starts_at->format('D j M Y') }}
-                                            <span class="text-ink/40">·</span> {{ $r->party_size }} {{ \Illuminate\Support\Str::plural('seat', $r->party_size) }}
-                                            <span class="text-ink/40">·</span> {{ $trip->host->name }}
-                                        </p>
-                                    </a>
-                                    @if($r->owesBalance())
-                                        @php($money = $r->money())
-                                        <div class="flex items-center gap-2 mt-1.5">
-                                            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-amber shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                            <p class="text-sm text-amber font-semibold">
-                                                {{ number_format($money['due']) }} balance due on the day
-                                            </p>
-                                        </div>
-                                    @endif
-                                </div>
-                                <span class="shrink-0 rounded-full px-3 py-1 text-xs font-bold backdrop-blur-sm
-                                             {{ $st[1] === 'moss' ? 'bg-moss/90 text-cream' : ($st[1] === 'amber' ? 'bg-amber/90 text-cream' : 'bg-ink/70 text-cream/90') }}">
-                                    {{ $st[0] }}
-                                </span>
-                                <div class="flex items-center gap-1 shrink-0">
-                                    <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
-                                       class="inline-flex items-center rounded-full border border-ink/20 text-sm font-semibold text-pine hover:text-pine/80 hover:border-ink/30 min-h-[40px] px-4 transition-colors">View</a>
-                                    @if(in_array($r->status, ['pending', 'awaiting_payment', 'payment_submitted']))
-                                        <button type="button" wire:click="cancelBooking({{ $r->id }})" wire:confirm="Are you sure you want to cancel this booking?"
-                                                class="inline-flex items-center rounded-full border border-ink/20 text-sm font-semibold text-terra/80 hover:text-terra hover:border-terra/30 min-h-[40px] px-4 transition-colors">Cancel</button>
-                                    @endif
-                                </div>
-                            </div>
+                            <x-booking-card :reservation="$r" variant="row" />
                         @endforeach
                     </div>
                 @endif
             @else
-                <div class="rounded-2xl border-2 border-dashed border-ink/15 px-6 py-16 text-center bg-ink/[.01]">
-                    <div class="w-16 h-16 rounded-full bg-ink/[.04] grid place-items-center mx-auto mb-4">
-                        <svg viewBox="0 0 24 24" class="w-8 h-8 text-ink/30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    </div>
-                    <p class="font-semibold mb-1">No trips booked yet</p>
-                    <p class="text-ink/65 text-sm mb-5">Find a group heading somewhere you want to go.</p>
-                    <a href="{{ route('trips.index') }}" wire:navigate
-                       class="inline-flex items-center rounded-full bg-pine text-cream px-6 min-h-[48px] font-semibold hover:bg-pine/90 transition-colors shadow-sm">Explore trips</a>
-
-                    @if($recommended->isNotEmpty())
-                        <div class="mt-10 pt-8 border-t border-ink/10 text-left">
-                            <div class="flex items-center gap-2 mb-4">
-                                <svg viewBox="0 0 24 24" class="w-5 h-5 text-moss shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                                <p class="text-sm font-semibold text-ink/70">Based on trips you have booked before</p>
-                            </div>
-                            <div class="grid gap-3 sm:grid-cols-3">
-                                @foreach($recommended as $trip)
-                                    <a href="{{ route('trips.show', $trip) }}" wire:navigate
-                                       class="group block rounded-2xl border border-ink/10 overflow-hidden hover:border-ink/25 hover:shadow-[0_10px_30px_-18px_rgba(31,28,21,.35)] transition-all duration-300">
-                                        <div class="relative aspect-[16/10] overflow-hidden">
-                                            <img src="{{ $trip->cover_url }}" alt="" class="w-full h-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.06]">
-                                        </div>
-                                        <div class="p-3">
-                                            <p class="font-semibold text-sm truncate">{{ $trip->title }}</p>
-                                            <p class="text-xs text-ink/65">{{ $trip->place->name }} · {{ $trip->host->name }}</p>
-                                        </div>
-                                    </a>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-                </div>
+                <x-no-trips />
             @endif
         </section>
 
@@ -520,31 +391,13 @@
                 @if($view === 'grid')
                     <div class="grid gap-3 sm:grid-cols-2">
                         @foreach($past as $r)
-                            @php($trip = $r->departure->trip)
-                            <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
-                               dusk="past-{{ $r->id }}"
-                               class="flex items-center gap-4 rounded-2xl border border-ink/10 p-4 hover:border-ink/25 hover:shadow-[0_4px_12px_-8px_rgba(31,28,21,.2)] transition-all opacity-75 hover:opacity-100">
-                                <img src="{{ $trip->cover_url }}" alt="" class="w-16 h-16 rounded-xl object-cover shrink-0 grayscale">
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-semibold truncate">{{ $trip->title }}</p>
-                                    <p class="text-sm text-ink/65">{{ $r->departure->starts_at->format('D j M Y') }}</p>
-                                </div>
-                            </a>
+                            <x-booking-card :reservation="$r" variant="row" :actions="false" />
                         @endforeach
                     </div>
                 @else
                     <div class="space-y-2">
                         @foreach($past as $r)
-                            @php($trip = $r->departure->trip)
-                            <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
-                               dusk="past-{{ $r->id }}"
-                               class="flex items-center gap-4 rounded-2xl border border-ink/10 p-4 hover:border-ink/25 hover:shadow-[0_4px_12px_-8px_rgba(31,28,21,.2)] transition-all opacity-75 hover:opacity-100">
-                                <img src="{{ $trip->cover_url }}" alt="" class="w-14 h-14 rounded-xl object-cover shrink-0 grayscale">
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-semibold truncate">{{ $trip->title }}</p>
-                                    <p class="text-sm text-ink/65">{{ $r->departure->starts_at->format('D j M Y') }}</p>
-                                </div>
-                            </a>
+                            <x-booking-card :reservation="$r" variant="row" :actions="false" />
                         @endforeach
                     </div>
                 @endif
