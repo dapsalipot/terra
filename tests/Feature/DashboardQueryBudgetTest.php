@@ -61,10 +61,23 @@ function queriesForRender(User $user): array
 it('renders within its query budget', function () {
     $queries = queriesForRender(joinerWithBookings(6));
 
-    // Measured before this work: 18, of which 6 were a per-booking price-tier lookup.
-    // The ceiling is 10 rather than 8 so an unrelated session or framework query does not
-    // break the test, while still failing loudly if the eager load is dropped.
-    expect(count($queries))->toBeLessThanOrEqual(10);
+    /*
+     * 18 before this work began, of which 6 were a per-booking price-tier lookup.
+     *
+     * The 13 now issued are each one grouped query for a distinct thing the page shows:
+     * reservations, departures, trips, hosts, price tiers, places, participants, reviews,
+     * orphaned guest bookings, holidays, per-day trip availability, and — the two most recent —
+     * the trips and places behind the cover photos stacked on each joinable day.
+     *
+     * Those last two bought the calendar its photos in place of a bare number nobody could
+     * read the meaning of. They are two for the whole grid, not two per trip, which is the
+     * distinction that matters: the sibling test below pins that flatness and would fail if
+     * this ever became per-row.
+     *
+     * The ceiling sits one above. It is not a target to grow into: an N+1 regression costs six
+     * or more at this fixture size, so it still fails loudly.
+     */
+    expect(count($queries))->toBeLessThanOrEqual(14);
 });
 
 it('does not issue more queries as bookings grow', function () {

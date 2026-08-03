@@ -48,7 +48,7 @@ class ReserveFlowTest extends DuskTestCase
                 ->assertSee('Mount Rinjani Traverse')
                 ->assertSee('spots')
                 ->press('Join this trip')
-                ->waitForText('Who we contact about this booking')
+                ->waitForText('Where the host reaches you about this booking')
                 ->assertPathIs('/t/'.$departure->trip->slug.'/join');
         });
     }

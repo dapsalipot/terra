@@ -2,13 +2,23 @@
 {{-- $images: iterable of ['url' => string, 'alt' => ?string] --}}
 @php($items = collect($images)->values())
 
+{{--
+    Attributes are merged onto the root so a caller can size this from the outside.
+
+    The booking panel's photo is not a fixed ratio — it is a flex child that takes whatever height
+    the rail has left — so `ratio` alone cannot describe it. Existing callers pass no classes and
+    are unaffected. `relative` stays hardcoded because the arrows, counter and dots are positioned
+    against it; size it with height/width classes, not with `absolute`.
+--}}
 @if($items->count() === 1)
     <img src="{{ $items[0]['url'] }}" alt="{{ $items[0]['alt'] ?? '' }}"
-         class="w-full {{ $ratio }} object-cover {{ $rounded }}" loading="lazy">
+         {{ $attributes->class(['w-full', $ratio, 'object-cover', $rounded]) }} loading="lazy">
 @elseif($items->count() > 1)
-    <div x-data="{ i: 0, count: {{ $items->count() }} }" class="relative group {{ $rounded }} overflow-hidden">
-        {{-- track --}}
-        <div class="flex transition-transform duration-500 ease-[cubic-bezier(.2,.7,.2,1)]"
+    <div x-data="{ i: 0, count: {{ $items->count() }} }"
+         {{ $attributes->class(['relative group overflow-hidden', $rounded]) }}>
+        {{-- track: h-full resolves to auto inside an auto-height parent, so the ratio-based
+             callers are untouched; it only bites when the caller gives the root a real height --}}
+        <div class="flex h-full transition-transform duration-500 ease-[cubic-bezier(.2,.7,.2,1)]"
              :style="`transform: translateX(-${i * 100}%)`">
             @foreach($items as $img)
                 <img src="{{ $img['url'] }}" alt="{{ $img['alt'] ?? '' }}"

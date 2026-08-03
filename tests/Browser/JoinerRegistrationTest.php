@@ -94,6 +94,10 @@ class JoinerRegistrationTest extends DuskTestCase
                 ->waitForText('take no seat')
                 ->type('@seat-0-first', 'Dee')
                 ->type('@seat-0-last', 'Santos')
+                // The one-tap answer to the per-seat email rule, exercised in a real browser:
+                // a booker paying for someone else usually has their own inbox, not theirs.
+                ->click('@seat-0-use-my-email')
+                ->waitUsing(5, 100, fn () => $browser->value('@seat-0-email') === 'cara@example.com')
                 ->keys('@seat-0-birthday', '03', '15', '2000')
                 ->uncheck('@create-account')
                 ->click('@submit-registration')
@@ -111,6 +115,11 @@ class JoinerRegistrationTest extends DuskTestCase
     public function test_extra_seats_reveal_a_card_each(): void
     {
         $departure = $this->publishedDeparture();
+
+        // Roomy, because the stepper now caps at seats remaining and the default capacity of 10
+        // would clamp the two-digit case below. The cap has its own coverage in
+        // RegisterComponentTest; what is under test here is the typing.
+        $departure->update(['capacity' => 30]);
 
         $this->browse(function (Browser $browser) use ($departure) {
             $browser->visit('/t/'.$departure->trip->slug.'/join')

@@ -478,6 +478,53 @@
             </div>
             <button type="button" wire:click="addInclusion" class="mt-4 text-sm font-semibold text-moss">＋ Add an inclusion</button>
 
+            {{--
+                ═══ WHAT TO BRING ═══
+
+                A picker, not another repeater. Inclusions are yours to describe — "Transport",
+                "air-conditioned van from Manila" — but what a joiner packs is the same short list
+                on every trip, so it is toggles over an allow-list. One vocabulary means the trip
+                page can render it the same way every time, and it can be searched on later.
+            --}}
+            <div class="mt-10 pt-8 border-t border-ink/10">
+                <h2 class="font-serif font-semibold text-2xl mb-1">What to bring</h2>
+                <p class="text-ink/65 mb-6">
+                    Tap everything a joiner needs to pack. This shows on the trip page and on their booking.
+                </p>
+
+                @foreach(\App\Support\PackingItems::CATALOG as $group => $items)
+                    <div class="mb-6 last:mb-0">
+                        <span class="field-label">{{ $group }}</span>
+                        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
+                            @foreach($items as $key => [$label, $note, $icon])
+                                @php($on = in_array($key, $packing, true))
+                                <button type="button" wire:click="togglePacking('{{ $key }}')"
+                                        aria-pressed="{{ $on ? 'true' : 'false' }}"
+                                        dusk="packing-{{ $key }}"
+                                        class="flex items-start gap-3 text-left rounded-xl border-2 px-4 py-3.5 transition-colors
+                                               {{ $on ? 'border-moss bg-moss/10' : 'border-ink/10 hover:border-ink/25' }}">
+                                    <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0 mt-0.5 {{ $on ? 'text-moss' : 'text-ink/40' }}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $icon }}"/></svg>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block text-sm font-semibold">{{ $label }}</span>
+                                        <span class="block text-xs text-ink/65 leading-snug">{{ $note }}</span>
+                                    </span>
+                                    <span class="grid place-items-center w-5 h-5 shrink-0 rounded-full mt-0.5 {{ $on ? 'bg-moss text-cream' : 'border border-ink/15' }}">
+                                        @if($on)
+                                            <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5.5 5.5L20 6.5"/></svg>
+                                        @endif
+                                    </span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+
+                <p class="text-sm text-ink/55" dusk="packing-count">
+                    {{ count($packing) }} {{ \Illuminate\Support\Str::plural('item', count($packing)) }} selected.
+                    @if(count($packing) === 0) Optional, but joiners turn up better prepared when it is filled in. @endif
+                </p>
+            </div>
+
             <div class="flex gap-3 mt-9">
                 <button wire:click="back" dusk="wizard-back" class="rounded-full border border-ink/20 px-7 py-3.5 font-semibold hover:bg-ink/5 transition-colors">Back</button>
                 <button wire:click="next" dusk="wizard-next" class="flex-1 rounded-full bg-pine text-cream py-3.5 font-semibold hover:bg-pine/90 transition-colors">Continue to logistics</button>

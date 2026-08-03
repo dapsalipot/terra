@@ -146,6 +146,66 @@ class Register extends Component
             ->first();
     }
 
+    /**
+     * The most seats this booking can take.
+     *
+     * Capped by what is actually left rather than the blanket 20, so the stepper cannot walk
+     * someone into a TripFullException they could have been shown up front.
+     */
+    public function getMaxSeatsProperty(): int
+    {
+        return max(1, min(20, $this->spotsLeft()));
+    }
+
+    /**
+     * Photos for the trip panel, best first.
+     *
+     * `cover_url` is not a plain accessor: when the host has uploaded no cover it returns a stock
+     * photo chosen from the place's category. So this cannot be "cover, then the rest" — a host
+     * with three real photos and no cover set would lead with a picture of somewhere they have
+     * never been. Real images always win; the stock shot appears only when there is nothing else.
+     *
+     * @return array<int, array{url: string, alt: string}>
+     */
+    public function getGalleryProperty(): array
+    {
+        $shot = fn (?string $url) => $url ? ['url' => $url, 'alt' => $this->trip->title] : null;
+
+        $gallery = collect([$this->trip->cover_photo ? $shot($this->trip->cover_url) : null])
+            ->concat($this->trip->photos->map(fn ($p) => $shot($p->url)))
+            ->filter()
+            ->values();
+
+        return $gallery->isNotEmpty()
+            ? $gallery->all()
+            : array_filter([$shot($this->trip->cover_url)]);
+    }
+
+    /**
+     * Seats remaining, resolved once per request.
+     *
+     * addSeat() and render() both want it, and spotsLeft() is a query — without the memo a single
+     * tap on the stepper pays for it twice.
+     */
+    private ?int $spotsLeft = null;
+
+    private function spotsLeft(): int
+    {
+        return $this->spotsLeft ??= $this->closed ? 0 : $this->departure->spotsLeft();
+    }
+
+    public function addSeat(): void
+    {
+        $this->partySize = (int) $this->partySize + 1;
+        $this->updatedPartySize();
+    }
+
+    public function removeSeat(): void
+    {
+        $this->partySize = max(1, (int) $this->partySize - 1);
+        $this->updatedPartySize();
+    }
+
     /** Seats drive the traveller list; one row per seat, always. */
     public function updatedPartySize(): void
     {
@@ -156,7 +216,7 @@ class Register extends Component
             return;
         }
 
-        $this->partySize = max(1, min(20, (int) $this->partySize));
+        $this->partySize = max(1, min($this->maxSeats, (int) $this->partySize));
 
         while (count($this->participants) < $this->partySize) {
             $this->participants[] = self::BLANK_PARTICIPANT;
@@ -197,6 +257,32 @@ class Register extends Component
         $this->participants[$i]['show_contact'] = ! ($this->participants[$i]['show_contact'] ?? false);
     }
 
+    /**
+     * Put the booker's own address on someone else's seat.
+     *
+     * Requiring an email per seat is only reasonable if there is a one-tap answer: a booker
+     * organising five friends rarely has five addresses to hand, and without this the rule would
+     * be a wall rather than a prompt. Sharing one inbox across seats is a legitimate answer — the
+     * booker is the person the host needs to reach.
+     */
+    public function useBookerEmail(int $i): void
+    {
+        $this->participants[$i]['email'] = trim((string) ($this->contact['email'] ?? ''));
+        $this->saveDraft();
+    }
+
+    /**
+     * Gender chips toggle rather than latch.
+     *
+     * It is optional, so a mis-tap has to be undoable. With a plain $set the only way back from
+     * an accidental answer was to reload the page and lose the rest of the form.
+     */
+    public function setGender(int $i, string $value): void
+    {
+        $this->participants[$i]['gender'] = ($this->participants[$i]['gender'] ?? '') === $value ? '' : $value;
+        $this->saveDraft();
+    }
+
     /** Copy the booker's name into their own seat; never their birthday or gender. */
     private function mirrorBookerSeat(): void
     {
@@ -221,21 +307,37 @@ class Register extends Component
 
     protected function rules(): array
     {
-        return [
+        $rules = [
             'partySize' => ['required', 'integer', 'min:1', 'max:20'],
             'contact.first_name' => ['required', 'string', 'max:80'],
             'contact.middle_name' => ['nullable', 'string', 'max:80'],
             'contact.last_name' => ['required', 'string', 'max:80'],
             'contact.email' => ['required', 'email', 'max:180'],
             'contact.phone' => ['required', 'string', 'max:32'],
-            'participants.*.first_name' => ['nullable', 'string', 'max:80'],
             'participants.*.middle_name' => ['nullable', 'string', 'max:80'],
-            'participants.*.last_name' => ['nullable', 'string', 'max:80'],
             'participants.*.birthday' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'participants.*.gender' => ['nullable', 'string', 'max:24'],
-            'participants.*.email' => ['nullable', 'email', 'max:180'],
             'participants.*.phone' => ['nullable', 'string', 'max:32'],
         ];
+
+        /*
+         * Names are required per seat, not by wildcard, because seat 1 is a special case.
+         *
+         * While the booker is travelling, seat 1 mirrors the contact block — the same box, shown
+         * once. Requiring it here too would raise two errors for one empty field and send the
+         * booker hunting for a second thing to fill in. The contact rules above already cover the
+         * name and the email; submit() re-mirrors the name before validating so the copy is never
+         * stale, and normalisedParticipants() fills that seat's email from the contact.
+         */
+        foreach (array_keys($this->participants) as $i) {
+            $presence = $this->bookerIsTraveling && $i === 0 ? 'nullable' : 'required';
+
+            $rules["participants.{$i}.first_name"] = [$presence, 'string', 'max:80'];
+            $rules["participants.{$i}.last_name"] = [$presence, 'string', 'max:80'];
+            $rules["participants.{$i}.email"] = [$presence, 'email', 'max:180'];
+        }
+
+        return $rules;
     }
 
     /** Laravel would otherwise surface the attribute path: "The contact.first name field...". */
@@ -251,13 +353,45 @@ class Register extends Component
         ];
     }
 
-    protected function validationMessages(): array
+    /**
+     * Custom messages.
+     *
+     * Named `messages()`, not `validationMessages()`. Livewire reads only the former
+     * (HandlesValidation::getMessages) even though it accepts either name for attributes, so
+     * everything in here was silently inert until the seat messages needed to reach the screen.
+     */
+    protected function messages(): array
     {
-        return [
+        $messages = [
+            // The summary at the top of the form is read as a list of things to go and do, so
+            // these are phrased as requests rather than as "The X field is required."
+            'contact.first_name.required' => 'We need your first name.',
+            'contact.last_name.required' => 'We need your last name.',
+            'contact.email.required' => 'We need an email — your booking link goes there.',
+            'contact.email.email' => 'That email address does not look right.',
+            'contact.phone.required' => 'We need a mobile number so the host can reach you.',
             'participants.*.birthday.before' => 'A birthday has to be in the past.',
             'participants.*.birthday.after' => 'That birthday looks like a typo — please check the year.',
-            'participants.*.email.email' => 'That traveller\'s email address does not look right.',
         ];
+
+        /*
+         * Say which seat.
+         *
+         * The default renders the attribute path — "The participants.1.first name field is
+         * required" — which makes the booker count cards to find the one at fault. On a six-seat
+         * booking the offending card is usually off-screen, so the message is the only pointer
+         * they have.
+         */
+        foreach (array_keys($this->participants) as $i) {
+            $seat = 'Seat '.($i + 1);
+
+            $messages["participants.{$i}.first_name.required"] = "{$seat} needs a first name.";
+            $messages["participants.{$i}.last_name.required"] = "{$seat} needs a last name.";
+            $messages["participants.{$i}.email.required"] = "{$seat} needs an email address.";
+            $messages["participants.{$i}.email.email"] = "The email on {$seat} does not look right.";
+        }
+
+        return $messages;
     }
 
     public function submit(RegistrationService $service)
@@ -265,6 +399,11 @@ class Register extends Component
         if ($this->closed) {
             return null;
         }
+
+        // Seat 1 is exempt from the name rules while it mirrors the contact block, so the mirror
+        // has to be current before those rules are skipped. wire:model.blur means the last field
+        // touched may not have synced when the button was clicked.
+        $this->mirrorBookerSeat();
 
         $this->validate();
 
@@ -310,15 +449,31 @@ class Register extends Component
 
     private function normalisedParticipants(): array
     {
-        return collect($this->participants)->map(fn (array $p) => [
-            'first_name' => trim($p['first_name'] ?? '') ?: null,
-            'middle_name' => trim($p['middle_name'] ?? '') ?: null,
-            'last_name' => trim($p['last_name'] ?? '') ?: null,
-            'birthday' => ($p['birthday'] ?? '') ?: null,
-            'gender' => ($p['gender'] ?? '') ?: null,
-            'email' => trim($p['email'] ?? '') ?: null,
-            'phone' => ($p['phone'] ?? '') ? $this->normalisePhone($p['phone']) : null,
-        ])->all();
+        return collect($this->participants)->map(function (array $p, int $i) {
+            $email = strtolower(trim($p['email'] ?? '')) ?: null;
+
+            /*
+             * The booker's own seat inherits their contact address.
+             *
+             * It is the only seat exempt from the email rule, because asking for it there would
+             * be a second box for an address already given a section earlier. Filling it here
+             * keeps the roster complete without the duplicate question — and only when blank, so
+             * a booker who deliberately gave their seat a different address keeps it.
+             */
+            if ($email === null && $this->bookerIsTraveling && $i === 0) {
+                $email = strtolower(trim($this->contact['email'] ?? '')) ?: null;
+            }
+
+            return [
+                'first_name' => trim($p['first_name'] ?? '') ?: null,
+                'middle_name' => trim($p['middle_name'] ?? '') ?: null,
+                'last_name' => trim($p['last_name'] ?? '') ?: null,
+                'birthday' => ($p['birthday'] ?? '') ?: null,
+                'gender' => ($p['gender'] ?? '') ?: null,
+                'email' => $email,
+                'phone' => ($p['phone'] ?? '') ? $this->normalisePhone($p['phone']) : null,
+            ];
+        })->all();
     }
 
     /** Store one shape: 09xxxxxxxxx and +639xxxxxxxxx both become 09xxxxxxxxx. */
@@ -372,7 +527,11 @@ class Register extends Component
         $seats = max(1, (int) $this->partySize);
 
         return view('livewire.reservations.register', [
-            'spotsLeft' => $this->closed ? 0 : $this->departure->spotsLeft(),
+            'gallery' => $this->gallery,
+            'spotsLeft' => $this->spotsLeft(),
+            'maxSeats' => $this->maxSeats,
+            'seats' => $seats,
+            'perSeat' => $this->trip->current_price,
             'total' => $this->trip->current_price * $seats,
             'payableNow' => $this->trip->payable_now * $seats,
         ])->layout('components.layouts.site');

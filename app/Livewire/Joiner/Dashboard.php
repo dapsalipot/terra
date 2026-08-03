@@ -36,6 +36,15 @@ class Dashboard extends Component
     /** Which day the phone calendar is listing. Not in the URL — it is a transient tap. */
     public string $selectedDate = '';
 
+    /**
+     * Whether the day sheet is open.
+     *
+     * Separate from $selectedDate because render() seeds that with the joiner's next booked day so
+     * the grid has something highlighted. If the sheet keyed off the date alone it would fly open
+     * on page load, before anyone had clicked anything.
+     */
+    public bool $dayOpen = false;
+
     public array $dismissedAttention = [];
 
     /**
@@ -147,17 +156,25 @@ class Dashboard extends Component
     {
         $this->month = $this->cursor()->addMonthsNoOverflow($by)->format('Y-m');
         $this->selectedDate = '';
+        $this->dayOpen = false;
     }
 
     public function today(): void
     {
         $this->month = now()->format('Y-m');
         $this->selectedDate = '';
+        $this->dayOpen = false;
     }
 
     public function selectDate(string $date): void
     {
         $this->selectedDate = $date;
+        $this->dayOpen = true;
+    }
+
+    public function closeDay(): void
+    {
+        $this->dayOpen = false;
     }
 
     /**
@@ -378,6 +395,51 @@ class Dashboard extends Component
         // stop someone reaching their own bookings.
         $holidays = app(\App\Services\PhilippineHolidays::class)->between($gridStart, $gridEnd);
 
+        /*
+         * What is joinable on each visible day — a count and the cover photos to show for it.
+         *
+         * Still one query for the whole grid, not one per day, and seats-held is still summed in
+         * SQL: spotsLeft() queries per departure, so calling it in a loop would be an N+1 that
+         * scales with how many trips exist rather than how many the joiner has.
+         *
+         * The two eager loads are the price of showing photos instead of a bare number, and they
+         * are two queries for the whole grid rather than two per trip. Columns are trimmed to what
+         * the cell and the cover fallback actually read: cover_url returns the host's upload when
+         * there is one and otherwise picks a stock photo from the place's slug and category.
+         */
+        $openByDate = \App\Models\TripDeparture::query()
+            ->whereBetween('starts_at', [$gridStart->copy()->startOfDay(), $gridEnd->copy()->endOfDay()])
+            ->where('status', 'open')
+            ->whereHas('trip', fn ($t) => $t->where('status', 'published'))
+            ->with(['trip:id,title,cover_photo,place_id', 'trip.place:id,slug,category'])
+            ->withSum(
+                ['reservations as seats_held' => fn ($q) => $q->whereIn('status', Reservation::HOLDING)],
+                'party_size',
+            )
+            ->orderBy('starts_at')
+            ->get(['id', 'trip_id', 'starts_at', 'capacity'])
+            // Already booked is not "available", and neither is sold out.
+            ->reject(fn ($d) => $reservations->contains(fn (Reservation $r) => $r->trip_departure_id === $d->id))
+            ->filter(fn ($d) => $d->capacity - (int) ($d->seats_held ?? 0) > 0)
+            ->groupBy(fn ($d) => $d->starts_at->toDateString())
+            ->map(fn ($deps) => [
+                'count' => $deps->count(),
+                // Three is what fits a calendar square; the cell shows "+N" for the rest.
+                'covers' => $deps->take(3)
+                    ->map(fn ($d) => ['url' => $d->trip->cover_url, 'title' => $d->trip->title])
+                    ->values()
+                    ->all(),
+                /*
+                 * What kind of trips they are. Free — the category rides along on the place that
+                 * is already loaded for the cover fallback — and it answers the question the
+                 * photos raise but cannot settle: three beaches and a mountain look like four
+                 * photographs until something says which is which.
+                 */
+                'types' => \App\Support\PlaceCategories::resolve(
+                    $deps->map(fn ($d) => $d->trip->place?->category),
+                ),
+            ]);
+
         $days = collect();
         for ($day = $gridStart->copy(); $day->lte($gridEnd); $day->addDay()) {
             $iso = $day->toDateString();
@@ -387,6 +449,9 @@ class Dashboard extends Component
                 'isToday' => $day->isToday(),
                 'isWeekend' => $day->isWeekend(),
                 'holiday' => $holidays[$iso] ?? null,
+                'available' => $openByDate->get($iso)['count'] ?? 0,
+                'covers' => $openByDate->get($iso)['covers'] ?? [],
+                'types' => $openByDate->get($iso)['types'] ?? [],
                 'bookings' => $byDate->get($iso, collect()),
             ]);
         }
@@ -396,19 +461,35 @@ class Dashboard extends Component
          * somewhere on this date?" rather than doing nothing.
          */
         $availableOnDate = collect();
+        $availableTotal = 0;
 
         if ($this->selectedDate !== '' && $byDate->get($this->selectedDate, collect())->isEmpty()) {
-            $availableOnDate = \App\Models\TripDeparture::query()
+            $offers = \App\Models\TripDeparture::query()
                 ->whereDate('starts_at', $this->selectedDate)
                 ->where('status', 'open')
                 ->whereHas('trip', fn ($t) => $t->where('status', 'published'))
-                ->with('trip.host')
+                /*
+                 * place and priceTiers are loaded because the sheet shows a photo and a price:
+                 * cover_url reads the place, current_price reads the tiers. Left lazy they would
+                 * be two more queries per trip on the day — the same N+1 shape the grid's
+                 * availability count was written to avoid.
+                 */
+                ->with(['trip.host', 'trip.place', 'trip.priceTiers'])
+                // Seats held summed in SQL: spotsLeft() is a query per departure otherwise.
+                ->withSum(
+                    ['reservations as seats_held' => fn ($q) => $q->whereIn('status', Reservation::HOLDING)],
+                    'party_size',
+                )
+                ->orderBy('starts_at')
                 ->get()
                 // Excludes anything already booked, and anything with no seat left to sell.
                 ->reject(fn ($d) => $reservations->contains(fn (Reservation $r) => $r->trip_departure_id === $d->id))
-                ->filter(fn ($d) => $d->spotsLeft() > 0)
-                ->take(6)
+                ->filter(fn ($d) => $d->capacity - (int) ($d->seats_held ?? 0) > 0)
                 ->values();
+
+            $availableTotal = $offers->count();
+            // Capped so one busy date cannot render an unbounded list; the footer says when it did.
+            $availableOnDate = $offers->take(12);
         }
 
         // Card view groups by month so a long list reads as a year rather than a wall of rows.
@@ -425,6 +506,7 @@ class Dashboard extends Component
             'weeks' => $days->chunk(7),
             'selectedBookings' => $byDate->get($this->selectedDate, collect()),
             'availableOnDate' => $availableOnDate,
+            'availableTotal' => $availableTotal,
             'selectedHoliday' => $holidays[$this->selectedDate] ?? null,
             'monthCount' => $byDate->flatten()->filter(
                 fn (Reservation $r) => $r->departure->starts_at->isSameMonth($cursor)

@@ -9,6 +9,12 @@
     font-display: swap;
 }
 
+/* The sticky site nav's height, so full-viewport panes can subtract it instead of each page
+   hardcoding the same number. Kept in sync with .site-nav's h-[68px] in the layout. */
+:root {
+    --nav-h: 68px;
+}
+
 body {
     background: #FBF9F4;
     color: #1F1C15;

@@ -244,7 +244,7 @@ class SystemAuditTest extends DuskTestCase
             $this->sweep($browser, '/t/'.$w['trip']->slug, 'trip detail', 'Mount Pulag Sunrise Traverse');
             $browser->script('window.scrollTo(0, document.body.scrollHeight / 2);');
             $browser->pause(self::BEAT);
-            $this->sweep($browser, '/t/'.$w['trip']->slug.'/join', 'registration form', 'Who we contact');
+            $this->sweep($browser, '/t/'.$w['trip']->slug.'/join', 'registration form', 'Where the host reaches you');
             $this->sweep($browser, '/login', 'login', 'Continue with Google');
             $this->sweep($browser, '/register', 'register', 'Name');
         });
@@ -308,7 +308,7 @@ class SystemAuditTest extends DuskTestCase
                 ->waitForText('Mount Pulag Sunrise Traverse')
                 ->pause(self::BEAT)
                 ->press('Join this trip')
-                ->waitForText('Who we contact about this booking')
+                ->waitForText('Where the host reaches you about this booking')
                 ->pause(self::BEAT);
 
             // Two seats, booker travelling.
@@ -323,6 +323,7 @@ class SystemAuditTest extends DuskTestCase
                 ->pause(self::BEAT)
                 ->type('@seat-1-first', 'Ben')
                 ->type('@seat-1-last', 'Cruz')
+                ->type('@seat-1-email', 'ben@example.com')
                 ->keys('@seat-1-birthday', '01', '10', '1995')
                 ->pause(self::BEAT);
 
@@ -433,7 +434,7 @@ class SystemAuditTest extends DuskTestCase
                 '/' => ['home', 'Better trips with'],
                 '/trips' => ['discovery', 'Mount Pulag'],
                 '/t/'.$w['trip']->slug => ['trip detail', 'Mount Pulag'],
-                '/t/'.$w['trip']->slug.'/join' => ['registration form', 'Who we contact'],
+                '/t/'.$w['trip']->slug.'/join' => ['registration form', 'Where the host reaches you'],
             ];
 
             foreach ($pages as $url => [$where, $expect]) {

@@ -219,6 +219,29 @@
                 @endif
             @endif
 
+            {{--
+                ═══ WHAT TO BRING ═══
+
+                Distinct from what's included, and worth its own heading: one is what the host
+                hands you, the other is what you are on the hook for. A joiner who reads these as
+                one list turns up expecting a headlamp to be provided.
+            --}}
+            @php($packing = \App\Support\PackingItems::resolve($trip->packing_items))
+            @if($packing)
+                <h2 class="font-serif font-semibold text-xl mt-9 mb-4">What to bring</h2>
+                <div class="grid sm:grid-cols-2 gap-2" dusk="trip-packing">
+                    @foreach($packing as $item)
+                        <div class="flex items-start gap-3 rounded-xl border border-ink/8 bg-surface px-4 py-3">
+                            <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0 mt-0.5 text-moss" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $item['icon'] }}"/></svg>
+                            <div class="min-w-0">
+                                <span class="block text-sm font-semibold">{{ $item['label'] }}</span>
+                                <span class="block text-xs text-ink/65 leading-snug">{{ $item['note'] }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
             {{-- ═══ MEETUP POINTS ═══ --}}
             {{-- Pickups and drop-offs render identically; only the heading differs. --}}
             @foreach([['Pickup', 'Pickup points', $trip->meetups], ['Drop-off', 'Drop-off points', $trip->dropoffs]] as [$one, $many, $spots])

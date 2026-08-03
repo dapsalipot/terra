@@ -244,8 +244,11 @@
                                                dusk="cal-day-{{ $iso }}"
                                                title="{{ $trip->title }}@if($day['holiday']) · {{ $day['holiday'] }}@endif"
                                                aria-label="{{ $day['date']->format('j F') }} — {{ $trip->title }}, open this booking"
+                                               {{-- focus-visible in moss, not the browser's blue: the default ring is the one
+                                                    colour on this page that belongs to no part of the palette. --}}
                                                class="group relative aspect-square rounded-lg sm:rounded-2xl overflow-hidden block
                                                       ring-offset-2 ring-offset-surface transition-all duration-300
+                                                      focus:outline-none focus-visible:ring-2 focus-visible:ring-moss
                                                       {{ $day['isToday'] ? 'ring-2 ring-pine' : 'hover:ring-2 hover:ring-ink/25' }}">
                                                 <img src="{{ $trip->cover_url }}" alt=""
                                                      class="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.12] {{ $isPast ? 'grayscale' : '' }}">
@@ -271,25 +274,172 @@
                                                 </span>
                                             </a>
                                         @else
-                                            {{-- An empty square is a question — "could I go somewhere that day?" — so it answers it
-                                                 rather than sitting inert. Weekends are tinted moss and holidays flagged, because
-                                                 those are the days a joiner is actually free to travel. --}}
+                                            {{--
+                                                An empty square is a question — "could I go somewhere that day?" — so it
+                                                answers it rather than sitting inert.
+
+                                                Two independent facts share this cell and must not be collapsed into one
+                                                colour: the tint says when the joiner is free (weekend moss, holiday
+                                                amber) and the moss ring says something is actually bookable. A day can
+                                                easily be one without the other, so availability is a foreground
+                                                treatment layered over whichever tint the day already carries.
+                                            --}}
+                                            @php($hasTrips = $day['available'] > 0)
+                                            {{--
+                                                A joinable day has to differ from a weekend by more than a shade.
+
+                                                The first attempt tinted it moss/25 against the weekend's moss/10 and the
+                                                two were indistinguishable on screen — the same hue two steps apart reads
+                                                as one colour. It is a filled moss card now, dark enough that the
+                                                difference is a difference in kind, with the day type kept in the border:
+                                                amber edge for a holiday, moss for everything else.
+                                            --}}
+                                            @php($tint = $selectedDate === $iso
+                                                ? 'bg-moss/25'
+                                                : ($hasTrips
+                                                    {{-- Lighter than it was: the covers now carry the "something is here"
+                                                         signal, so the fill only has to sit them apart from a plain
+                                                         square rather than do the shouting on its own. --}}
+                                                    ? 'bg-gradient-to-br from-moss/[.24] via-moss/[.16] to-moss/[.08]'
+                                                    : ($day['holiday']
+                                                        ? 'bg-amber/[.13]'
+                                                        : ($day['isWeekend']
+                                                            ? 'bg-moss/[.10]'
+                                                            : ($day['inMonth'] ? 'bg-ink/[.015]' : 'bg-transparent')))))
+                                            @php($edge = $selectedDate === $iso
+                                                ? 'border-moss'
+                                                : ($hasTrips
+                                                    ? ($day['holiday'] ? 'border-amber/70 shadow-sm' : 'border-moss/70 shadow-sm')
+                                                    : ($day['holiday'] ? 'border-amber/45' : ($day['isWeekend'] ? 'border-moss/55' : 'border-ink/[.07]'))))
+
+                                            {{--
+                                                Built in PHP, not spliced together with directives inside the attribute.
+
+                                                It used to read `…@endif@if($hasTrips)…`, and Blade will not compile a
+                                                directive that butts straight up against the previous one — the `\B` in
+                                                its pattern fails when `@` follows a word character. So `@if($hasTrips)`
+                                                was being emitted as literal text and screen readers were reading the
+                                                source code out loud. It stayed invisible because the damage was inside
+                                                an attribute; adding one nested `@endif` that did compile turned it into
+                                                a parse error, which is the only reason it surfaced at all.
+                                            --}}
+                                            @php($ariaParts = collect([$day['date']->format('j F')])
+                                                ->when($day['holiday'], fn ($c) => $c->push($day['holiday']))
+                                                ->push($hasTrips
+                                                    ? $day['available'].' '.\Illuminate\Support\Str::plural('trip', $day['available']).' leaving this day'
+                                                    : 'no trips leaving this day')
+                                                ->when($hasTrips && $day['types'], fn ($c) => $c->push(collect($day['types'])->pluck('label')->implode(', '))))
+
                                             <button type="button" wire:click="selectDate('{{ $iso }}')"
                                                     dusk="cal-free-{{ $iso }}"
-                                                    title="@if($day['holiday']){{ $day['holiday'] }}@else{{ $day['date']->format('j F') }}@endif"
-                                                    aria-label="{{ $day['date']->format('j F') }}@if($day['holiday']) — {{ $day['holiday'] }}@endif — see trips leaving this day"
-                                                    class="relative aspect-square rounded-lg sm:rounded-2xl border grid place-items-center transition-colors
-                                                           hover:border-moss/50 hover:bg-moss/10
+                                                    title="{{ $day['holiday'] ?: $day['date']->format('j F') }}"
+                                                    aria-label="{{ $ariaParts->implode(' — ') }}"
+                                                    {{-- overflow-hidden is structural, not decorative: without it a child
+                                                         wider than the square simply hangs over the neighbouring day, which
+                                                         is exactly how the phone layout broke. Clipping makes that a visible
+                                                         crop instead of a silent overlap. --}}
+                                                    class="group relative aspect-square rounded-lg sm:rounded-2xl border grid place-items-center
+                                                           overflow-hidden transition-all duration-200 ease-out
+                                                           focus:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2 focus-visible:ring-offset-surface
+                                                           {{ $hasTrips ? 'hover:border-moss hover:shadow-md hover:-translate-y-0.5' : 'hover:border-moss/50 hover:bg-moss/10' }}
                                                            {{ $day['isToday'] ? 'ring-2 ring-pine border-transparent' : '' }}
-                                                           {{ $selectedDate === $iso ? 'border-moss bg-moss/12' : ($day['holiday'] ? 'border-amber/45 bg-amber/[.13]' : ($day['isWeekend'] ? 'border-moss/55 bg-moss/[.10]' : 'border-ink/[.07] '.($day['inMonth'] ? 'bg-ink/[.015]' : 'bg-transparent'))) }}">
-                                                <span class="text-[11px] sm:text-xs {{ $day['isWeekend'] || $day['holiday'] ? 'font-bold' : 'font-semibold' }}
-                                                             {{ $day['inMonth'] ? ($day['holiday'] ? 'text-ink' : ($day['isWeekend'] ? 'text-pine' : 'text-ink/40')) : 'text-ink/15' }}">
-                                                    {{ $day['date']->day }}
-                                                </span>
+                                                           {{ $edge }} {{ $tint }}">
+                                                @if($hasTrips)
+                                                    {{--
+                                                        Two compositions, because a phone cell is 44px square.
+
+                                                        The wide one — date, type badges, a stack of covers, a label — was
+                                                        measured at 52px of badges alone in a 44px box, so it hung outside
+                                                        the cell and over its neighbour. Below `sm` the same facts are
+                                                        stacked instead of arranged: date, one cover, and a count when
+                                                        there is more than one. The kinds of trip are one tap away in the
+                                                        day sheet, which is where a phone was always going to read them.
+                                                    --}}
+                                                    @php($types = $day['types'])
+
+                                                    {{-- ── phone ── --}}
+                                                    <span class="sm:hidden flex flex-col items-center justify-center gap-0.5 w-full px-1">
+                                                        <span class="text-[10px] font-bold leading-none {{ $day['inMonth'] ? 'text-pine' : 'text-ink/25' }}">{{ $day['date']->day }}</span>
+                                                        @if($day['covers'])
+                                                            <img src="{{ $day['covers'][0]['url'] }}" alt="" loading="lazy"
+                                                                 class="w-4 h-4 rounded object-cover ring-1 ring-surface shadow-sm">
+                                                        @endif
+                                                    </span>
+                                                    @if($day['available'] > 1)
+                                                        <span class="sm:hidden absolute top-0.5 right-0.5 grid place-items-center
+                                                                     min-w-[0.85rem] h-3.5 px-0.5 rounded-full ring-1 ring-surface
+                                                                     bg-pine text-cream text-[8px] font-bold leading-none"
+                                                              aria-hidden="true">{{ $day['available'] }}</span>
+                                                    @endif
+
+                                                    {{-- ── sm and up ── --}}
+                                                    <span class="hidden sm:block absolute top-1.5 left-2 text-xs font-bold
+                                                                 {{ $day['inMonth'] ? 'text-pine' : 'text-ink/25' }}">{{ $day['date']->day }}</span>
+
+                                                    {{--
+                                                        What kind of trips these are.
+
+                                                        A single kind gets its name spelled out, because there is room for
+                                                        one word and a word cannot be misread. A mixed day falls back to
+                                                        icons — three labels will not fit a calendar square — and each
+                                                        carries a title, with the full list on the button's aria-label so
+                                                        nothing depends on recognising a glyph.
+                                                    --}}
+                                                    <span class="hidden sm:flex absolute top-1.5 right-1.5 items-center gap-1">
+                                                        @if(count($types) === 1)
+                                                            <span class="inline-flex items-center gap-1 rounded-lg bg-pine text-cream
+                                                                         px-1.5 h-5 ring-2 ring-surface"
+                                                                  title="{{ $types[0]['label'] }} trip">
+                                                                <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $types[0]['icon'] }}"/></svg>
+                                                                <span class="text-[9px] font-bold leading-none pr-0.5">{{ $types[0]['label'] }}</span>
+                                                            </span>
+                                                        @else
+                                                            @foreach(array_slice($types, 0, 3) as $type)
+                                                                <span class="grid place-items-center w-5 h-5 rounded-lg
+                                                                             bg-pine text-cream ring-2 ring-surface"
+                                                                      title="{{ $type['label'] }} trip">
+                                                                    <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $type['icon'] }}"/></svg>
+                                                                </span>
+                                                            @endforeach
+                                                        @endif
+                                                    </span>
+
+                                                    <span class="hidden sm:flex items-center -space-x-2" aria-hidden="true">
+                                                        @foreach($day['covers'] as $cover)
+                                                            <img src="{{ $cover['url'] }}" alt="" loading="lazy"
+                                                                 class="w-8 h-8 rounded-lg object-cover ring-2 ring-surface shadow-sm
+                                                                        transition-transform duration-200 group-hover:scale-105">
+                                                        @endforeach
+                                                        @if($day['available'] > count($day['covers']))
+                                                            <span class="grid place-items-center w-8 h-8 rounded-lg
+                                                                         ring-2 ring-surface bg-pine text-cream text-[10px] font-bold">
+                                                                +{{ $day['available'] - count($day['covers']) }}
+                                                            </span>
+                                                        @endif
+                                                    </span>
+
+                                                    {{-- pine, not moss: measured, moss text on the dark end of the moss fill
+                                                         is 2.99:1 and this is 9px bold, which is small text. pine is 6.44:1. --}}
+                                                    <span class="absolute bottom-1 inset-x-1 hidden sm:block text-[9px] leading-tight font-bold text-pine truncate">
+                                                        {{ $day['available'] }} {{ \Illuminate\Support\Str::plural('trip', $day['available']) }} to join
+                                                    </span>
+                                                @else
+                                                    <span class="text-[11px] sm:text-xs
+                                                                 {{ $day['isWeekend'] || $day['holiday'] ? 'font-bold' : 'font-semibold' }}
+                                                                 {{ $day['inMonth'] ? ($day['holiday'] ? 'text-ink' : ($day['isWeekend'] ? 'text-pine' : 'text-ink/40')) : 'text-ink/15' }}">
+                                                        {{ $day['date']->day }}
+                                                    </span>
+                                                @endif
+
                                                 @if($day['holiday'])
-                                                    <span class="absolute bottom-1 inset-x-1 hidden sm:block text-[9px] leading-tight text-ink/70 font-semibold truncate">{{ $day['holiday'] }}</span>
+                                                    {{-- A joinable day is already using this line for its own label, and the
+                                                         holiday name reaches a screen reader through aria-label regardless. --}}
+                                                    @unless($hasTrips)
+                                                        <span class="absolute bottom-1 inset-x-1 hidden sm:block text-[9px] leading-tight text-ink/70 font-semibold truncate">{{ $day['holiday'] }}</span>
+                                                    @endunless
                                                     <span class="sm:hidden absolute bottom-1 w-1 h-1 rounded-full bg-amber" aria-hidden="true"></span>
                                                 @endif
+
                                             </button>
                                         @endif
                                     @endforeach
@@ -297,42 +447,7 @@
                             @endforeach
                         </div>
 
-                        {{-- Phone: a 48px cell has no room for a title, so the tapped day is listed here. --}}
-                        {{-- What the tapped free day has on offer. Shown at every width, unlike the phone-only
-                             booking list below: on a laptop this is the answer to clicking an empty square. --}}
-                        @if($selectedDate !== '' && $selectedBookings->isEmpty())
-                            <div class="border-t border-ink/8 p-4" dusk="cal-free-panel">
-                                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-3">
-                                    <p class="font-semibold">{{ \Illuminate\Support\Carbon::parse($selectedDate)->format('D j F Y') }}</p>
-                                    @if($selectedHoliday)
-                                        <span class="rounded-full bg-amber/15 text-amber px-2.5 py-0.5 text-xs font-bold">{{ $selectedHoliday }}</span>
-                                    @endif
-                                    @if(\Illuminate\Support\Carbon::parse($selectedDate)->isWeekend())
-                                        <span class="rounded-full bg-moss/15 text-pine px-2.5 py-0.5 text-xs font-bold">Weekend</span>
-                                    @endif
-                                </div>
-
-                                @if($availableOnDate->isNotEmpty())
-                                    <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                                        @foreach($availableOnDate as $dep)
-                                            <a href="{{ route('trips.show', $dep->trip) }}" wire:navigate
-                                               class="flex items-center gap-3 rounded-xl border border-ink/10 p-2.5 hover:border-moss transition-colors">
-                                                <img src="{{ $dep->trip->cover_url }}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0">
-                                                <span class="min-w-0 flex-1">
-                                                    <span class="block font-semibold text-sm truncate">{{ $dep->trip->title }}</span>
-                                                    <span class="block text-xs text-ink/60">{{ $dep->trip->host->name }} · {{ $dep->spotsLeft() }} {{ \Illuminate\Support\Str::plural('seat', $dep->spotsLeft()) }} left</span>
-                                                </span>
-                                            </a>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <p class="text-sm text-ink/60">
-                                        Nothing leaves on this day yet.
-                                        <a href="{{ route('trips.index') }}" wire:navigate class="font-semibold text-moss hover:underline">Browse every trip</a>
-                                    </p>
-                                @endif
-                            </div>
-                        @endif
+                        {{-- the tapped free day opens as a sheet — see the bottom of this file --}}
                         @if($selectedBookings->isNotEmpty())
                             <div class="sm:hidden border-t border-ink/8 p-3 space-y-2" dusk="cal-day-list">
                                 @foreach($selectedBookings as $r)
@@ -405,4 +520,149 @@
         @endif
         </div>
     </div>
+
+{{--
+    ═══ DAY SHEET ═══
+
+    Clicking an empty square used to push a panel into the calendar card, which shoved the whole
+    grid down the page — the thing you were looking at moved because you asked a question about it.
+    A sheet answers over the top and leaves the calendar where it was.
+
+    Rendered only while open, rather than hidden with CSS, so "is the day sheet showing" stays a
+    fact about the HTML that a test can check rather than a class on a permanent element.
+--}}
+@if($dayOpen && $selectedDate !== '' && $selectedBookings->isEmpty())
+    @php($sheetDate = \Illuminate\Support\Carbon::parse($selectedDate))
+    <div
+        x-data="{ shown: false }"
+        x-init="$nextTick(() => shown = true)"
+        {{-- Livewire inserts this element already "open", so an x-show that starts true would
+             never animate. Flipping shown on the next tick gives the enter transition something
+             to transition from. Leaving runs the reverse first, then tells the server. --}}
+        x-on:keydown.escape.window="shown = false; setTimeout(() => $wire.closeDay(), 150)"
+        x-effect="document.body.classList.toggle('overflow-hidden', shown)"
+        x-on:livewire:navigating.window="document.body.classList.remove('overflow-hidden')"
+        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+        role="dialog" aria-modal="true" aria-labelledby="day-sheet-title" dusk="cal-free-panel">
+
+        <div x-show="shown" x-transition.opacity.duration.200ms
+             @click="shown = false; setTimeout(() => $wire.closeDay(), 150)"
+             class="absolute inset-0 bg-ink/50 backdrop-blur-[3px]" aria-hidden="true"></div>
+
+        {{-- A bottom sheet on a phone and a centred dialog from `sm`: the same content, reachable
+             by thumb on one and out of the way of the calendar on the other. --}}
+        <div x-show="shown"
+             x-transition:enter="transition ease-[cubic-bezier(.2,.8,.2,1)] duration-300"
+             x-transition:enter-start="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+             x-transition:leave-end="opacity-0 translate-y-8 sm:translate-y-0 sm:scale-95"
+             class="relative w-full sm:max-w-3xl max-h-[88dvh] sm:max-h-[85dvh] flex flex-col
+                    bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl sm:m-6 overflow-hidden">
+
+            {{-- grab handle, phone only --}}
+            <div class="sm:hidden pt-3 pb-1 flex justify-center shrink-0" aria-hidden="true">
+                <span class="w-10 h-1 rounded-full bg-ink/15"></span>
+            </div>
+
+            <div class="flex items-start gap-4 px-5 sm:px-6 pt-4 sm:pt-6 pb-4 shrink-0">
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-moss mb-1">
+                        {{ $availableTotal > 0 ? 'Trips leaving' : 'Nothing leaving' }}
+                    </p>
+                    <h2 id="day-sheet-title" class="font-serif font-semibold text-2xl leading-tight">
+                        {{ $sheetDate->format('l j F') }}
+                    </h2>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                        @if($selectedHoliday)
+                            <span class="rounded-full bg-amber/15 text-ink px-2.5 py-0.5 text-xs font-bold">{{ $selectedHoliday }}</span>
+                        @endif
+                        @if($sheetDate->isWeekend())
+                            <span class="rounded-full bg-moss/15 text-pine px-2.5 py-0.5 text-xs font-bold">Weekend</span>
+                        @endif
+                        <span class="text-xs text-ink/50">{{ $sheetDate->diffForHumans(['parts' => 1]) }}</span>
+                    </div>
+                </div>
+
+                <button type="button" x-ref="close" data-autofocus
+                        @click="shown = false; setTimeout(() => $wire.closeDay(), 150)"
+                        aria-label="Close" dusk="cal-free-close"
+                        class="shrink-0 grid place-items-center w-10 h-10 rounded-full text-ink/50
+                               hover:bg-ink/5 hover:text-ink transition-colors">
+                    <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+
+            <div class="px-5 sm:px-6 pb-5 sm:pb-6 overflow-y-auto">
+                @if($availableOnDate->isNotEmpty())
+                    @php($cur = fn ($trip) => ($trip->host->hostProfile?->currency ?? 'PHP'))
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        @foreach($availableOnDate as $dep)
+                            @php($seats = $dep->capacity - (int) ($dep->seats_held ?? 0))
+                            <a href="{{ route('trips.show', $dep->trip) }}" wire:navigate
+                               class="group rounded-2xl border border-ink/10 overflow-hidden bg-canvas
+                                      hover:border-moss hover:shadow-md transition-all duration-200">
+                                <span class="block relative aspect-[16/9] overflow-hidden">
+                                    <img src="{{ $dep->trip->cover_url }}" alt="" loading="lazy"
+                                         class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-105">
+                                    <span class="absolute inset-0 bg-gradient-to-t from-ink/60 to-transparent"></span>
+                                    @if($seats <= 3)
+                                        <span class="absolute top-2 right-2 rounded-full bg-terra text-cream px-2 py-0.5 text-[10px] font-bold">
+                                            {{ $seats }} left
+                                        </span>
+                                    @endif
+                                    @if($label = \App\Support\PlaceCategories::label($dep->trip->place?->category))
+                                        {{-- Same vocabulary as the badge on the square that opened this sheet. --}}
+                                        <span class="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full glass-dark px-2 py-1 text-[10px] font-bold text-cream">
+                                            <svg viewBox="0 0 24 24" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ \App\Support\PlaceCategories::icon($dep->trip->place?->category) }}"/></svg>
+                                            {{ $label }}
+                                        </span>
+                                    @endif
+                                    <span class="absolute bottom-2 left-3 right-3 block text-cream font-semibold text-sm leading-tight truncate">
+                                        {{ $dep->trip->title }}
+                                    </span>
+                                </span>
+                                <span class="flex items-center justify-between gap-3 px-3 py-2.5">
+                                    <span class="min-w-0 text-xs text-ink/60 truncate">
+                                        {{ $dep->trip->host->name }}@if($dep->trip->place) · {{ $dep->trip->place->name }}@endif
+                                    </span>
+                                    <span class="shrink-0 text-sm font-serif font-semibold">
+                                        {{ $cur($dep->trip) }} {{ number_format($dep->trip->current_price) }}
+                                    </span>
+                                </span>
+                            </a>
+                        @endforeach
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-ink/8">
+                        <p class="text-xs text-ink/55">
+                            @if($availableTotal > $availableOnDate->count())
+                                Showing {{ $availableOnDate->count() }} of {{ $availableTotal }} trips leaving this day.
+                            @else
+                                {{ $availableTotal }} {{ \Illuminate\Support\Str::plural('trip', $availableTotal) }} leaving this day.
+                            @endif
+                        </p>
+                        <a href="{{ route('trips.index') }}" wire:navigate
+                           class="text-sm font-semibold text-moss hover:underline">Browse every trip →</a>
+                    </div>
+                @else
+                    <div class="text-center py-10">
+                        <span class="grid place-items-center w-14 h-14 mx-auto rounded-full bg-ink/[.04] text-ink/25 mb-4">
+                            <x-icon.calendar class="w-6 h-6" />
+                        </span>
+                        <p class="font-semibold mb-1">Nothing leaves on this day yet</p>
+                        <p class="text-sm text-ink/60 mb-5 max-w-xs mx-auto">
+                            Hosts add departures all the time — try a nearby weekend, or see what else is going.
+                        </p>
+                        <a href="{{ route('trips.index') }}" wire:navigate
+                           class="inline-flex items-center rounded-full bg-pine text-cream px-6 min-h-[44px] font-semibold hover:bg-pine/90 transition-colors">
+                            Browse every trip
+                        </a>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+@endif
 </div>

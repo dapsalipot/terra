@@ -15,7 +15,12 @@ class Trip extends Model
 
     protected function casts(): array
     {
-        return ['inclusions' => 'array', 'price' => 'decimal:2', 'deposit_amount' => 'decimal:2'];
+        return [
+            'inclusions' => 'array',
+            'packing_items' => 'array',
+            'price' => 'decimal:2',
+            'deposit_amount' => 'decimal:2',
+        ];
     }
 
     public function getSlugOptions(): SlugOptions

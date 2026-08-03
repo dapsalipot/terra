@@ -374,6 +374,62 @@ it('answers an empty day with what leaves that day', function () {
         ->assertSeeHtml('dusk="cal-free-panel"');
 });
 
+/*
+ * The sheet must stay shut until someone asks for it.
+ *
+ * render() seeds selectedDate with the next booked day so the grid has something highlighted, so
+ * a sheet keyed off the date alone would fly open on page load. dayOpen is the separate flag that
+ * stops that, and this is the test that would catch it being collapsed back into one.
+ */
+it('does not open the day sheet on page load', function () {
+    $user = joiner();
+    $free = now()->addMonth()->startOfMonth()->addDays(14);
+
+    $trip = Trip::factory()->create(['status' => 'published', 'title' => 'Siargao Surf']);
+    TripDeparture::factory()->create([
+        'trip_id' => $trip->id, 'starts_at' => $free, 'capacity' => 8, 'status' => 'open',
+    ]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $free->format('Y-m'))
+        ->assertSet('dayOpen', false)
+        ->assertDontSeeHtml('dusk="cal-free-panel"');
+});
+
+it('closes the day sheet on request', function () {
+    $user = joiner();
+    $free = now()->addMonth()->startOfMonth()->addDays(14);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $free->format('Y-m'))
+        ->call('selectDate', $free->toDateString())
+        ->assertSeeHtml('dusk="cal-free-panel"')
+        ->call('closeDay')
+        ->assertSet('dayOpen', false)
+        ->assertDontSeeHtml('dusk="cal-free-panel"');
+});
+
+/*
+ * Paging the month while the sheet is open would leave it describing a date that is no longer on
+ * screen — the calendar behind it would have moved on without it.
+ */
+it('closes the day sheet when the month changes', function () {
+    $user = joiner();
+    $free = now()->addMonth()->startOfMonth()->addDays(14);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $free->format('Y-m'))
+        ->call('selectDate', $free->toDateString())
+        ->assertSet('dayOpen', true)
+        ->call('shiftMonth', 1)
+        ->assertSet('dayOpen', false);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('selectDate', $free->toDateString())
+        ->call('today')
+        ->assertSet('dayOpen', false);
+});
+
 it('keeps a free day selected instead of snapping back to a booked one', function () {
     // render() used to reset the selection whenever the chosen day held no booking, which made
     // picking a free square impossible — a free day is by definition absent from that lookup.
@@ -673,4 +729,139 @@ it('shows exactly one empty state in each view', function () {
 
         expect(substr_count($html, 'No trips booked yet'))->toBe(1);
     }
+});
+
+// ────────────────────────────────────── availability indicator on the grid
+
+it('counts joinable trips on each free day', function () {
+    $user = joiner();
+    $day = now()->addMonth()->startOfMonth()->addDays(14);
+
+    foreach (['Surf Trip', 'Ridge Hike'] as $title) {
+        $trip = Trip::factory()->create(['status' => 'published', 'title' => $title]);
+        TripDeparture::factory()->create([
+            'trip_id' => $trip->id, 'starts_at' => $day, 'capacity' => 8, 'status' => 'open',
+        ]);
+    }
+
+    $weeks = Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $day->format('Y-m'))
+        ->viewData('weeks')->flatten(1);
+
+    $cell = $weeks->firstWhere(fn ($d) => $d['date']->toDateString() === $day->toDateString());
+
+    expect($cell['available'])->toBe(2);
+});
+
+it('does not count a trip the joiner has already booked', function () {
+    $user = joiner();
+    $r = bookingFor($user, [], ['starts_at' => now()->addMonth()->startOfMonth()->addDays(9)]);
+    $day = $r->departure->starts_at;
+
+    $weeks = Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $day->format('Y-m'))
+        ->viewData('weeks')->flatten(1);
+
+    $cell = $weeks->firstWhere(fn ($d) => $d['date']->toDateString() === $day->toDateString());
+
+    expect($cell['available'])->toBe(0);
+});
+
+it('does not count a sold-out departure', function () {
+    $user = joiner();
+    $day = now()->addMonth()->startOfMonth()->addDays(14);
+
+    $trip = Trip::factory()->create(['status' => 'published', 'title' => 'Sold Out']);
+    $dep = TripDeparture::factory()->create([
+        'trip_id' => $trip->id, 'starts_at' => $day, 'capacity' => 2, 'status' => 'open',
+    ]);
+    Reservation::factory()->create([
+        'trip_departure_id' => $dep->id, 'party_size' => 2, 'status' => 'confirmed',
+        'joiner_id' => joiner()->id,
+    ]);
+
+    $weeks = Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $day->format('Y-m'))
+        ->viewData('weeks')->flatten(1);
+
+    $cell = $weeks->firstWhere(fn ($d) => $d['date']->toDateString() === $day->toDateString());
+
+    expect($cell['available'])->toBe(0);
+});
+
+it('shows the count on the day square and in its accessible name', function () {
+    $user = joiner();
+    $day = now()->addMonth()->startOfMonth()->addDays(14);
+
+    $trip = Trip::factory()->create(['status' => 'published']);
+    TripDeparture::factory()->create([
+        'trip_id' => $trip->id, 'starts_at' => $day, 'capacity' => 8, 'status' => 'open',
+    ]);
+
+    // The badge is aria-hidden, so the count has to reach a screen reader through the label.
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $day->format('Y-m'))
+        ->assertSeeHtml('1 trip leaving this day');
+});
+
+it('says so when nothing leaves that day', function () {
+    $user = joiner();
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->assertSeeHtml('no trips leaving this day');
+});
+
+/*
+ * ── Trip type badges ─────────────────────────────────────────────────────────────────────
+ */
+
+it('names the single kind of trip leaving on a day', function () {
+    $user = joiner();
+    $free = now()->addMonth()->startOfMonth()->addDays(12);
+    $place = \App\Models\Place::factory()->create(['category' => 'hike']);
+
+    $trip = Trip::factory()->create(['status' => 'published', 'place_id' => $place->id]);
+    TripDeparture::factory()->create([
+        'trip_id' => $trip->id, 'starts_at' => $free, 'capacity' => 8, 'status' => 'open',
+    ]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $free->format('Y-m'))
+        // Spelled out, because one word fits and a word cannot be misread.
+        ->assertSee('Hike')
+        ->assertSee('leaving this day — Hike');
+});
+
+/*
+ * Catalog order, not creation order: the same mix of trips has to draw the same row of badges
+ * every time, or the calendar reshuffles itself between renders for no reason a user can see.
+ */
+it('lists mixed trip kinds in catalog order', function () {
+    $user = joiner();
+    $free = now()->addMonth()->startOfMonth()->addDays(12);
+
+    // created surf-first, but 'hike' comes first in the catalog
+    foreach (['surf', 'hike'] as $category) {
+        $place = \App\Models\Place::factory()->create(['category' => $category]);
+        $trip = Trip::factory()->create(['status' => 'published', 'place_id' => $place->id]);
+        TripDeparture::factory()->create([
+            'trip_id' => $trip->id, 'starts_at' => $free, 'capacity' => 8, 'status' => 'open',
+        ]);
+    }
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->set('month', $free->format('Y-m'))
+        ->assertSee('leaving this day — Hike, Surf');
+});
+
+it('does not repeat a badge when several trips share a kind', function () {
+    $place = \App\Models\Place::factory()->create(['category' => 'island']);
+
+    expect(\App\Support\PlaceCategories::resolve(['island', 'island', 'island']))
+        ->toHaveCount(1);
+});
+
+it('draws no badge for a category the catalog does not know', function () {
+    expect(\App\Support\PlaceCategories::resolve(['spelunking', null]))->toBe([])
+        ->and(\App\Support\PlaceCategories::label('spelunking'))->toBeNull();
 });

@@ -34,6 +34,16 @@ class Create extends Component
         ['label' => 'Permits', 'note' => '', 'image' => null],
         ['label' => 'Guide', 'note' => '', 'image' => null],
     ];
+    /**
+     * What joiners should bring, as keys from App\Support\PackingItems.
+     *
+     * Allow-listed rather than free text for the same reason trail features are: one vocabulary
+     * across every trip, so "headlamp" is never also "head lamp" and "flashlight".
+     *
+     * @var array<int, string>
+     */
+    public array $packing = [];
+
     public $cover = null;
     /** @var array uploaded carousel photos */
     public array $photos = [];
@@ -476,6 +486,26 @@ class Create extends Component
             && Place::whereIn('id', $ids)->where('category', 'hike')->exists();
     }
 
+    /**
+     * Toggle a packing item.
+     *
+     * Silently ignores a key that is not in the catalog. The method is reachable from the browser
+     * whatever the markup renders, and an unknown key would be stored and then quietly dropped by
+     * PackingItems::resolve() — a host would see it save and never appear again.
+     */
+    public function togglePacking(string $key): void
+    {
+        if (! in_array($key, \App\Support\PackingItems::keys(), true)) {
+            return;
+        }
+
+        $this->packing = in_array($key, $this->packing, true)
+            ? array_values(array_diff($this->packing, [$key]))
+            : [...$this->packing, $key];
+
+        $this->saveDraft();
+    }
+
     public function toggleFeature(int $placeId, string $key): void
     {
         $this->hikes[$placeId] ??= self::BLANK_HIKE;
@@ -617,6 +647,9 @@ class Create extends Component
                 'meetup_point' => $meetups[0]['label'] ?? null,
                 'price' => $this->price,
                 'deposit_amount' => $this->deposit !== '' ? $this->deposit : null,
+                // Re-filtered through the catalog on the way in as well as the way out, so a
+                // retired key cannot survive in the column after the catalog has moved on.
+                'packing_items' => array_values(array_intersect($this->packing, \App\Support\PackingItems::keys())) ?: null,
                 'status' => 'published',
             ]);
 
@@ -760,7 +793,7 @@ class Create extends Component
     // meaningfully restored into a fresh browser session.
     private const DRAFT_FIELDS = [
         'destinations', 'title', 'description',
-        'inclusions', 'hikes', 'meetups', 'dropoffs', 'departures', 'price', 'priceTiers', 'deposit',
+        'inclusions', 'packing', 'hikes', 'meetups', 'dropoffs', 'departures', 'price', 'priceTiers', 'deposit',
     ];
 
     public bool $draftRestored = false;
@@ -885,6 +918,11 @@ class Create extends Component
         $this->inclusions = $trip->inclusionItems
             ->map(fn ($c) => ['label' => $c->label, 'note' => (string) $c->note, 'image' => $c->image])
             ->all() ?: $this->inclusions;
+
+        $this->packing = array_values(array_intersect(
+            (array) ($trip->packing_items ?? []),
+            \App\Support\PackingItems::keys(),
+        ));
 
         // Photos come across as storage paths, not uploads. The upload component previews
         // them, and publish() copies the file rather than sharing it, so deleting one
