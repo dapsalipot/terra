@@ -11,6 +11,7 @@ use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\CheckInService;
 use App\Services\ReservationService;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 function passBooking(array $overrides = []): array
@@ -147,4 +148,124 @@ it('has no pass page before one is issued', function () {
     [, $reservation] = passBooking();
 
     $this->get(route('reservations.pass', ['token' => $reservation->public_token]))->assertNotFound();
+});
+
+// ──────────────────────────────────────────── group bookings · a tab per traveller
+
+/** A paid group booking, optionally with one traveller added after the money landed. */
+function groupPasses(int $party = 3, bool $addLatecomer = false): array
+{
+    [$host, $reservation, , $departure] = passBooking(['party_size' => $party]);
+
+    for ($i = 1; $i < $party; $i++) {
+        ReservationParticipant::factory()->for($reservation)->create([
+            'position' => $i, 'first_name' => 'Trav'.$i, 'last_name' => 'Cruz', 'birthday' => '1996-03-03',
+        ]);
+    }
+
+    app(ReservationService::class)->markFullyPaid($reservation->fresh(), $host);
+
+    $latecomer = null;
+    if ($addLatecomer) {
+        // Added after the host tagged the money as in, so issueFor() has already run and this
+        // one carries no pass until it runs again.
+        $latecomer = ReservationParticipant::factory()->for($reservation)->create([
+            'position' => $party, 'first_name' => 'Nina', 'last_name' => 'Diaz', 'birthday' => '1994-08-08',
+        ]);
+    }
+
+    return [$host, $reservation->fresh(), $latecomer, $departure];
+}
+
+it('gives a group one tab per traveller, showing one pass at a time', function () {
+    [, $reservation] = groupPasses(3);
+
+    $html = Livewire::test(Show::class, ['token' => $reservation->public_token])->html();
+
+    // Three names in the strip, one pass panel — not three stacked QR codes.
+    foreach ($reservation->participants as $p) {
+        expect($html)->toContain('dusk="pass-tab-'.$p->id.'"');
+    }
+    expect(substr_count($html, 'dusk="pass-'.$reservation->participants[0]->id.'"'))->toBe(1);
+});
+
+it('shows a traveller with no pass yet, but refuses to open them', function () {
+    [, $reservation, $latecomer] = groupPasses(2, addLatecomer: true);
+
+    $page = Livewire::test(Show::class, ['token' => $reservation->public_token]);
+    $html = $page->html();
+
+    /*
+     * They are on the trip, so they are in the strip — dropping them would read as "not coming".
+     * What they do not have is a pass, and the tab says so rather than opening an empty panel.
+     */
+    expect($html)->toContain('dusk="pass-tab-'.$latecomer->id.'"')
+        ->and($html)->toContain('Nina')
+        ->and($html)->toContain('no pass yet');
+
+    /*
+     * And the control is genuinely inert, not merely styled grey. Slicing the whole <button>
+     * rather than from the dusk attribute onward: `disabled` is written before it in the
+     * markup, so an "after the marker" slice looks in the wrong half of the element.
+     */
+    $upto = Str::before($html, 'dusk="pass-tab-'.$latecomer->id.'"');
+    $tab = Str::afterLast($upto, '<button');
+
+    expect($tab)->toContain('disabled')
+        ->and($tab)->toContain('aria-disabled="true"')
+        // No wire:click at all — a disabled attribute the server does not honour is decoration.
+        ->and($tab)->not->toContain('wire:click');
+});
+
+it('will not switch to a traveller who has no pass, however the request arrives', function () {
+    [, $reservation, $latecomer] = groupPasses(2, addLatecomer: true);
+
+    // The method is reachable from the browser whatever the markup renders, so `disabled` is
+    // decoration until the server says no too.
+    $page = Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('setPassTab', $latecomer->id);
+
+    expect($page->get('passTab'))->toBeNull()
+        // Still showing a real pass rather than an empty panel.
+        ->and($page->html())->toContain($reservation->participants->first()->pass_code);
+});
+
+it('switches to the traveller asked for', function () {
+    [, $reservation] = groupPasses(3);
+    $second = $reservation->participants[1];
+
+    $page = Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('setPassTab', $second->id);
+
+    expect($page->get('passTab'))->toBe($second->id)
+        ->and($page->html())->toContain($second->pass_code)
+        ->and($page->html())->not->toContain($reservation->participants->first()->pass_code);
+});
+
+it('falls back when the remembered traveller loses their pass', function () {
+    [$host, $reservation] = groupPasses(2);
+    $second = $reservation->participants[1];
+
+    $page = Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->call('setPassTab', $second->id);
+
+    // The host takes the fully-paid tag back, which revokes every pass and re-issues none.
+    app(ReservationService::class)->unmarkFullyPaid($reservation->fresh());
+
+    // No passes at all now, so the section goes away rather than rendering a panel around a null.
+    $html = Livewire::test(Show::class, ['token' => $reservation->public_token])->html();
+    expect($html)->not->toContain('dusk="pass-section"');
+
+    unset($host, $page);
+});
+
+it('leaves a solo booking without a tab strip', function () {
+    // One traveller, one pass. A tab strip of one is a control that does nothing.
+    [$host, $reservation] = passBooking();
+    app(ReservationService::class)->markFullyPaid($reservation, $host);
+
+    $html = Livewire::test(Show::class, ['token' => $reservation->fresh()->public_token])->html();
+
+    expect($html)->toContain('dusk="pass-section"')
+        ->and($html)->not->toContain('dusk="pass-tabs"');
 });

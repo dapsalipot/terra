@@ -100,28 +100,64 @@ class PassCheckInFlowTest extends DuskTestCase
         });
     }
 
-    public function test_a_party_gets_a_pass_each(): void
+    public function test_a_group_gets_a_tab_each_and_one_pass_at_a_time(): void
     {
-        [$host, $joiner, $reservation, $departure] = $this->paidBooking();
+        [$host, $joiner, $reservation] = $this->paidBooking();
 
-        // A second traveller on the same booking, paid at the same time.
         $second = ReservationParticipant::factory()->for($reservation)->create([
             'position' => 1, 'first_name' => 'Tala', 'last_name' => 'Cruz', 'birthday' => '2001-07-19',
         ]);
         $reservation->update(['party_size' => 2]);
         app(CheckInService::class)->issueFor($reservation->fresh());
 
-        $this->browse(function (Browser $browser) use ($joiner, $reservation, $second) {
+        $first = $reservation->participants()->first();
+
+        $this->browse(function (Browser $browser) use ($joiner, $reservation, $first, $second) {
             $browser->loginAs($joiner)
                 ->visit('/r/'.$reservation->public_token)
-                ->waitFor('@pass-section')
-                // Two people, two codes. One shared pass cannot check in two travellers.
-                ->assertVisible('@pass-'.$reservation->participants()->first()->id)
-                ->assertVisible('@pass-'.$second->id)
-                ->assertSee($second->fresh()->pass_code);
-
-            unset($host, $departure);
+                ->waitFor('@pass-tabs')
+                // Ada's pass is showing; Tala's is behind her tab rather than stacked below.
+                ->assertSee($first->fresh()->pass_code)
+                ->assertDontSee($second->fresh()->pass_code)
+                ->click('@pass-tab-'.$second->id)
+                ->waitForText($second->fresh()->pass_code)
+                // One pass at a time — the fifth person on a party of five should not scroll past
+                // four QR codes that are not theirs.
+                ->assertDontSee($first->fresh()->pass_code);
         });
+
+        unset($host);
+    }
+
+    public function test_a_traveller_with_no_pass_is_shown_but_cannot_be_opened(): void
+    {
+        [$host, $joiner, $reservation] = $this->paidBooking();
+
+        // Added after the host tagged the money as in, so issueFor() has already run.
+        $latecomer = ReservationParticipant::factory()->for($reservation)->create([
+            'position' => 1, 'first_name' => 'Nina', 'last_name' => 'Diaz', 'birthday' => '1994-08-08',
+        ]);
+        $reservation->update(['party_size' => 2]);
+
+        $this->browse(function (Browser $browser) use ($joiner, $reservation, $latecomer) {
+            $browser->loginAs($joiner)
+                ->visit('/r/'.$reservation->public_token)
+                ->waitFor('@pass-tabs')
+                // On the trip, so in the strip. Dropping them would read as "not coming".
+                ->assertSeeIn('@pass-tabs', 'Nina')
+                ->assertSeeIn('@pass-waiting', 'no pass yet');
+
+            $inert = $browser->script(
+                "const b = document.querySelector('[dusk=pass-tab-{$latecomer->id}]');
+                 return [b.disabled, b.getAttribute('aria-disabled'), b.hasAttribute('wire:click')]"
+            )[0];
+
+            $this->assertTrue($inert[0], 'The passless tab is clickable.');
+            $this->assertSame('true', $inert[1]);
+            $this->assertFalse($inert[2], 'The passless tab still carries a wire:click.');
+        });
+
+        unset($host);
     }
 
     public function test_the_host_checks_a_traveller_in_by_typing_the_code_and_cannot_do_it_twice(): void

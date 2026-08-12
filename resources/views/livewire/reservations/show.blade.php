@@ -691,12 +691,17 @@
             The dedicated /pass route stays: it prints cleanly and it is a link people save. Same
             component, so the two cannot drift.
         --}}
-        @php($passes = $reservation->participants->filter(fn ($p) => $p->pass_code)->values())
+        @php($travellers = $reservation->participants)
+        @php($passes = $travellers->filter(fn ($p) => $p->pass_code)->values())
+        {{-- Requested tab if it still holds a pass, else the first that does. A traveller can be
+             added to a paid booking and has no pass until the host re-issues, so the tab someone
+             was last on is not guaranteed to survive to the next render. --}}
+        @php($activePass = $passes->firstWhere('id', $passTab) ?: $passes->first())
         @if($passes->isNotEmpty())
             <section class="mb-6" dusk="pass-section">
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
                     <h2 class="marker text-[11px] font-semibold text-ink/70">
-                        {{ $passes->count() > 1 ? 'Check-in passes' : 'Your check-in pass' }}
+                        {{ $travellers->count() > 1 ? 'Check-in passes' : 'Your check-in pass' }}
                     </h2>
                     <a href="{{ route('reservations.pass', ['token' => $reservation->public_token]) }}" wire:navigate
                        dusk="open-pass"
@@ -706,13 +711,66 @@
                     </a>
                 </div>
 
-                {{-- One per traveller. Side by side from `sm` when there are several, because a
-                     party of four should not be four screens of scrolling to reach the last code. --}}
-                <div class="grid gap-4 {{ $passes->count() > 1 ? 'sm:grid-cols-2' : '' }}">
-                    @foreach($passes as $p)
-                        <x-check-in-pass :participant="$p" :reservation="$reservation" :compact="$passes->count() > 1" />
-                    @endforeach
-                </div>
+                {{--
+                    A tab per traveller, on a group booking.
+
+                    Side-by-side cards meant the fifth person on a party of five scrolled past four
+                    QR codes that were not theirs. One name, one pass.
+
+                    Everyone on the booking gets a tab, including anyone without a pass yet — a
+                    traveller added after the host tagged the money as in has none until it is
+                    re-issued. Dropping them from the strip would make them look like they are not
+                    on the trip; showing them disabled says the seat is real and the pass is not
+                    ready, which is the true thing.
+                --}}
+                @if($travellers->count() > 1)
+                    <div role="tablist" aria-label="Travellers" dusk="pass-tabs"
+                         class="flex gap-1 p-1 mb-3 rounded-2xl bg-ink/[.04] border border-ink/8 overflow-x-auto"
+                         x-data
+                         x-on:keydown.right.prevent="$el.querySelector('[aria-selected=true]')?.nextElementSibling?.focus()"
+                         x-on:keydown.left.prevent="$el.querySelector('[aria-selected=true]')?.previousElementSibling?.focus()">
+                        @foreach($travellers as $t)
+                            @php($ready = (bool) $t->pass_code)
+                            @php($isOn = $ready && $activePass && $t->id === $activePass->id)
+                            <button type="button"
+                                    @if($ready) wire:click="setPassTab({{ $t->id }})" @else disabled aria-disabled="true" @endif
+                                    role="tab" id="pass-tab-{{ $t->id }}" aria-controls="pass-panel-{{ $t->id }}"
+                                    aria-selected="{{ $isOn ? 'true' : 'false' }}"
+                                    tabindex="{{ $isOn ? '0' : '-1' }}"
+                                    dusk="pass-tab-{{ $t->id }}"
+                                    title="{{ $ready ? '' : 'No pass yet — your host issues it once the payment is recorded' }}"
+                                    class="flex-1 whitespace-nowrap rounded-xl px-3 min-h-[44px] text-[13px] font-semibold
+                                           inline-flex items-center justify-center gap-1.5 transition-colors
+                                           {{ $isOn ? 'bg-surface text-ink shadow-[0_1px_3px_rgba(31,28,21,.12)]' : '' }}
+                                           {{ $ready
+                                                ? ($isOn ? '' : 'text-ink/70 hover:text-ink')
+                                                : 'text-ink/45 cursor-not-allowed' }}">
+                                {{ $t->first_name ?: ($t->fullName() ?: 'Traveller '.($loop->index + 1)) }}
+                                @unless($ready)
+                                    {{-- A lock, not just a grey label: colour alone is not a state. --}}
+                                    <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                                    <span class="sr-only">— no pass yet</span>
+                                @endunless
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if($activePass)
+                    <div role="tabpanel" id="pass-panel-{{ $activePass->id }}"
+                         aria-labelledby="pass-tab-{{ $activePass->id }}" tabindex="0">
+                        <x-check-in-pass :participant="$activePass" :reservation="$reservation" />
+                    </div>
+                @endif
+
+                @php($waiting = $travellers->reject->pass_code)
+                @if($waiting->isNotEmpty())
+                    <p class="text-xs text-ink/70 mt-3" dusk="pass-waiting">
+                        {{ $waiting->count() }} {{ \Illuminate\Support\Str::plural('traveller', $waiting->count()) }}
+                        on this booking {{ $waiting->count() === 1 ? 'has' : 'have' }} no pass yet —
+                        {{ $host->name }} issues {{ $waiting->count() === 1 ? 'it' : 'them' }} once the payment is recorded.
+                    </p>
+                @endif
 
                 <p class="text-xs text-ink/70 mt-3">
                     Screenshot or print {{ $passes->count() > 1 ? 'them' : 'it' }} — the trailhead may have no signal.

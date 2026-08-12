@@ -36,6 +36,31 @@ class Show extends Component
     /** Whether the submitted-receipt sheet is open. Entangled for the same reason as $payOpen. */
     public bool $proofOpen = false;
 
+    /**
+     * Which traveller's check-in pass is showing.
+     *
+     * A party of five is five passes, and stacking them means the fifth person scrolls past four
+     * QR codes that are not theirs to find the one that is. Null means "the first one that
+     * exists" — resolved at render against the passes actually issued, because a traveller can
+     * be added to a paid booking and will not have one until the host re-issues.
+     */
+    public ?int $passTab = null;
+
+    /**
+     * Only names a traveller; whether they have a pass is checked here too.
+     *
+     * Guarded server-side rather than by disabling a button: the method is reachable from the
+     * browser whatever the markup renders, and selecting a passless traveller would render a tab
+     * panel built around a null code.
+     */
+    public function setPassTab(int $participantId): void
+    {
+        $valid = $this->reservation->participants
+            ->first(fn ($p) => $p->id === $participantId && $p->pass_code);
+
+        $this->passTab = $valid?->id;
+    }
+
     public $editingId = null;
 
     public bool $showEditModal = false;
