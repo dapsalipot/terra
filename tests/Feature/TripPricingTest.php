@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Host\Trips\Create;
+use App\Livewire\Trips\Show;
 use App\Models\HostProfile;
 use App\Models\Place;
 use App\Models\Trip;
@@ -83,7 +84,7 @@ it('falls back to the flat price when no window covers today', function () {
         'price' => '2500',
         'priceTiers' => [
             ['label' => 'Flash sale', 'amount' => '1500',
-             'starts_at' => now()->addMonth()->toDateString(), 'ends_at' => now()->addMonth()->addDays(3)->toDateString()],
+                'starts_at' => now()->addMonth()->toDateString(), 'ends_at' => now()->addMonth()->addDays(3)->toDateString()],
         ],
     ]);
 
@@ -205,7 +206,7 @@ it('shows the live rate and what is owed on the trip page', function () {
         ],
     ]);
 
-    Livewire::test(\App\Livewire\Trips\Show::class, ['trip' => $trip])
+    Livewire::test(Show::class, ['trip' => $trip])
         ->assertSee('2,000')                    // the live rate, not the flat price
         ->assertSee('Early bird')
         ->assertSee('then PHP 2,500')           // and what it becomes

@@ -342,7 +342,7 @@
                     <h2 class="font-serif font-semibold text-xl mb-4">Price</h2>
                     <x-money-input wire:model.live="price" :currency="$currency" dusk="trip-price" />
                     @error('price')<p class="text-terra text-sm mt-2">{{ $message }}</p>@enderror
-                    <p class="text-sm text-ink/65 mt-3">Per person. Joiners pay you directly — Peeps never holds the money.</p>
+                    <p class="text-sm text-ink/65 mt-3">Per person. Joiners pay you directly — Terra never holds the money.</p>
 
                     {{-- ── Price windows ──────────────────────────────────────────────
                          An early-bird rate that expires on its own beats one the host has
@@ -439,6 +439,68 @@
                         @endif
                     </div>
                 </section>
+
+                {{--
+                    When the money is due.
+
+                    Joiners pay only after you accept them onto the trip, so every deadline here is
+                    measured from that moment — or pinned to a date the whole group works to. Two
+                    payment types get their own clock because they answer different questions: the
+                    down payment is "are you serious", the balance is "are we going".
+                --}}
+                <section class="rounded-2xl border border-ink/10 bg-surface p-5 sm:p-6">
+                    <h2 class="font-serif font-semibold text-xl">Payment deadlines</h2>
+                    <p class="text-ink/65 text-sm mt-1 mb-5">
+                        Optional. Nobody is cancelled automatically — a late booking is flagged on your roster
+                        and you decide what to do about it.
+                    </p>
+
+                    <div class="space-y-5">
+                        @foreach([
+                            ['key' => 'downpayment', 'label' => 'Down payment due', 'show' => $deposit !== ''],
+                            ['key' => 'full', 'label' => $deposit !== '' ? 'Balance due' : 'Full payment due', 'show' => true],
+                        ] as $term)
+                            @continue(! $term['show'])
+                            @php($mode = $term['key'].'DueMode')
+                            @php($hours = $term['key'].'DueHours')
+                            @php($date = $term['key'].'DueDate')
+
+                            <div dusk="terms-{{ $term['key'] }}">
+                                <span class="field-label">{{ $term['label'] }}</span>
+
+                                <div class="flex flex-wrap gap-2 mt-1.5 mb-3">
+                                    @foreach(['none' => 'No deadline', 'relative' => 'After I confirm', 'fixed' => 'On a date'] as $value => $caption)
+                                        <button type="button" wire:click="$set('{{ $mode }}', '{{ $value }}')"
+                                                aria-pressed="{{ $this->$mode === $value ? 'true' : 'false' }}"
+                                                dusk="{{ $term['key'] }}-{{ $value }}"
+                                                class="rounded-xl px-4 min-h-[44px] text-sm font-semibold border transition-colors
+                                                       {{ $this->$mode === $value ? 'bg-moss text-cream border-moss' : 'border-ink/15 hover:border-ink/30' }}">{{ $caption }}</button>
+                                    @endforeach
+                                </div>
+
+                                @if($this->$mode === 'relative')
+                                    <label class="flex items-center gap-2 max-w-xs">
+                                        <input wire:model.live="{{ $hours }}" type="text" inputmode="numeric" placeholder="48"
+                                               dusk="{{ $term['key'] }}-hours" class="field w-24">
+                                        <span class="text-sm text-ink/70">hours after I confirm the seat</span>
+                                    </label>
+                                    @error($hours)<p class="text-terra text-sm mt-1">{{ $message }}</p>@enderror
+                                    @if(is_numeric($this->$hours) && (int) $this->$hours > 0)
+                                        <p class="text-sm text-ink/70 mt-2">
+                                            That's <b>{{ \App\Support\PaymentTerms::describeHours((int) $this->$hours) }}</b> from the moment you accept someone.
+                                        </p>
+                                    @endif
+                                @elseif($this->$mode === 'fixed')
+                                    <label class="block max-w-xs">
+                                        <input wire:model.live="{{ $date }}" type="date" dusk="{{ $term['key'] }}-date" class="field">
+                                    </label>
+                                    @error($date)<p class="text-terra text-sm mt-1">{{ $message }}</p>@enderror
+                                    <p class="text-sm text-ink/70 mt-2">Everyone on this trip works to the same date.</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
             </div>
 
             <div class="flex gap-3 mt-7">
@@ -519,7 +581,22 @@
                     </div>
                 @endforeach
 
-                <p class="text-sm text-ink/55" dusk="packing-count">
+                {{-- A permit-controlled climb needs an ID from every head; a beach day does not.
+                     Off by default, because asking a stranger for their passport when the trip
+                     does not need one is a cost with no benefit. --}}
+                <label class="flex items-start gap-3 rounded-2xl border border-ink/12 p-4 mt-5 cursor-pointer hover:border-ink/25 transition-colors">
+                    <input type="checkbox" wire:model="requiresId" dusk="requires-id"
+                           class="mt-0.5 rounded border-ink/25 text-pine focus:ring-pine">
+                    <span class="text-sm">
+                        <span class="block font-semibold">Require a photo ID from every traveller</span>
+                        <span class="block text-ink/60 mt-0.5">
+                            Joiners upload one when they register, and you see them on the roster.
+                            Turn this on for permits, boat manifests or anywhere names are checked.
+                        </span>
+                    </span>
+                </label>
+
+                <p class="text-sm text-ink/55 mt-4" dusk="packing-count">
                     {{ count($packing) }} {{ \Illuminate\Support\Str::plural('item', count($packing)) }} selected.
                     @if(count($packing) === 0) Optional, but joiners turn up better prepared when it is filled in. @endif
                 </p>

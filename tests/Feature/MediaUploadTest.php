@@ -1,5 +1,7 @@
 <?php
 
+use App\Livewire\Host\Trips\Create;
+use App\Livewire\Reservations\Show;
 use App\Models\HostProfile;
 use App\Models\Place;
 use App\Models\Reservation;
@@ -17,7 +19,7 @@ it('stores a trip cover on the public disk via the wizard', function () {
     $place = Place::factory()->create();
 
     Livewire::actingAs($host)
-        ->test(\App\Livewire\Host\Trips\Create::class)
+        ->test(Create::class)
         ->call('addDestination', $place->id)
         ->set('title', 'Mount Rinjani Traverse')
         ->call('next')->call('next')
@@ -42,11 +44,12 @@ it('stores a payment proof on the private disk, not the public one', function ()
     $departure = TripDeparture::factory()->for($trip)->create();
     $joiner = User::factory()->create(['role' => 'joiner']);
     $reservation = Reservation::factory()->create([
-        'trip_departure_id' => $departure->id, 'joiner_id' => $joiner->id, 'status' => 'pending',
+        'trip_departure_id' => $departure->id, 'joiner_id' => $joiner->id,
+        'status' => 'confirmed', 'confirmed_at' => now(),
     ]);
 
     Livewire::actingAs($joiner)
-        ->test(\App\Livewire\Reservations\Show::class, ['token' => $reservation->public_token])
+        ->test(Show::class, ['token' => $reservation->public_token])
         ->set('reference_no', '9021')
         ->set('proof', UploadedFile::fake()->image('proof.jpg'))
         ->call('submit');

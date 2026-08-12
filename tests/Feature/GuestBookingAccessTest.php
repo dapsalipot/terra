@@ -33,14 +33,44 @@ it('redirects the legacy pay URL to the token URL', function () {
 });
 
 it('lets a guest submit payment details', function () {
-    $reservation = Reservation::factory()->create(['joiner_id' => null, 'status' => 'pending']);
+    $reservation = Reservation::factory()->create([
+        'joiner_id' => null, 'status' => 'confirmed', 'confirmed_at' => now(),
+    ]);
+
+    // The method must be one the host actually advertises — the form is a picker over their
+    // own list now, so an arbitrary string is not a value a joiner could produce.
+    $reservation->departure->trip->host->hostProfile()->updateOrCreate([], [
+        'payment_methods' => [['label' => 'GCash', 'detail' => '0917 000 1111']],
+    ]);
 
     Livewire::test(Show::class, ['token' => $reservation->public_token])
         ->set('reference_no', 'GC-12345')
-        ->set('method', 'gcash')
-        ->call('submit');
+        ->set('method', 'GCash')
+        ->call('submit')
+        ->assertHasNoErrors();
 
-    expect($reservation->fresh()->status)->toBe('payment_submitted');
+    expect($reservation->fresh()->status)->toBe('confirmed')
+        // The method now reaches the record, so the host's roster can say how it arrived.
+        ->and($reservation->fresh()->latestPayment->method)->toBe('GCash');
+});
+
+it('refuses a payment method the host does not offer', function () {
+    $reservation = Reservation::factory()->create([
+        'joiner_id' => null, 'status' => 'confirmed', 'confirmed_at' => now(),
+    ]);
+    $reservation->departure->trip->host->hostProfile()->updateOrCreate([], [
+        'payment_methods' => [['label' => 'GCash', 'detail' => '0917 000 1111']],
+    ]);
+
+    Livewire::test(Show::class, ['token' => $reservation->public_token])
+        ->set('reference_no', 'GC-12345')
+        ->set('method', 'Some wallet they never listed')
+        ->call('submit')
+        ->assertHasErrors('method');
+
+    // Rejected at validation, so nothing was written and the seat is untouched.
+    expect($reservation->fresh()->status)->toBe('confirmed')
+        ->and($reservation->fresh()->paymentSubmissions()->count())->toBe(0);
 });
 
 it('shows the booking link so a guest can get back without email', function () {

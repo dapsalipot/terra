@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Host\Trips;
 
+use App\Models\Reservation;
 use App\Models\Trip;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
@@ -15,7 +16,21 @@ class Index extends Component
     public function render()
     {
         $trips = Trip::where('host_id', Auth::id())
-            ->with(['departure', 'place', 'destinations.place'])
+            /*
+             * Seats held, summed in SQL on the eager load.
+             *
+             * One extra query for the whole page rather than heldCount() per row, which is what
+             * calling it in the loop would have cost. The row shows it because the space beside
+             * the date was empty and "how full is this date" is the first thing a host looks for.
+             */
+            ->with([
+                'departure' => fn ($q) => $q->withSum(
+                    ['reservations as seats_held' => fn ($r) => $r->whereIn('status', Reservation::HOLDING)],
+                    'party_size',
+                ),
+                'place',
+                'destinations.place',
+            ])
             ->withCount('reviews')
             ->get()
             ->sortBy(fn ($t) => $t->departure?->starts_at ?? $t->created_at)
@@ -31,6 +46,6 @@ class Index extends Component
                 'past' => Trip::where('host_id', Auth::id())->whereHas('departures', fn ($q) => $q->where('starts_at', '<=', now()))->count(),
                 'all' => Trip::where('host_id', Auth::id())->count(),
             ],
-        ])->layout('components.layouts.host', ['title' => 'Peeps · My trips']);
+        ])->layout('components.layouts.host', ['title' => 'Terra · My trips']);
     }
 }

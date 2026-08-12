@@ -1,13 +1,13 @@
-# Peeps — MVP Design Spec
+# Terra — MVP Design Spec
 
 **Date:** 2026-07-18
 **Status:** Approved (brainstorm phase complete)
 
-> **Rebrand (2026-07-27): Terra → Peeps.** "Peeps" is slang for people, and the brand line is
-> **"Better trips with better peeps."** The emphasis moves from *place* to *the people you go with* —
+> **Rebrand (2026-07-27): Terra → Terra.** "Terra" is slang for people, and the brand line is
+> **"Better trips with better terra."** The emphasis moves from *place* to *the people you go with* —
 > the trip is the occasion, the crew is the product. The outdoor identity is unchanged: Mount Pulag
 > photography, the Trail Earth palette, the mountain divider, and the dashed trail-line all stay.
-> References to "Terra" below predate the rename and mean Peeps.
+> References to "Terra" below predate the rename and mean Terra.
 >
 > Naming caution for implementers: the Tailwind token `terra` (`#BC4B26`) is **terracotta the colour**,
 > not the old brand — `text-terra` / `bg-terra` must never be renamed. Likewise "terrain" in copy.

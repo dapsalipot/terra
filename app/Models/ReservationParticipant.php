@@ -14,7 +14,7 @@ class ReservationParticipant extends Model
 
     protected function casts(): array
     {
-        return ['birthday' => 'date', 'is_booker' => 'boolean'];
+        return ['birthday' => 'date', 'is_booker' => 'boolean', 'id_uploaded_at' => 'datetime', 'checked_in_at' => 'datetime'];
     }
 
     public function reservation()
@@ -36,6 +36,12 @@ class ReservationParticipant extends Model
      * Gender is deliberately excluded: it is nudged in the form but never forced, and a
      * booking must not be blocked on it.
      */
+    /** Whether this person still owes the host a photo of their ID, on a trip that asks for one. */
+    public function needsIdFor(Trip $trip): bool
+    {
+        return $trip->requires_id && ! $this->id_image;
+    }
+
     public function isComplete(): bool
     {
         return filled($this->first_name) && filled($this->last_name) && filled($this->birthday);

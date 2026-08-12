@@ -20,7 +20,7 @@ beforeEach(function () {
 /** A Socialite user as a provider would hand it back. */
 function socialUser(array $attrs = []): SocialiteUser
 {
-    $user = new SocialiteUser();
+    $user = new SocialiteUser;
     $user->id = $attrs['id'] ?? 'provider-sub-123';
     $user->name = $attrs['name'] ?? 'Ada Reyes';
     // array_key_exists, not ??: passing an explicit null must mean "provider sent no email",

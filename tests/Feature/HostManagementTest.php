@@ -1,5 +1,7 @@
 <?php
 
+use App\Livewire\Host\Roster;
+use App\Livewire\Host\Trips\Create;
 use App\Models\HostProfile;
 use App\Models\Place;
 use App\Models\Trip;
@@ -29,7 +31,7 @@ it('publishes a trip with departures through the wizard', function () {
     $place = Place::factory()->create(['name' => 'Mount Rinjani']);
 
     Livewire::actingAs($host)
-        ->test(\App\Livewire\Host\Trips\Create::class)
+        ->test(Create::class)
         ->call('addDestination', $place->id)
         ->call('next')
         ->set('title', 'Mount Rinjani Traverse')
@@ -59,18 +61,18 @@ it('publishes a trip with departures through the wizard', function () {
 
 it('requires a destination before advancing, and a title one step later', function () {
     $host = makeHost();
-    $place = \App\Models\Place::factory()->create();
+    $place = Place::factory()->create();
 
     // step 1 is where you're going, so only the destination is required here
     Livewire::actingAs($host)
-        ->test(\App\Livewire\Host\Trips\Create::class)
+        ->test(Create::class)
         ->call('next')
         ->assertHasErrors(['destinations'])
         ->assertSet('step', 1);
 
     // the title belongs to step 2, with the rest of the trip's presentation
     Livewire::actingAs($host)
-        ->test(\App\Livewire\Host\Trips\Create::class)
+        ->test(Create::class)
         ->call('addDestination', $place->id)
         ->call('next')
         ->set('title', '')
@@ -85,7 +87,7 @@ it('adds an offline participant that consumes capacity', function () {
     $departure = TripDeparture::factory()->for($trip)->create(['capacity' => 10]);
 
     Livewire::actingAs($host)
-        ->test(\App\Livewire\Host\Roster::class, ['departure' => $departure])
+        ->test(Roster::class, ['departure' => $departure])
         ->set('guest_name', 'Ramil Cruz')
         ->set('guest_party', 2)
         ->call('addOffline');
@@ -103,7 +105,7 @@ it('another host cannot open my roster', function () {
     $other = User::factory()->create(['role' => 'host']);
 
     Livewire::actingAs($other)
-        ->test(\App\Livewire\Host\Roster::class, ['departure' => $departure])
+        ->test(Roster::class, ['departure' => $departure])
         ->assertForbidden();
 });
 

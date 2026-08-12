@@ -13,11 +13,17 @@ class MeetupPresets extends Component
     use WithFileUploads;
 
     public ?int $editingId = null;
+
     public string $label = '';
+
     public string $address = '';
+
     public string $lat = '';
+
     public string $lng = '';
+
     public string $note = '';
+
     public $image = null;
 
     public string $saved = '';
@@ -114,6 +120,6 @@ class MeetupPresets extends Component
     {
         return view('livewire.host.meetup-presets', [
             'presets' => Auth::user()->meetupPresets()->get(),
-        ])->layout('components.layouts.host', ['title' => 'Peeps · Meetup points']);
+        ])->layout('components.layouts.host', ['title' => 'Terra · Meetup points']);
     }
 }

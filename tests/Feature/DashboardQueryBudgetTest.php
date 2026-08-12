@@ -74,10 +74,13 @@ it('renders within its query budget', function () {
      * distinction that matters: the sibling test below pins that flatness and would fail if
      * this ever became per-row.
      *
+     * One more since: the trail figures behind the "where you have been" totals, eager-loaded
+     * through trip_destinations. Also one for the page rather than one per past trip.
+     *
      * The ceiling sits one above. It is not a target to grow into: an N+1 regression costs six
      * or more at this fixture size, so it still fails loudly.
      */
-    expect(count($queries))->toBeLessThanOrEqual(14);
+    expect(count($queries))->toBeLessThanOrEqual(15);
 });
 
 it('does not issue more queries as bookings grow', function () {
@@ -102,8 +105,15 @@ it('does not build recommendations for a joiner who has bookings', function () {
     // state, so computing it for someone with bookings is pure waste.
     $queries = queriesForRender(joinerWithBookings(3));
 
+    /*
+     * `trip_destinations` alone stopped identifying this query: the trail-stats eager load joins
+     * the same table, so the old needle matched a query that is supposed to run and the test
+     * failed on a change that was correct. What is unique to the recommendation is the
+     * correlated shape — it reaches trip_destinations *and* reservations in one statement, which
+     * nothing else on this page does.
+     */
     $recommendationQueries = collect($queries)
-        ->filter(fn ($sql) => str_contains($sql, 'trip_destinations'));
+        ->filter(fn ($sql) => str_contains($sql, 'trip_destinations') && str_contains($sql, 'reservations'));
 
     expect($recommendationQueries)->toBeEmpty();
 });
@@ -113,4 +123,17 @@ it('still recommends trips to a joiner with nothing booked', function () {
 
     Livewire::actingAs($user)->test(Dashboard::class)
         ->assertViewHas('recommended');
+
+    /*
+     * The other half of the pair, and the reason it matters: the sibling test asserts the
+     * recommendation query is ABSENT, which a needle matching nothing at all would also satisfy.
+     * Running the same filter against a render that genuinely builds recommendations proves the
+     * needle can fire, so the absence assertion means something.
+     */
+    $queries = queriesForRender($user);
+
+    $recommendationQueries = collect($queries)
+        ->filter(fn ($sql) => str_contains($sql, 'trip_destinations') && str_contains($sql, 'reservations'));
+
+    expect($recommendationQueries)->not->toBeEmpty();
 });

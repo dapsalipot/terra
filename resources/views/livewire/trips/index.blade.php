@@ -29,7 +29,7 @@
     </div>
 
     <p class="text-sm text-ink/65 mt-6 mb-4">
-        <span wire:loading.remove wire:target="search,category,country,difficulty">{{ $trips->count() }} {{ Str::plural('trip', $trips->count()) }}</span>
+        <span wire:loading.remove wire:target="search,category,country,difficulty">{{ $trips->total() }} {{ Str::plural('trip', $trips->total()) }}</span>
         <span wire:loading wire:target="search,category,country,difficulty" class="inline-flex items-center gap-2 text-ink/50">
             <svg viewBox="0 0 24 24" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9" stroke-linecap="round"/></svg>
             Updating results…
@@ -45,5 +45,9 @@
                 <p class="text-ink/65 mt-1">Try widening your filters.</p>
             </div>
         @endforelse
+
+        @if($trips->hasPages())
+            <div class="mt-8">{{ $trips->links() }}</div>
+        @endif
     </div>
 </div>

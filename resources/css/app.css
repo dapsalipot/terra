@@ -169,7 +169,18 @@ body {
 .glass-thin  { background: rgba(247, 244, 236, .30); border: 1px solid rgba(255, 255, 255, .30); }
 
 .glass-dark  {
-    background: rgba(31, 28, 21, .42);
+    /*
+     * .42 was a look, not a contrast decision.
+     *
+     * These chips carry cream text over photography, and the veil is the only thing standing
+     * between that text and whatever the photo happens to be. Over a bright frame — a sea of
+     * cloud, a white sky, sunlit limestone — a 42% veil composites to roughly rgb(161,160,157),
+     * and cream on that measures 2.39:1 against the 4.5:1 an 11px label needs. Half the ratio.
+     *
+     * .70 holds 5.7:1 in that worst case and 10:1 over a mid-tone, which is the point of a veil:
+     * it has to work against the brightest image anyone uploads, not the average one.
+     */
+    background: rgba(31, 28, 21, .70);
     border: 1px solid rgba(247, 244, 236, .18);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, .22),
@@ -319,4 +330,48 @@ body {
     .glass-moss  { background: rgba(212, 219, 200, 1); backdrop-filter: none; -webkit-backdrop-filter: none; }
     .glass-terra { background: rgba(245, 216, 206, 1); backdrop-filter: none; -webkit-backdrop-filter: none; }
     .host-ui     { background-image: none; }
+}
+
+/* Confirmation dialog entrance.
+
+   A CSS keyframe rather than x-transition: Alpine's transitions do not survive x-teleport, and
+   the dialog is teleported to <body> so a parent's overflow or stacking context cannot clip it.
+   A keyframe replays whenever display flips from none, which is exactly the trigger we want. */
+@keyframes confirm-pop {
+    from { opacity: 0; transform: translateY(12px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.confirm-pop {
+    animation: confirm-pop .18s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .confirm-pop { animation: none; }
+}
+
+
+/*
+ * Mobile bottom sheets.
+ *
+ * Driven by a data attribute rather than Tailwind's `max-lg:translate-y-*` utilities: bound
+ * through x-bind those set --tw-translate-y correctly but lost the `transform` longhand to
+ * another rule, so the panel stayed parked off-screen with the variable reading 0px. One
+ * media query, two states, nothing to out-specify.
+ */
+@media (max-width: 1023px) {
+    [data-sheet] {
+        transform: translateY(100%);
+        visibility: hidden;
+        transition: transform .3s cubic-bezier(.2, .8, .2, 1), visibility .3s;
+    }
+
+    [data-sheet][data-open="true"] {
+        transform: translateY(0);
+        visibility: visible;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-sheet] { transition: none; }
 }

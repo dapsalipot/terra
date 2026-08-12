@@ -33,7 +33,7 @@ class RegistrationService
         $actor = $data['actor'] ?? null;
 
         if ($actor?->isHost()) {
-            throw new HostCannotJoinException();
+            throw new HostCannotJoinException;
         }
 
         return DB::transaction(function () use ($departure, $data, $actor) {
@@ -80,6 +80,9 @@ class RegistrationService
                 'gender' => $row['gender'] ?? null,
                 'email' => $row['email'] ?? null,
                 'phone' => $row['phone'] ?? null,
+                // Already stored by the caller; only the path travels this far.
+                'id_image' => $row['id_image'] ?? null,
+                'id_uploaded_at' => $row['id_uploaded_at'] ?? null,
             ]);
         }
     }

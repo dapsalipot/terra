@@ -131,13 +131,22 @@
                             <div class="space-y-1 sm:overflow-y-auto sm:min-h-0 sm:flex-1">
                                 @foreach($day['departures'] as $dep)
                                     @php($full = $dep->spotsLeft() === 0)
-                                    <a href="{{ route('host.roster', $dep) }}" wire:navigate dusk="cal-departure-{{ $dep->id }}"
-                                       title="{{ $dep->trip->title }} — {{ $dep->heldCount() }} of {{ $dep->capacity }} held"
-                                       class="block rounded-lg px-2.5 py-2 transition-colors {{ $full ? 'glass-terra' : 'glass-moss' }}">
+                                    {{-- A multi-day trip appears on every day it runs, so each chip has to say
+                                         which day it is. Without that, three days of one traverse read as three
+                                         separate departures — the reason this used to only mark the start. --}}
+                                    @php($span = $dep->spanDays())
+                                    @php($dayNo = $span > 1 ? $dep->dayNumberOn($day['date']) : 0)
+                                    <a href="{{ route('host.roster', $dep) }}" wire:navigate dusk="cal-departure-{{ $dep->id }}-{{ $day['date']->toDateString() }}"
+                                       title="{{ $dep->trip->title }}{{ $dayNo ? ' — day '.$dayNo.' of '.$span : '' }} — {{ $dep->heldCount() }} of {{ $dep->capacity }} held"
+                                       class="block rounded-lg px-2.5 py-2 transition-colors {{ $full ? 'glass-terra' : 'glass-moss' }}
+                                              {{ $dayNo > 1 ? 'rounded-l-none border-l-2 border-dashed border-pine/30' : '' }}">
                                         <span class="block text-[11px] font-bold leading-tight truncate {{ $full ? 'text-ink' : 'text-pine' }}">
                                             {{ $dep->trip->title }}
                                         </span>
                                         <span class="block text-[10px] font-semibold tabular-nums {{ $full ? 'text-ink/70' : 'text-pine' }}">
+                                            @if($dayNo)
+                                                Day {{ $dayNo }}/{{ $span }} ·
+                                            @endif
                                             {{ $dep->heldCount() }}/{{ $dep->capacity }}{{ $full ? ' · full' : '' }}
                                         </span>
                                     </a>
@@ -159,7 +168,10 @@
                         <span class="min-w-0 flex-1">
                             <span class="block font-semibold truncate">{{ $dep->trip->title }}</span>
                             <span class="block text-sm text-ink/65 tabular-nums">
-                                {{ $dep->starts_at->format('D j M') }} · {{ $dep->heldCount() }}/{{ $dep->capacity }}{{ $full ? ' · full' : '' }}
+                                {{-- The whole span, so a trip listed under the 25th does not look like it
+                                     starts there when it actually began on the 24th. --}}
+                                {{ $dep->starts_at->format('D j M') }}@if($dep->isMultiDay()) – {{ $dep->ends_at->format('D j M') }}@endif
+                                · {{ $dep->heldCount() }}/{{ $dep->capacity }}{{ $full ? ' · full' : '' }}
                             </span>
                         </span>
                         <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink/40 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6l6 6-6 6"/></svg>

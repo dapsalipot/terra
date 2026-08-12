@@ -9,6 +9,9 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 
+// Warn before the axe falls, then swing it. Both hourly, the reminder first so a hold is
+// never released in the same pass that would have warned about it.
+Schedule::command('reservations:remind')->hourly();
 Schedule::command('reservations:expire')->hourly();
 
 Schedule::command('departures:complete')->daily();

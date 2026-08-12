@@ -6,8 +6,15 @@ use App\Mail\MagicLinkMail;
 use App\Models\Reservation;
 use App\Models\Review;
 use App\Models\Trip;
+use App\Models\TripDeparture;
 use App\Services\MagicLinkService;
+use App\Services\PhilippineHolidays;
 use App\Services\ReservationService;
+use App\Support\DaySpan;
+use App\Support\PlaceCategories;
+use App\Support\TrailStats;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -17,6 +24,7 @@ use Livewire\Component;
 class Dashboard extends Component
 {
     public bool $showClaim = false;
+
     public ?string $claimStatus = null;
 
     #[Url]
@@ -32,6 +40,16 @@ class Dashboard extends Component
     /** Month on screen as YYYY-MM, in the URL so a month can be linked. */
     #[Url]
     public string $month = '';
+
+    /**
+     * Which panel of the right-hand column is showing.
+     *
+     * In the URL so "the thing I still owe money on" is a linkable place rather than a state you
+     * have to re-find. Blank means "whichever has something in it" — resolved in render() against
+     * the panels that actually exist, because a remembered tab can empty out from under you.
+     */
+    #[Url]
+    public string $panel = '';
 
     /** Which day the phone calendar is listing. Not in the URL — it is a transient tap. */
     public string $selectedDate = '';
@@ -136,6 +154,7 @@ class Dashboard extends Component
         // single definition of validity the property's own setter already has.
         $this->setFilter($this->filter);
         $this->setView($this->view);
+        $this->setPanel($this->panel);
 
         $this->dismissedAttention = session($this->dismissKey(), []);
     }
@@ -150,6 +169,18 @@ class Dashboard extends Component
     public function setView(string $view): void
     {
         $this->view = in_array($view, ['calendar', 'grid', 'list'], true) ? $view : 'calendar';
+    }
+
+    /**
+     * Only names a panel; whether it exists is render()'s call.
+     *
+     * Validating against the four keys here rather than against what is currently on screen keeps
+     * a linked URL working: ?panel=review is a reasonable thing to send someone even on a render
+     * where they have nothing to review, and it costs nothing to fall back gracefully.
+     */
+    public function setPanel(string $panel): void
+    {
+        $this->panel = in_array($panel, ['next', 'pay', 'confirm', 'review'], true) ? $panel : '';
     }
 
     public function shiftMonth(int $by): void
@@ -184,27 +215,39 @@ class Dashboard extends Component
      * "2026-06" on a 31st yields 31 June and overflows into July. The host calendar shipped
      * that bug and showed the wrong month for a few days every month.
      */
-    private function cursor(): \Illuminate\Support\Carbon
+    private function cursor(): Carbon
     {
         try {
-            return \Illuminate\Support\Carbon::createFromFormat('!Y-m', $this->month)->startOfMonth();
+            return Carbon::createFromFormat('!Y-m', $this->month)->startOfMonth();
         } catch (\Throwable) {
             return now()->startOfMonth();
         }
     }
 
-    private function holdWording(Reservation $r): string
+    /**
+     * The hold sentence, in one place.
+     *
+     * Public because the For-confirmation cards render it directly. The alternative — repeating
+     * the three branches in Blade — is two definitions of the same sentence that drift apart the
+     * first time the wording is tuned.
+     *
+     * The wording used to end "pay now to see if the seat is still free", which was right when a
+     * joiner paid to hold a place. Paying is now the one thing they cannot do here: this window
+     * is the host's to answer in, not theirs to buy their way out of.
+     */
+    public function holdWording(Reservation $r): string
     {
         if (! $r->expires_at) {
-            return 'Your host is waiting on payment';
+            return 'Waiting on your host';
         }
 
         if ($r->expires_at->isPast()) {
-            return 'This hold has lapsed — pay now to see if the seat is still free';
+            return 'This hold has lapsed — your host may have released the seat';
         }
 
         return 'Your seat is held for another '
-            .$r->expires_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]);
+            .$r->expires_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE])
+            .' while your host decides';
     }
 
     /**
@@ -225,13 +268,20 @@ class Dashboard extends Component
 
             $link = route('reservations.show', ['token' => $r->public_token]);
 
+            /*
+             * A request the host has not answered yet is not a bill.
+             *
+             * This used to shout "Pay for X — Pay now" at anyone holding an unconfirmed booking,
+             * which was true under the old pay-first order and is now a link to a page with no
+             * payment form on it. Nothing is owed until a seat has actually been granted.
+             */
             if (in_array($r->status, ['pending', 'awaiting_payment'], true)) {
-                $groups['pay'][] = [
-                    'kind' => 'pay',
-                    'urgent' => true,
-                    'title' => 'Pay for '.$trip->title,
-                    'detail' => $this->holdWording($r),
-                    'cta' => 'Pay now',
+                $groups['details'][] = [
+                    'kind' => 'waiting',
+                    'urgent' => false,
+                    'title' => $trip->host->name.' is reviewing your request',
+                    'detail' => 'You will be asked to pay once your seat on '.$trip->title.' is granted',
+                    'cta' => 'See booking',
                     'href' => $link,
                     'reservation_id' => $r->id,
                 ];
@@ -254,14 +304,28 @@ class Dashboard extends Component
                     ];
                 }
 
+                /*
+                 * A confirmed seat with money still on it is the real "pay now".
+                 *
+                 * Urgency comes from the deadline the host set rather than from the status, so a
+                 * booking two days from its cut-off shouts and one with no deadline at all simply
+                 * sits there. "on the day" was the old wording and is wrong now: there is a date.
+                 */
                 if ($r->owesBalance()) {
                     $money = $r->money();
-                    $groups['balance'][] = [
-                        'kind' => 'balance',
-                        'urgent' => false,
-                        'title' => 'Balance due on '.$trip->title,
-                        'detail' => number_format($money['due']).' to settle with your host on the day',
-                        'cta' => 'See booking',
+                    $due = $r->nextPaymentDue();
+                    $overdue = $r->paymentOverdue();
+
+                    $groups['pay'][] = [
+                        'kind' => 'pay',
+                        'urgent' => $overdue || ($due !== null && $due->isBefore(now()->addDays(3))),
+                        'title' => ($overdue ? $r->overdueLabel().' — ' : '').'Pay for '.$trip->title,
+                        'detail' => number_format($money['due']).' owed'.match (true) {
+                            $due === null => ' — no deadline set',
+                            $overdue => ', due '.$due->diffForHumans(),
+                            default => ', by '.$due->format('j M').' at '.$due->format('g:ia'),
+                        },
+                        'cta' => 'Pay now',
                         'href' => $link,
                         'reservation_id' => $r->id,
                     ];
@@ -305,7 +369,15 @@ class Dashboard extends Component
             // cover image calls $trip->cover_url -> StockPhotos::cover() which reads
             // $trip->place. Without either, every booking costs one extra query and the
             // page degrades linearly with how much someone travels.
-            ->with(['departure.trip.host', 'departure.trip.priceTiers', 'departure.trip.place', 'participants'])
+            // latestPayment joins the list because money() now reads it to decide what has
+            // actually been paid; left lazy it is one query per booking on every render.
+            // hikeDetails joins the list for the past summary: elevation and distance live two
+            // hops away (trip -> destinations -> hike detail), and left lazy that is one query
+            // per past trip on a page that already loads every booking a joiner has.
+            ->with([
+                'departure.trip.host', 'departure.trip.priceTiers', 'departure.trip.place',
+                'departure.trip.hikeDetails', 'participants', 'latestPayment',
+            ])
             ->get()
             ->filter(fn (Reservation $r) => $r->departure !== null);
 
@@ -368,10 +440,18 @@ class Dashboard extends Component
          */
         $cursor = $this->cursor();
         // Sunday-first, which is how a Philippine wall calendar reads.
-        $gridStart = $cursor->copy()->startOfWeek(\Illuminate\Support\Carbon::SUNDAY);
-        $gridEnd = $cursor->copy()->endOfMonth()->endOfWeek(\Illuminate\Support\Carbon::SATURDAY);
+        $gridStart = $cursor->copy()->startOfWeek(Carbon::SUNDAY);
+        $gridEnd = $cursor->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
-        $byDate = $reservations->groupBy(fn (Reservation $r) => $r->departure->starts_at->toDateString());
+        // Every day of the trip, not just the day it leaves. "When am I away?" is the question
+        // this grid exists to answer, and a three-day traverse marked on one square answers it
+        // wrongly on the other two.
+        $byDate = DaySpan::group(
+            $reservations,
+            fn (Reservation $r) => [$r->departure->starts_at, $r->departure->ends_at],
+            $gridStart,
+            $gridEnd,
+        );
 
         // Default the phone's day list to the soonest day in view that has something on it.
         $daysWithTrips = $byDate->keys()
@@ -393,7 +473,7 @@ class Dashboard extends Component
 
         // Holidays for the visible range. Fails silently — a planning hint must never be able to
         // stop someone reaching their own bookings.
-        $holidays = app(\App\Services\PhilippineHolidays::class)->between($gridStart, $gridEnd);
+        $holidays = app(PhilippineHolidays::class)->between($gridStart, $gridEnd);
 
         /*
          * What is joinable on each visible day — a count and the cover photos to show for it.
@@ -407,8 +487,8 @@ class Dashboard extends Component
          * the cell and the cover fallback actually read: cover_url returns the host's upload when
          * there is one and otherwise picks a stock photo from the place's slug and category.
          */
-        $openByDate = \App\Models\TripDeparture::query()
-            ->whereBetween('starts_at', [$gridStart->copy()->startOfDay(), $gridEnd->copy()->endOfDay()])
+        $open = TripDeparture::query()
+            ->overlapping($gridStart, $gridEnd)
             ->where('status', 'open')
             ->whereHas('trip', fn ($t) => $t->where('status', 'published'))
             ->with(['trip:id,title,cover_photo,place_id', 'trip.place:id,slug,category'])
@@ -417,12 +497,20 @@ class Dashboard extends Component
                 'party_size',
             )
             ->orderBy('starts_at')
-            ->get(['id', 'trip_id', 'starts_at', 'capacity'])
+            // ends_at is load-bearing, not decoration: leave it out of the column list and every
+            // departure looks like a single day no matter how long it runs.
+            ->get(['id', 'trip_id', 'starts_at', 'ends_at', 'capacity'])
             // Already booked is not "available", and neither is sold out.
             ->reject(fn ($d) => $reservations->contains(fn (Reservation $r) => $r->trip_departure_id === $d->id))
-            ->filter(fn ($d) => $d->capacity - (int) ($d->seats_held ?? 0) > 0)
-            ->groupBy(fn ($d) => $d->starts_at->toDateString())
-            ->map(fn ($deps) => [
+            ->filter(fn ($d) => $d->capacity - (int) ($d->seats_held ?? 0) > 0);
+
+        $openByDate = DaySpan::group(
+            $open,
+            fn ($d) => [$d->starts_at, $d->ends_at],
+            $gridStart,
+            $gridEnd,
+        )
+            ->map(fn ($deps, $iso) => [
                 'count' => $deps->count(),
                 // Three is what fits a calendar square; the cell shows "+N" for the rest.
                 'covers' => $deps->take(3)
@@ -435,9 +523,15 @@ class Dashboard extends Component
                  * photos raise but cannot settle: three beaches and a mountain look like four
                  * photographs until something says which is which.
                  */
-                'types' => \App\Support\PlaceCategories::resolve(
+                'types' => PlaceCategories::resolve(
                     $deps->map(fn ($d) => $d->trip->place?->category),
                 ),
+                /*
+                 * Of those, how many are mid-trip rather than setting off. The cell's own label
+                 * said "N trips leaving this day" for every day a trip touched, which stopped
+                 * being true once a departure started appearing on its middle days.
+                 */
+                'continuing' => $deps->reject(fn ($d) => $d->starts_at->toDateString() === $iso)->count(),
             ]);
 
         $days = collect();
@@ -452,6 +546,7 @@ class Dashboard extends Component
                 'available' => $openByDate->get($iso)['count'] ?? 0,
                 'covers' => $openByDate->get($iso)['covers'] ?? [],
                 'types' => $openByDate->get($iso)['types'] ?? [],
+                'continuing' => $openByDate->get($iso)['continuing'] ?? 0,
                 'bookings' => $byDate->get($iso, collect()),
             ]);
         }
@@ -462,10 +557,12 @@ class Dashboard extends Component
          */
         $availableOnDate = collect();
         $availableTotal = 0;
+        $availableContinuing = 0;
 
         if ($this->selectedDate !== '' && $byDate->get($this->selectedDate, collect())->isEmpty()) {
-            $offers = \App\Models\TripDeparture::query()
-                ->whereDate('starts_at', $this->selectedDate)
+            $offers = TripDeparture::query()
+                // Overlapping the day, so tapping the middle of a multi-day trip offers it too.
+                ->overlapping($this->selectedDate, $this->selectedDate)
                 ->where('status', 'open')
                 ->whereHas('trip', fn ($t) => $t->where('status', 'published'))
                 /*
@@ -490,10 +587,99 @@ class Dashboard extends Component
             $availableTotal = $offers->count();
             // Capped so one busy date cannot render an unbounded list; the footer says when it did.
             $availableOnDate = $offers->take(12);
+
+            /*
+             * How many of these are already under way rather than setting off today.
+             *
+             * The sheet used to say "trips leaving this day" unconditionally, which stopped being
+             * true the moment a multi-day trip started appearing on its middle days.
+             */
+            $availableContinuing = $availableOnDate
+                ->reject(fn ($d) => $d->starts_at->toDateString() === $this->selectedDate)
+                ->count();
         }
+
+        /*
+         * The right-hand column's own data.
+         *
+         * $upcoming is already sorted by departure date, so "next up" is simply its head. The
+         * payment list is drawn from the same collection rather than a second query — a booking
+         * that needs paying is by definition one of the trips already loaded here.
+         */
+        $nextUp = $upcoming->first();
+        $laterUp = $upcoming->slice(1)->take(3)->values();
+
+        /*
+         * What you owe on, and what you are waiting on. Two different lists now.
+         *
+         * This used to be one list filtered on the unconfirmed statuses, which was right when a
+         * joiner paid before the host accepted them. Since that order reversed those are exactly
+         * the bookings with no payment form — a "For payment" list of things you cannot pay for.
+         * Money is owed by a confirmed seat; an unconfirmed one is simply waiting on a person.
+         */
+        $awaitingPayment = $upcoming
+            ->filter(fn (Reservation $r) => $r->canSubmitPayment() && $r->money()['due'] > 0)
+            ->values();
+
+        $forConfirmation = $upcoming
+            ->filter(fn (Reservation $r) => in_array($r->status, ['pending', 'awaiting_payment', 'payment_submitted'], true))
+            ->values();
+
+        $forReview = collect($attention['review'] ?? [])
+            ->reject(fn ($item) => in_array($item['kind'], $this->dismissedAttention, true))
+            ->values();
+
+        // Traveller details are still someone's move, so they ride with the money rather than
+        // becoming a fifth tab nobody asked for.
+        $alsoNeedsYou = collect($attention['details'] ?? [])
+            ->reject(fn ($item) => in_array($item['kind'], $this->dismissedAttention, true))
+            ->values();
+
+        /*
+         * The tab strip, built from what actually has something in it.
+         *
+         * An empty tab is a promise of content that is not there; a joiner with one upcoming trip
+         * and nothing owed should see one tab, not four with three dead ends. `panels` drives both
+         * the strip and which panel body renders, so they cannot disagree.
+         */
+        $panels = collect([
+            'next' => ['label' => 'Next up', 'count' => $nextUp ? 1 + $laterUp->count() : 0],
+            'pay' => ['label' => 'For payment', 'count' => $awaitingPayment->count() + $alsoNeedsYou->count(), 'urgent' => true],
+            'confirm' => ['label' => 'For confirmation', 'count' => $forConfirmation->count()],
+            'review' => ['label' => 'For review', 'count' => $forReview->count()],
+        ])->filter(fn ($p) => $p['count'] > 0);
+
+        /*
+         * A remembered tab that has since emptied — the review you just wrote — falls back to the
+         * first one with anything in it rather than rendering a panel with nothing on it.
+         *
+         * Deliberately NOT called `$panel`: Livewire shares public properties with the view, so a
+         * local of the same name as the `$panel` property is a coin toss over which one Blade
+         * sees. It lost — the view read the raw property, which is blank on a first visit, so no
+         * tab was selected and the whole right-hand column rendered empty.
+         */
+        $activePanel = $panels->has($this->panel) ? $this->panel : (string) $panels->keys()->first();
 
         // Card view groups by month so a long list reads as a year rather than a wall of rows.
         $byMonth = $sorted->values()->groupBy(fn (Reservation $r) => $r->departure->starts_at->format('F Y'));
+
+        /*
+         * Where you have been, month by month, with what it added up to.
+         *
+         * Newest first — a history read forwards from your first trip buries this year under
+         * three years of scrolling. Each month carries its own totals because "6,240 m in
+         * August" is a fact about a month; the same number spread over a year says nothing.
+         */
+        $pastByMonth = $past
+            ->sortByDesc(fn (Reservation $r) => $r->departure->starts_at)
+            ->groupBy(fn (Reservation $r) => $r->departure->starts_at->format('F Y'))
+            ->map(fn (Collection $rows) => [
+                'rows' => $rows->values(),
+                'stats' => TrailStats::summarise($rows),
+            ]);
+
+        // The whole history in one line, which is the number people actually screenshot.
+        $pastTotals = TrailStats::summarise($past);
 
         return view('livewire.joiner.dashboard', [
             'attention' => $attention,
@@ -507,13 +693,26 @@ class Dashboard extends Component
             'selectedBookings' => $byDate->get($this->selectedDate, collect()),
             'availableOnDate' => $availableOnDate,
             'availableTotal' => $availableTotal,
+            'availableContinuing' => $availableContinuing,
             'selectedHoliday' => $holidays[$this->selectedDate] ?? null,
-            'monthCount' => $byDate->flatten()->filter(
+            // unique() first: a multi-day booking now sits in several buckets, and this counts
+            // trips in the month, not days spent travelling.
+            'monthCount' => $byDate->flatten()->unique('id')->filter(
                 fn (Reservation $r) => $r->departure->starts_at->isSameMonth($cursor)
             )->count(),
+            'pastByMonth' => $pastByMonth,
+            'pastTotals' => $pastTotals,
             'orphaned' => $orphaned,
             'recommended' => $recommended,
             'hasAnyBookings' => $reservations->isNotEmpty(),
+            'nextUp' => $nextUp,
+            'laterUp' => $laterUp,
+            'awaitingPayment' => $awaitingPayment,
+            'forConfirmation' => $forConfirmation,
+            'forReview' => $forReview,
+            'alsoNeedsYou' => $alsoNeedsYou,
+            'panels' => $panels,
+            'activePanel' => $activePanel,
         ])->layout('components.layouts.site');
     }
 }

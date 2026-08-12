@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Host\Trips\Create;
+use App\Livewire\Trips\Show;
 use App\Models\HostProfile;
 use App\Models\Place;
 use App\Models\Trip;
@@ -334,7 +335,7 @@ it('shows the trail panel with its definitions on the public trip page', functio
 
     TripDeparture::factory()->for($trip)->create(['starts_at' => now()->addMonth()]);
 
-    Livewire::test(\App\Livewire\Trips\Show::class, ['trip' => $trip])
+    Livewire::test(Show::class, ['trip' => $trip])
         ->assertSee('The trail')
         ->assertSee('Akiki traverse')
         ->assertSee('2,922 m')
@@ -360,7 +361,7 @@ it('shows both mountains’ trails on the public page of a traverse', function (
 
     TripDeparture::factory()->for($trip)->create(['starts_at' => now()->addMonth()]);
 
-    Livewire::test(\App\Livewire\Trips\Show::class, ['trip' => $trip])
+    Livewire::test(Show::class, ['trip' => $trip])
         ->assertSee('Mount Pulag')
         ->assertSee('2,922 m')
         ->assertSee('Mossy forest')
@@ -376,6 +377,6 @@ it('keeps the trail panel off a trip with no trail detail', function () {
     $trip = publishTrip($host, [$place], [], 'Quiet Trip');
     TripDeparture::factory()->for($trip)->create(['starts_at' => now()->addMonth()]);
 
-    Livewire::test(\App\Livewire\Trips\Show::class, ['trip' => $trip])
+    Livewire::test(Show::class, ['trip' => $trip])
         ->assertDontSee('The trail');
 });

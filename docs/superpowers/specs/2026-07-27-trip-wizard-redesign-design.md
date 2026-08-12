@@ -8,7 +8,7 @@
 
 The current three-step wizard works but is thin and, in places, wrong:
 
-- Step 1 is labelled "Mountain" although Peeps covers all trip types.
+- Step 1 is labelled "Mountain" although Terra covers all trip types.
 - `difficulty` is validated as **required** in step 1 but there is no `trips.difficulty` column and `publish()` never writes it. The field blocks progress and does nothing.
 - Destination is a `<select>` over every place — it will not scale and reads as a database form.
 - A trip can only have one destination, so multi-day routes cannot be expressed.

@@ -1,4 +1,4 @@
-# Deploying Peeps
+# Deploying Terra
 
 Laravel 12 + Livewire 3, MySQL, server-rendered. No websocket server required for v1 (chat polls).
 

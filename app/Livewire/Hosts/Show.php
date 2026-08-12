@@ -17,7 +17,9 @@ class Show extends Component
     use WithFileUploads;
 
     public User $user;
+
     public string $postBody = '';
+
     /** @var array uploaded files for a single multi-image post */
     public $postImages = [];
 
@@ -108,13 +110,13 @@ class Show extends Component
 
     public function render()
     {
-        $trips = \App\Models\Trip::collapseSchedules(
+        $trips = Trip::collapseSchedules(
             $this->user->trips()->published()->with(['place', 'host.hostProfile', 'departures', 'openDepartures', 'inclusionItems'])->latest()->get()
         );
         $posts = $this->user->posts()->with(['trip', 'images'])->latest()->get();
 
         // Reviews of the host themselves, plus reviews left on any of their trips.
-        $reviews = Review::query()
+        $reviews = Review::visible()
             ->with(['joiner', 'reviewable'])
             ->where(fn ($q) => $q
                 ->where(fn ($h) => $h->where('reviewable_type', User::class)->where('reviewable_id', $this->user->id))
@@ -125,6 +127,6 @@ class Show extends Component
             ->get();
 
         return view('livewire.hosts.show', compact('trips', 'posts', 'reviews'))
-            ->layout('components.layouts.site', ['title' => $this->user->name.' · Peeps']);
+            ->layout('components.layouts.site', ['title' => $this->user->name.' · Terra']);
     }
 }

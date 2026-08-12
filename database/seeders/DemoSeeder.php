@@ -8,6 +8,7 @@ use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
+use App\Services\ReviewService;
 use Illuminate\Database\Seeder;
 
 class DemoSeeder extends Seeder
@@ -15,7 +16,7 @@ class DemoSeeder extends Seeder
     public function run(): void
     {
         // Known demo logins (password: "password")
-        $demoJoiner = User::factory()->create(['name' => 'Demo Joiner', 'email' => 'joiner@peeps.test', 'role' => 'joiner']);
+        $demoJoiner = User::factory()->create(['name' => 'Demo Joiner', 'email' => 'joiner@terra.test', 'role' => 'joiner']);
         $reviewers = User::factory()->count(4)->create(['role' => 'joiner']);
 
         $places = Place::all();
@@ -24,7 +25,7 @@ class DemoSeeder extends Seeder
             ->each(function ($handle, $name) use ($places, $reviewers) {
                 $host = User::factory()->create([
                     'name' => $name,
-                    'email' => $handle.'@peeps.test',
+                    'email' => $handle.'@terra.test',
                     'role' => 'host',
                     'handle' => $handle,
                 ]);
@@ -61,7 +62,7 @@ class DemoSeeder extends Seeder
                         Reservation::factory()->confirmed()->create([
                             'trip_departure_id' => $done->id, 'joiner_id' => $joiner->id,
                         ]);
-                        app(\App\Services\ReviewService::class)->record($joiner, $trip, [
+                        app(ReviewService::class)->record($joiner, $trip, [
                             'trip' => fake()->numberBetween(4, 5),
                             'host' => fake()->numberBetween(4, 5),
                             'place' => fake()->numberBetween(4, 5),

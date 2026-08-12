@@ -4,11 +4,26 @@
 @php($shown = $trip->relationLoaded('inclusionItems') ? $trip->inclusionItems->take(3) : collect())
 @php($moreCount = $trip->relationLoaded('inclusionItems') ? max(0, $trip->inclusionItems->count() - $shown->count()) : 0)
 
-<a href="{{ route('trips.show', $trip) }}"
-   class="group block rounded-3xl overflow-hidden bg-surface border border-ink/6 transition-all duration-300
-          shadow-[0_10px_30px_-18px_rgba(31,28,21,.35)]
-          hover:shadow-[0_28px_50px_-24px_rgba(31,28,21,.5)] hover:-translate-y-1
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-moss focus-visible:ring-offset-2">
+{{--
+    The card is a container with a stretched link, not one big anchor.
+
+    It used to wrap everything in a single <a>, which meant the host credit inside it could
+    never be a link of its own — nested anchors are invalid HTML and browsers drop the inner
+    one. The overlay below still makes the whole card clickable; anything that needs its own
+    destination just sits above it on the z-axis.
+--}}
+<div dusk="trip-card" data-trip="{{ $trip->id }}"
+     class="group relative rounded-3xl overflow-hidden bg-surface border border-ink/6 transition-all duration-300
+            shadow-[0_10px_30px_-18px_rgba(31,28,21,.35)]
+            hover:shadow-[0_28px_50px_-24px_rgba(31,28,21,.5)] hover:-translate-y-1
+            focus-within:ring-2 focus-within:ring-moss focus-within:ring-offset-2">
+
+    {{-- The title rides inside the anchor as visually-hidden text rather than as an aria-label:
+         an anchor with no text content is one a screen reader announces by its href, and it is
+         invisible to any tooling that finds links by their words. --}}
+    <a href="{{ route('trips.show', $trip) }}" class="absolute inset-0 z-0 focus:outline-none">
+        <span class="sr-only">View {{ $trip->title }}</span>
+    </a>
 
     {{-- Photo: wide, not tall — a strong first impression without dominating the card's height. --}}
     <div class="relative aspect-[16/10] overflow-hidden">
@@ -80,16 +95,9 @@
 
         {{-- footer: host stays legible, price stays quiet — it's a detail, not the headline --}}
         <div class="flex items-center justify-between gap-3 mt-4 pt-3.5 border-t border-ink/6">
-            <span class="inline-flex items-center gap-2 min-w-0">
-                <span class="grid place-items-center w-6 h-6 rounded-full bg-pine text-cream text-[10px] font-serif font-semibold shrink-0 overflow-hidden">
-                    @if($trip->host->avatar_url)
-                        <img src="{{ $trip->host->avatar_url }}" alt="" class="w-full h-full object-cover">
-                    @else{{ $trip->host->initials }}@endif
-                </span>
-                <span class="text-xs text-ink/65 truncate">{{ $trip->host->name }}</span>
-            </span>
+            <x-host-link :host="$trip->host" size="xs" class="text-xs text-ink/65" />
 
             <span class="text-sm font-medium text-ink/60 shrink-0">{{ $currency }} {{ number_format($trip->current_price) }} <span class="text-ink/40">/ person</span></span>
         </div>
     </div>
-</a>
+</div>

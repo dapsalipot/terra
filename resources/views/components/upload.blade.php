@@ -1,4 +1,4 @@
-@props(['label' => 'Photos', 'multiple' => false, 'max' => 10, 'hint' => null])
+@props(['label' => 'Photos', 'multiple' => false, 'max' => 10, 'hint' => null, 'prompt' => null, 'sub' => null])
 @php($model = $attributes->wire('model')->value())
 
 {{-- Drag-drop uploader. The real <input type="file"> stays in the DOM (visually hidden) so it
@@ -21,8 +21,10 @@
         <svg viewBox="0 0 24 24" class="w-6 h-6 text-ink/65" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 16V4M7.5 8.5L12 4l4.5 4.5M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/>
         </svg>
-        <span class="text-sm font-semibold">Drag {{ $multiple ? 'photos' : 'a photo' }} here</span>
-        <span class="text-xs text-ink/60">or click to browse{{ $multiple ? ' · up to '.$max : '' }}</span>
+        {{-- Overridable wording: a payment receipt and a trip gallery are not the same ask,
+             and "Drag a photo here" on a proof-of-payment field reads as the wrong thing. --}}
+        <span class="text-sm font-semibold">{{ $prompt ?? 'Drag '.($multiple ? 'photos' : 'a photo').' here' }}</span>
+        <span class="text-xs text-ink/60">{{ $sub ?? 'or click to browse'.($multiple ? ' · up to '.$max : '') }}</span>
         <input x-ref="input" type="file" accept="image/*" {{ $multiple ? 'multiple' : '' }}
                {{ $attributes->only(['wire:model', 'dusk']) }} class="sr-only">
     </label>

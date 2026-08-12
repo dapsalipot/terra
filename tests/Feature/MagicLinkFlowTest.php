@@ -1,9 +1,13 @@
 <?php
 
 use App\Mail\MagicLinkMail;
+use App\Models\MagicLink;
 use App\Models\Reservation;
+use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\MagicLinkService;
+use App\Services\RegistrationService;
+use App\Support\AccountOutcome;
 use Illuminate\Support\Facades\Mail;
 
 it('signs a user in through a login link', function () {
@@ -95,7 +99,7 @@ it('still issues sign-in links even though the login page no longer offers a for
     $this->post(route('magic.send'), ['email' => $user->email])->assertRedirect();
 
     Mail::assertSent(MagicLinkMail::class);
-    expect(App\Models\MagicLink::where('purpose', 'login')->count())->toBe(1);
+    expect(MagicLink::where('purpose', 'login')->count())->toBe(1);
 });
 
 it('does not lose a booking when the mail transport fails', function () {
@@ -103,9 +107,9 @@ it('does not lose a booking when the mail transport fails', function () {
     // roll back the reservation and its traveller rows. The booking must survive.
     Mail::shouldReceive('to')->andThrow(new RuntimeException('smtp is down'));
 
-    $departure = App\Models\TripDeparture::factory()->create(['capacity' => 5]);
+    $departure = TripDeparture::factory()->create(['capacity' => 5]);
 
-    $result = app(App\Services\RegistrationService::class)->register($departure, [
+    $result = app(RegistrationService::class)->register($departure, [
         'party_size' => 1,
         'contact' => [
             'first_name' => 'Ada', 'middle_name' => null, 'last_name' => 'Reyes',
@@ -118,7 +122,7 @@ it('does not lose a booking when the mail transport fails', function () {
     ]);
 
     expect($result->reservation->exists)->toBeTrue()
-        ->and($result->outcome)->toBe(App\Support\AccountOutcome::AccountCreated)
+        ->and($result->outcome)->toBe(AccountOutcome::AccountCreated)
         ->and(User::where('email', 'ada@example.com')->exists())->toBeTrue()
         ->and(Reservation::count())->toBe(1);
 });

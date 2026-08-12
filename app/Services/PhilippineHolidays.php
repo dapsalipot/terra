@@ -19,7 +19,7 @@ use Illuminate\Support\Carbon;
 class PhilippineHolidays
 {
     /**
-     * @return array<string, string>  date (Y-m-d) => name
+     * @return array<string, string> date (Y-m-d) => name
      */
     public function forYear(int $year): array
     {

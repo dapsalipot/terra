@@ -36,7 +36,9 @@
             <p class="text-sm text-ink/65">
                 {{ $reservation->departure->starts_at->format('D j M Y') }}
                 <span class="text-ink/40">·</span> {{ $reservation->party_size }} {{ \Illuminate\Support\Str::plural('seat', $reservation->party_size) }}
-                <span class="text-ink/40">·</span> {{ $trip->host->name }}
+                <span class="text-ink/40">·</span>
+                {{-- Not inside either of this card's anchors, so it can be a link in its own right. --}}
+                <x-host-link :host="$trip->host" :avatar="false" class="align-bottom" />
             </p>
             @if($actions)
                 <div class="flex items-center justify-end gap-1 mt-auto pt-3 border-t border-ink/8">

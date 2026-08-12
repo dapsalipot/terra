@@ -6,6 +6,7 @@ use App\Models\HostProfile;
 use App\Models\Place;
 use App\Models\Trip;
 use App\Models\User;
+use App\Support\PackingItems;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -240,9 +241,9 @@ it('summarises every step on the review screen', function () {
         ->call('next')->call('next')
         ->set('departures', [['starts_at' => now()->addWeek()->toDateString(), 'ends_at' => '', 'capacity' => 9]])
         ->set('meetups', [['label' => 'Cubao terminal', 'address' => '', 'lat' => '14.62', 'lng' => '121.05',
-                           'time' => '22:00', 'note' => '', 'image' => null, 'save_to_library' => false]])
+            'time' => '22:00', 'note' => '', 'image' => null, 'save_to_library' => false]])
         ->set('dropoffs', [['label' => 'Cubao terminal', 'address' => '', 'lat' => '', 'lng' => '',
-                            'time' => '18:00', 'note' => '', 'image' => null, 'save_to_library' => false]])
+            'time' => '18:00', 'note' => '', 'image' => null, 'save_to_library' => false]])
         ->call('next')
         ->assertSet('step', 5)
         // every step's content is on the review screen, not just a tick
@@ -295,7 +296,7 @@ it('stores a drop-off pin, photo and library copy just like a pickup', function 
         ->call('next')->call('next')
         ->set('departures', [['starts_at' => now()->addWeek()->toDateString(), 'ends_at' => '', 'capacity' => 9]])
         ->set('dropoffs', [['label' => 'Cubao terminal', 'address' => 'EDSA', 'lat' => '14.6220', 'lng' => '121.0530',
-                            'time' => '18:30', 'note' => 'By the jeepney bay', 'image' => null, 'save_to_library' => true]])
+            'time' => '18:30', 'note' => 'By the jeepney bay', 'image' => null, 'save_to_library' => true]])
         ->set('dropoffs.0.image', UploadedFile::fake()->image('bay.jpg'))
         ->call('publish');
 
@@ -324,7 +325,7 @@ it('rejects a drop-off pin outside the valid range', function () {
         ->call('next')->call('next')
         ->set('departures', [['starts_at' => now()->addWeek()->toDateString(), 'ends_at' => '', 'capacity' => 9]])
         ->set('dropoffs', [['label' => 'Nowhere', 'address' => '', 'lat' => '999', 'lng' => '0',
-                            'time' => '', 'note' => '', 'image' => null, 'save_to_library' => false]])
+            'time' => '', 'note' => '', 'image' => null, 'save_to_library' => false]])
         ->call('next')
         ->assertHasErrors(['dropoffs.0.lat'])
         ->assertSet('step', 4);
@@ -438,7 +439,7 @@ it('carries the packing list into a duplicated trip', function () {
  * the filter is on the way out as well as the way in.
  */
 it('drops a stored key the catalog no longer knows', function () {
-    $resolved = \App\Support\PackingItems::resolve(['headlamp', 'retired_key', 'water']);
+    $resolved = PackingItems::resolve(['headlamp', 'retired_key', 'water']);
 
     expect(collect($resolved)->pluck('key')->all())->toBe(['water', 'headlamp']);
 });

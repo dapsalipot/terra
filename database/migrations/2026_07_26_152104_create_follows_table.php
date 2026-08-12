@@ -17,5 +17,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::dropIfExists('follows'); }
+    public function down(): void
+    {
+        Schema::dropIfExists('follows');
+    }
 };

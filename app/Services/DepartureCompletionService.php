@@ -23,7 +23,7 @@ class DepartureCompletionService
             'host_id' => $trip->host_id,
             'trip_id' => $trip->id,
             'type' => 'recap',
-            'body' => "Just wrapped {$trip->title} — {$guests} ".str('joiner')->plural($guests)." on the trail. Until the next one!",
+            'body' => "Just wrapped {$trip->title} — {$guests} ".str('joiner')->plural($guests).' on the trail. Until the next one!',
         ]);
     }
 

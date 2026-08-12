@@ -16,21 +16,30 @@ class Profile extends Component
 
     // Identity
     public string $name = '';
+
     public string $handle = '';
+
     public string $tagline = '';
+
     public string $location = '';
+
     public string $bio = '';
 
     // Look
     public string $accent = Accents::DEFAULT;
+
     public $avatar = null;
+
     public $cover = null;
 
     // Links + money
     public array $links = ['instagram' => '', 'facebook' => '', 'website' => ''];
+
     public string $currency = 'PHP';
+
     /** Each: label, detail, qr (stored path). */
     public array $payment_methods = [];
+
     /** Staged QR uploads, keyed by payment-method index. Merged into payment_methods on save. */
     public array $payment_qr = [];
 
@@ -49,12 +58,12 @@ class Profile extends Component
         $this->accent = $profile?->accent ?: Accents::DEFAULT;
         $this->currency = $profile?->currency ?: 'PHP';
         $this->links = array_merge($this->links, $profile?->links ?? []);
-        $this->payment_methods = $profile?->payment_methods ?: [['label' => '', 'detail' => '', 'qr' => null]];
+        $this->payment_methods = $profile?->payment_methods ?: [['label' => '', 'name' => '', 'detail' => '', 'qr' => null]];
     }
 
     public function addPaymentMethod(): void
     {
-        $this->payment_methods[] = ['label' => '', 'detail' => '', 'qr' => null];
+        $this->payment_methods[] = ['label' => '', 'name' => '', 'detail' => '', 'qr' => null];
     }
 
     public function removePaymentMethod(int $i): void
@@ -92,6 +101,9 @@ class Profile extends Component
             'links.*' => ['nullable', 'string', 'max:120'],
             'payment_methods.*.label' => ['nullable', 'string', 'max:40'],
             'payment_methods.*.detail' => ['nullable', 'string', 'max:80'],
+            // The account name. A joiner sending to "0917 000 0000" has no way to check they
+            // are paying the right person; e-wallets show the name before the money moves.
+            'payment_methods.*.name' => ['nullable', 'string', 'max:80'],
             'payment_qr.*' => ['nullable', 'image', 'max:5120'],
         ]);
 
@@ -167,6 +179,6 @@ class Profile extends Component
         return view('livewire.host.profile', [
             'user' => Auth::user()->fresh('hostProfile'),
             'palette' => Accents::PALETTE,
-        ])->layout('components.layouts.host', ['title' => 'Peeps · Profile']);
+        ])->layout('components.layouts.host', ['title' => 'Terra · Profile']);
     }
 }

@@ -120,11 +120,11 @@ it('counts payments waiting on the host', function () {
     $departure = $trip->departures->sole();
 
     Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                         'party_size' => 2, 'status' => 'payment_submitted']);
+        'party_size' => 2, 'status' => 'payment_submitted']);
     Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                         'party_size' => 1, 'status' => 'awaiting_payment']);
+        'party_size' => 1, 'status' => 'awaiting_payment']);
     Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                         'party_size' => 3, 'status' => 'confirmed']);
+        'party_size' => 3, 'status' => 'confirmed']);
 
     Livewire::actingAs($host)->test(Dashboard::class)
         ->assertViewHas('toConfirm', 1)
@@ -134,15 +134,29 @@ it('counts payments waiting on the host', function () {
 
 // ── the per-schedule dashboard ────────────────────────────────────────────────
 
+/**
+ * A booking whose payment the host has verified — the thing that credits money now that
+ * confirming a seat no longer does.
+ */
+function withVerifiedPayment(Reservation $r, User $host): Reservation
+{
+    $r->paymentSubmissions()->create([
+        'reference_no' => '9021', 'submitted_at' => now(),
+        'confirmed_at' => now(), 'confirmed_by' => $host->id,
+    ]);
+
+    return $r->fresh();
+}
+
 it('adds up what is expected, collected and outstanding', function () {
     $host = dashHost();
     $trip = schedule($host, now()->addWeek()->toDateString());   // 2000 per person, pay in full
     $departure = $trip->departures->sole();
 
+    withVerifiedPayment(Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
+        'party_size' => 2, 'status' => 'confirmed']), $host);   // 4000 in
     Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                         'party_size' => 2, 'status' => 'confirmed']);          // 4000 in
-    Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                         'party_size' => 1, 'status' => 'payment_submitted']);  // 2000 expected, 0 in
+        'party_size' => 1, 'status' => 'payment_submitted']);  // 2000 expected, not yet verified
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $departure])
         ->assertViewHas('money', fn ($m) => $m['expected'] === 6000.0
@@ -155,10 +169,10 @@ it('leaves a cancelled booking out of the money', function () {
     $trip = schedule($host, now()->addWeek()->toDateString());
     $departure = $trip->departures->sole();
 
+    withVerifiedPayment(Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
+        'party_size' => 2, 'status' => 'confirmed']), $host);
     Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                         'party_size' => 2, 'status' => 'confirmed']);
-    Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                         'party_size' => 5, 'status' => 'cancelled']);
+        'party_size' => 5, 'status' => 'cancelled']);
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $departure])
         ->assertViewHas('money', fn ($m) => $m['expected'] === 4000.0 && $m['outstanding'] === 0.0);
@@ -169,8 +183,8 @@ it('counts only the deposit as collected and flags the balance', function () {
     $trip = schedule($host, now()->addWeek()->toDateString(), ['deposit' => '500']);
     $departure = $trip->departures->sole();
 
-    $r = Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                              'party_size' => 2, 'status' => 'confirmed']);
+    $r = withVerifiedPayment(Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
+        'party_size' => 2, 'status' => 'confirmed']), $host);
 
     // 2 × 2000 expected, 2 × 500 taken up front, 3000 still owed on the day
     expect($r->fresh()->money())->toBe(['total' => 4000.0, 'paid' => 1000.0, 'due' => 3000.0])
@@ -178,7 +192,10 @@ it('counts only the deposit as collected and flags the balance', function () {
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $departure])
         ->assertViewHas('money', fn ($m) => $m['collected'] === 1000.0 && $m['outstanding'] === 3000.0)
-        ->assertSee('Balance due');
+        // Same guarantee, sharper wording: the chip now names the amount still owed rather
+        // than saying "Balance due" and leaving the host to work it out.
+        // The money column states the numbers; the chip used to narrate them in words.
+        ->assertSee('3,000 due');
 });
 
 it('does not flag a balance when the trip is paid in full', function () {
@@ -186,8 +203,8 @@ it('does not flag a balance when the trip is paid in full', function () {
     $trip = schedule($host, now()->addWeek()->toDateString());
     $departure = $trip->departures->sole();
 
-    $r = Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                              'party_size' => 1, 'status' => 'confirmed']);
+    $r = withVerifiedPayment(Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
+        'party_size' => 1, 'status' => 'confirmed']), $host);
 
     expect($r->fresh()->owesBalance())->toBeFalse();
 
@@ -203,7 +220,7 @@ it('prices the roster from the live tier, not the flat price', function () {
     $departure = $trip->departures->sole();
 
     Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => User::factory()->create()->id,
-                         'party_size' => 2, 'status' => 'confirmed']);
+        'party_size' => 2, 'status' => 'confirmed']);
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $departure])
         ->assertViewHas('money', fn ($m) => $m['expected'] === 3000.0);   // 2 × 1500, not 2 × 2000
@@ -216,13 +233,14 @@ it('shows who booked and how to reach them', function () {
 
     $joiner = User::factory()->create(['name' => 'Ana Cruz', 'email' => 'ana@example.test', 'phone' => '09171234567']);
     Reservation::create(['trip_departure_id' => $departure->id, 'joiner_id' => $joiner->id,
-                         'party_size' => 2, 'status' => 'confirmed']);
+        'party_size' => 2, 'status' => 'confirmed']);
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $departure])
         ->assertSee('Ana Cruz')
         ->assertSee('ana@example.test')
-        ->assertSee('09171234567')
-        ->assertSee('2 places');
+        ->assertSee('09171234567');
+    // No "Booking" column any more: who pays and how to reach them sits under the traveller
+    // it belongs to, rather than in a greyed column of its own.
 });
 
 it('refuses to open another host’s schedule dashboard', function () {

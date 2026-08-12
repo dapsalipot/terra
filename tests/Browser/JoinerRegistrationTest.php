@@ -43,6 +43,9 @@ class JoinerRegistrationTest extends DuskTestCase
                 ->keys('@seat-0-birthday', '04', '02', '1998')
                 ->uncheck('@create-account')
                 ->click('@submit-registration')
+                // the primary button opens the review sheet; the booking is confirmed inside it
+                ->waitFor('@confirm-booking')
+                ->click('@confirm-booking')
                 ->waitForText('Save this link')
                 ->assertVisible('@booking-link');
         });
@@ -68,7 +71,10 @@ class JoinerRegistrationTest extends DuskTestCase
                 ->type('@contact-email', 'ben@example.com')
                 ->type('@contact-phone', '09998887777')
                 ->keys('@seat-0-birthday', '01', '10', '1995')
-                ->click('@submit-registration')          // toggle left checked
+                ->click('@submit-registration')
+                // the primary button opens the review sheet; the booking is confirmed inside it
+                ->waitFor('@confirm-booking')
+                ->click('@confirm-booking')          // toggle left checked
                 ->waitForText('Save this link');
         });
 
@@ -101,6 +107,9 @@ class JoinerRegistrationTest extends DuskTestCase
                 ->keys('@seat-0-birthday', '03', '15', '2000')
                 ->uncheck('@create-account')
                 ->click('@submit-registration')
+                // the primary button opens the review sheet; the booking is confirmed inside it
+                ->waitFor('@confirm-booking')
+                ->click('@confirm-booking')
                 ->waitForText('Save this link');
         });
 
@@ -124,7 +133,9 @@ class JoinerRegistrationTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($departure) {
             $browser->visit('/t/'.$departure->trip->slug.'/join')
                 ->waitForText('Join this trip')
-                ->assertVisible('@seat-0')
+                // One seat has no traveller cards at all now — the booker's own fields live in
+                // "Your details". The cards are what extra seats reveal.
+                ->assertMissing('@seat-1')
                 ->assertMissing('@seat-2')
                 // Real keystrokes, not clear()+type(): clear() sets the value without firing an
                 // input event, so the empty-field state never reached the server and a 500 on

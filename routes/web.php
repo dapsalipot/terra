@@ -2,11 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 
-// Public marketplace (Peeps 01)
+// Public marketplace (Terra 01)
 Route::get('/', \App\Livewire\Home::class)->name('home');
 Route::get('/trips', \App\Livewire\Trips\Index::class)->name('trips.index');
 Route::get('/t/{trip:slug}', \App\Livewire\Trips\Show::class)->name('trips.show');
-Route::get('/t/{trip:slug}/join', \App\Livewire\Reservations\Register::class)->name('trips.join');
+// Throttled: reserve() holds a seat for hours, so an unthrottled endpoint lets one person
+// empty a departure with junk holds and leave it reading sold out until they expire.
+Route::get('/t/{trip:slug}/join', \App\Livewire\Reservations\Register::class)
+    ->middleware('throttle:30,1')->name('trips.join');
 Route::get('/hosts', \App\Livewire\Hosts\Index::class)->name('hosts.index');
 Route::get('/@{user:handle}', \App\Livewire\Hosts\Show::class)->name('hosts.show');
 
@@ -53,6 +56,14 @@ Route::post('/magic', \App\Http\Controllers\SendMagicLinkController::class)
  * the token is the credential. The page exposes exactly one booking and no account data.
  */
 Route::get('/r/{token}', \App\Livewire\Reservations\Show::class)->name('reservations.show');
+// The receipt the joiner uploaded, served on the strength of the booking token they already hold.
+Route::get('/r/{token}/proof', \App\Http\Controllers\BookingProofController::class)->name('reservations.proof');
+// A traveller ID photo. Guarded in the controller, not by a route group: the host reaches it
+// while signed in, the joiner reaches it with the booking token, and nobody else at all.
+Route::get('/ids/{participant}', \App\Http\Controllers\ParticipantIdController::class)->name('participants.id');
+// The QR square itself, and the pass it sits on. Both guarded the same way as the ID above.
+Route::get('/passes/{participant}/qr', \App\Http\Controllers\PassQrController::class)->name('passes.qr');
+Route::get('/r/{token}/pass', \App\Livewire\Reservations\Pass::class)->name('reservations.pass');
 
 /*
  * Legacy URL kept alive so links already sent out keep working.
@@ -96,14 +107,25 @@ Route::middleware(['auth', 'host'])->prefix('host')->group(function () {
     // same wizard, pre-loaded from a trip the host has already run
     Route::get('/trips/create/from/{from:slug}', \App\Livewire\Host\Trips\Create::class)->name('host.trips.duplicate');
     Route::get('/departures/{departure}/roster', \App\Livewire\Host\Roster::class)->name('host.roster');
+    Route::get('/departures/{departure}/check-in', \App\Livewire\Host\Scanner::class)->name('host.checkin');
     Route::get('/trips/{trip:slug}/qr', \App\Http\Controllers\TripQrController::class)->name('host.trips.qr');
     Route::get('/proof/{payment}', \App\Http\Controllers\ProofController::class)->name('host.proof');
+});
+
+/*
+ * The admin area.
+ *
+ * Not nested under /host: a moderator is not a seller, and putting the two behind the same
+ * prefix invites the mistake of guarding one with the other s middleware.
+ */
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/', \App\Livewire\Admin\Dashboard::class)->name('admin.dashboard');
 });
 
 require __DIR__.'/auth.php';
 
 /*
- * Root-level host pages: peeps.test/trailco
+ * Root-level host pages: terra.test/trailco
  *
  * Registered last so every named route above wins, and constrained to a handle shape so
  * it cannot swallow an unmatched URL and turn a 404 into a "host not found".

@@ -16,7 +16,7 @@
     'pay' => 'text-terra',
     'details' => 'text-amber',
     'balance' => 'text-amber',
-    'review' => 'text-ink/60',
+    'review' => 'text-ink/70',
 ])
 
 @php($attentionBg = [
@@ -43,126 +43,36 @@
 
 <div class="w-full px-5 sm:px-8 2xl:px-12 py-8">
     {{-- ═══ HEADER ═══ --}}
-    {{-- Stacked on a phone: the controls held their width and squeezed the title to two lines
-         and the description to four. --}}
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+    {{-- The view switcher used to live up here, a full column away from the thing it switched.
+         It now sits on the calendar it controls, which leaves the header as a title and nothing
+         else — and stops the controls squeezing the heading to two lines on a phone. --}}
+    <div class="mb-6">
         <div>
             <h1 class="font-serif font-semibold text-3xl mb-1">Your trips</h1>
             <p class="text-ink/65">Everything you have booked, and anything still waiting on you.</p>
         </div>
-        <div class="flex items-center gap-2 sm:shrink-0">
-            {{-- Three views, shown as one segmented control so the current one is always
-                 visible rather than inferred from an icon that toggles. --}}
-            <div class="inline-flex items-center rounded-xl border border-ink/15 p-1 bg-surface" role="group" aria-label="View">
-                @foreach([
-                    'calendar' => ['Calendar', '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'],
-                    'grid' => ['Cards', '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'],
-                    'list' => ['List', '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'],
-                ] as $key => $meta)
-                    <button type="button" wire:click="setView('{{ $key }}')" dusk="view-{{ $key }}"
-                            aria-pressed="{{ $view === $key ? 'true' : 'false' }}"
-                            aria-label="{{ $meta[0] }} view"
-                            class="inline-flex items-center gap-1.5 rounded-lg px-3 min-h-[38px] text-sm font-semibold transition-colors
-                                   {{ $view === $key ? 'bg-pine text-cream shadow-sm' : 'text-ink/60 hover:text-ink hover:bg-ink/5' }}">
-                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $meta[1] !!}</svg>
-                        <span class="hidden sm:inline">{{ $meta[0] }}</span>
-                    </button>
-                @endforeach
-            </div>
-        </div>
     </div>
 
-    {{-- Two columns once there is room for them. Below xl this collapses to one, and the
-         aside comes first in the DOM so "Needs you" still leads on a phone. --}}
-    <div class="xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-8 xl:items-start">
+    {{--
+        60/40 from xl.
 
-        <aside class="xl:col-start-2 xl:row-start-1 xl:sticky xl:top-6 space-y-4 mb-8 xl:mb-0">
-        {{-- ═══ NEEDS YOU ═══ --}}
-        @php($flatAttention = collect($attention)->flatten(1)->filter(fn ($item) => ! in_array($item['kind'], $dismissedAttention))->values())
-        @if($flatAttention->isNotEmpty())
-            <section class="mb-10" dusk="needs-you">
-                <h2 class="marker text-[11px] font-semibold text-ink/60 mb-3">Needs you</h2>
+        The right column used to be a 22rem rail of nudges; it now carries the trip you are
+        actually going on, so it earns real width. But not half: the calendar is a seven-column
+        grid whose cells each hold a photo and a label, and it degrades faster than a single
+        stack of cards does. Not sticky either — this column is taller than a viewport, and
+        pinning it would strand the bottom.
+    --}}
+    <div class="xl:grid xl:grid-cols-[3fr_2fr] xl:gap-8 xl:items-start">
 
-                <div class="space-y-2">
-                    @foreach($flatAttention as $item)
-                        {{-- Stacked, not a horizontal row. These sit in a 22rem sidebar on wide screens,
-                             where an inline CTA crushed the text to about 110px and wrapped every title
-                             three lines deep. --}}
-                        <div class="rounded-2xl p-4 border {{ $attentionBg[$item['kind']] ?? 'bg-ink/[.03] border-ink/8' }}"
-                             dusk="attention-{{ $item['kind'] }}-{{ $item['reservation_id'] }}">
-                            <div class="flex items-start gap-3">
-                                <div class="shrink-0 mt-0.5 {{ $attentionColor[$item['kind']] ?? 'text-ink/60' }}">
-                                    {!! $attentionIcon[$item['kind']] ?? '' !!}
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-semibold leading-snug">{{ $item['title'] }}</p>
-                                    <p class="text-sm text-ink/70 mt-1">{{ $item['detail'] }}</p>
-                                </div>
-                                @unless($item["urgent"])
-                                    <button type="button" wire:click="dismissAttention('{{ $item['kind'] }}')"
-                                            class="shrink-0 -mt-1 -mr-1 text-ink/35 hover:text-ink/70 p-2 rounded-lg hover:bg-ink/5 transition-colors"
-                                            aria-label="Dismiss">
-                                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                    </button>
-                                @endunless
-                            </div>
-                            <a href="{{ $item['href'] }}" wire:navigate
-                               class="mt-3 flex items-center justify-center rounded-full px-5 min-h-[44px] text-sm font-semibold transition-colors
-                                      {{ $item['urgent'] ? 'bg-pine text-cream hover:bg-pine/90 shadow-sm' : 'border border-ink/20 hover:border-ink/40 bg-surface' }}">
-                                {{ $item['cta'] }}
-                            </a>
-                        </div>
-                    @endforeach
-                </div>
-            </section>
-        @endif
+        {{--
+            The calendar comes first in the source, and therefore first on a phone.
 
-
-        {{-- ═══ CLAIM GUEST BOOKINGS ═══ --}}
-        <section class="rounded-2xl bg-ink/[.03] border border-ink/8 p-5">
-            @if($orphaned->isNotEmpty() && ! $claimStatus)
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-full bg-moss/10 text-moss grid place-items-center shrink-0">
-                        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    </div>
-                    <div>
-                        <p class="text-sm font-semibold mb-1">Found {{ $orphaned->count() }} {{ \Illuminate\Support\Str::plural('booking', $orphaned->count()) }} made as a guest</p>
-                        <p class="text-sm text-ink/70 mb-3">
-                            We can email {{ auth()->user()->email }} a link to attach them to your account.
-                        </p>
-                        <button wire:click="claimGuestBookings" dusk="claim-bookings"
-                                class="inline-flex items-center rounded-full border border-ink/20 px-5 min-h-[44px] text-sm font-semibold hover:border-moss hover:bg-moss/5 transition-colors">
-                            Email me a link
-                        </button>
-                    </div>
-                </div>
-            @elseif($claimStatus)
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-full bg-moss/10 text-moss grid place-items-center shrink-0">
-                        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>
-                    <p class="text-sm text-moss font-semibold" dusk="claim-status">{{ $claimStatus }}</p>
-                </div>
-            @else
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-full bg-ink/[.05] text-ink/50 grid place-items-center shrink-0">
-                        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    </div>
-                    <div>
-                        <p class="text-sm font-semibold mb-1">Booked as a guest before?</p>
-                        <p class="text-sm text-ink/70 mb-3">
-                            Bookings made without an account are not listed here. We can email
-                            {{ auth()->user()->email }} a link to attach them.
-                        </p>
-                        <button wire:click="claimGuestBookings" dusk="claim-bookings"
-                                class="inline-flex items-center rounded-full border border-ink/20 px-5 min-h-[44px] text-sm font-semibold hover:border-moss hover:bg-moss/5 transition-colors">
-                            Email me a link
-                        </button>
-                    </div>
-                </div>
-            @endif
-        </section>
-        </aside>
+            The aside carries an explicit `xl:col-start-2 xl:row-start-1`, so its position in the
+            grid is stated rather than inherited from source order — which means the two can be
+            swapped in the DOM without a single `order-*` utility and without moving anything on
+            desktop. A joiner opening this on a phone came here to see when they are away; four
+            panels of admin above the calendar made them scroll past the answer to reach it.
+        --}}
 
         <div class="xl:col-start-1 xl:row-start-1 min-w-0">
         {{-- Two tabs, always visible. Cards and List only: in Calendar the month is the scope, and
@@ -172,7 +82,7 @@
                 @foreach(['upcoming' => 'Upcoming', 'past' => 'Past'] as $key => $label)
                     <button type="button" wire:click="setFilter('{{ $key }}')" dusk="tab-{{ $key }}"
                             aria-pressed="{{ $filter === $key ? 'true' : 'false' }}"
-                            class="rounded-full px-4 min-h-[40px] text-sm font-semibold transition-colors
+                            class="rounded-full px-4 min-h-[44px] text-sm font-semibold transition-colors
                                    {{ $filter === $key ? 'bg-pine text-cream' : 'border border-ink/15 hover:border-ink/35' }}">
                         {{ $label }}
                     </button>
@@ -182,11 +92,34 @@
 
         {{-- ═══ BOOKINGS ═══ --}}
         <section class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="marker text-[11px] font-semibold text-ink/60">
-                    {{ $view === 'calendar' ? 'Your calendar' : ($filter === 'past' ? 'Past' : 'Upcoming') }}
-                </h2>
-                <span class="text-xs text-ink/50 font-medium">{{ $filtered->count() }} {{ \Illuminate\Support\Str::plural('booking', $filtered->count()) }}</span>
+            {{-- The switcher sits directly on top of what it switches. A control a full column
+                 away from its effect makes you hunt for the cause of a change you just made —
+                 and on a phone it was a screen-height apart from the calendar entirely. --}}
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="min-w-0">
+                    <h2 class="marker text-[11px] font-semibold text-ink/70">
+                        {{ $view === 'calendar' ? 'Your calendar' : ($filter === 'past' ? 'Past' : 'Upcoming') }}
+                    </h2>
+                    <span class="text-xs text-ink/65 font-medium">{{ $filtered->count() }} {{ \Illuminate\Support\Str::plural('booking', $filtered->count()) }}</span>
+                </div>
+                {{-- Three views, shown as one segmented control so the current one is always
+                     visible rather than inferred from an icon that toggles. --}}
+                <div class="inline-flex items-center rounded-xl border border-ink/15 p-1 bg-surface shrink-0" role="group" aria-label="View">
+                @foreach([
+                    'calendar' => ['Calendar', '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'],
+                    'grid' => ['Cards', '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'],
+                    'list' => ['List', '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'],
+                ] as $key => $meta)
+                    <button type="button" wire:click="setView('{{ $key }}')" dusk="view-{{ $key }}"
+                            aria-pressed="{{ $view === $key ? 'true' : 'false' }}"
+                            aria-label="{{ $meta[0] }} view"
+                            class="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 min-w-[44px] min-h-[44px] text-sm font-semibold transition-colors
+                                   {{ $view === $key ? 'bg-pine text-cream shadow-sm' : 'text-ink/70 hover:text-ink hover:bg-ink/5' }}">
+                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $meta[1] !!}</svg>
+                        <span class="hidden sm:inline">{{ $meta[0] }}</span>
+                    </button>
+                    @endforeach
+                </div>
             </div>
 
             {{-- Calendar first, and outside the emptiness guard: it must render even when the
@@ -199,19 +132,19 @@
                         <div class="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-ink/8">
                             <div class="min-w-0">
                                 <p class="font-serif font-semibold text-lg leading-tight">{{ $cursor->format('F Y') }}</p>
-                                <p class="text-xs text-ink/55">
+                                <p class="text-xs text-ink/70">
                                     {{ $monthCount }} {{ \Illuminate\Support\Str::plural('trip', $monthCount) }} this month
                                 </p>
                             </div>
                             <div class="flex items-center gap-1 shrink-0">
                                 <button type="button" wire:click="shiftMonth(-1)" dusk="cal-prev" aria-label="Previous month"
-                                        class="grid place-items-center w-10 h-10 rounded-lg text-ink/60 hover:text-ink hover:bg-ink/5 transition-colors">
+                                        class="grid place-items-center w-11 h-11 rounded-lg text-ink/70 hover:text-ink hover:bg-ink/5 transition-colors">
                                     <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                                 </button>
                                 <button type="button" wire:click="today" dusk="cal-today"
-                                        class="rounded-lg px-3 h-10 text-sm font-semibold text-ink/70 hover:text-ink hover:bg-ink/5 transition-colors">Today</button>
+                                        class="rounded-lg px-3 h-11 text-sm font-semibold text-ink/70 hover:text-ink hover:bg-ink/5 transition-colors">Today</button>
                                 <button type="button" wire:click="shiftMonth(1)" dusk="cal-next" aria-label="Next month"
-                                        class="grid place-items-center w-10 h-10 rounded-lg text-ink/60 hover:text-ink hover:bg-ink/5 transition-colors">
+                                        class="grid place-items-center w-11 h-11 rounded-lg text-ink/70 hover:text-ink hover:bg-ink/5 transition-colors">
                                     <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                                 </button>
                             </div>
@@ -221,7 +154,7 @@
                         <div class="grid grid-cols-7 gap-1 sm:gap-2 px-2 sm:px-3 pt-3">
                             @foreach(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] as $dow)
                                 @php($isWeekendCol = in_array($dow, ['Sat', 'Sun']))
-                                <div class="text-center text-[10px] font-semibold uppercase tracking-wide pb-1 {{ $isWeekendCol ? 'text-moss' : 'text-ink/40' }}">
+                                <div class="text-center text-[11px] font-semibold uppercase tracking-wide pb-1 {{ $isWeekendCol ? 'text-moss' : 'text-ink/70' }}">
                                     <span class="sm:hidden">{{ substr($dow, 0, 1) }}</span>
                                     <span class="hidden sm:inline">{{ $dow }}</span>
                                 </div>
@@ -238,12 +171,22 @@
                                         @if($booking)
                                             @php($trip = $booking->departure->trip)
                                             @php($isPast = $day['date']->isPast() && ! $day['isToday'])
+                                            {{-- The tile repeats across every day of the trip now, so it has to say which
+                                                 day it is. Three identical photos in a row otherwise read as three trips. --}}
+                                            @php($span = $booking->departure->spanDays())
+                                            @php($dayNo = $span > 1 ? $booking->departure->dayNumberOn($day['date']) : 0)
+                                            {{-- Built here, not inline: Blade will not compile `@endif` butted straight
+                                                 against the next `@if`, and the second directive silently becomes literal
+                                                 text whose stray `@endif` then closes the wrong block. --}}
+                                            @php($dayPart = $dayNo ? ' · day '.$dayNo.' of '.$span : '')
+                                            @php($tileTitle = $trip->title.$dayPart.($day['holiday'] ? ' · '.$day['holiday'] : ''))
+                                            @php($tileLabel = $day['date']->format('j F').' — '.$trip->title.$dayPart.', open this booking')
                                             {{-- A booked day goes straight to that booking. It is the thing the joiner wants:
                                                  pay, traveller details and the host's payment methods all live there. --}}
                                             <a href="{{ route('reservations.show', ['token' => $booking->public_token]) }}" wire:navigate
                                                dusk="cal-day-{{ $iso }}"
-                                               title="{{ $trip->title }}@if($day['holiday']) · {{ $day['holiday'] }}@endif"
-                                               aria-label="{{ $day['date']->format('j F') }} — {{ $trip->title }}, open this booking"
+                                               title="{{ $tileTitle }}"
+                                               aria-label="{{ $tileLabel }}"
                                                {{-- focus-visible in moss, not the browser's blue: the default ring is the one
                                                     colour on this page that belongs to no part of the palette. --}}
                                                class="group relative aspect-square rounded-lg sm:rounded-2xl overflow-hidden block
@@ -254,13 +197,19 @@
                                                      class="absolute inset-0 w-full h-full object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-[1.12] {{ $isPast ? 'grayscale' : '' }}">
                                                 <div class="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/25 to-ink/10" aria-hidden="true"></div>
 
-                                                <span class="absolute top-1 left-1 sm:top-2 sm:left-2 grid place-items-center min-w-[1.35rem] sm:min-w-[1.6rem] h-5 sm:h-6 px-1 rounded-full bg-cream text-ink text-[10px] sm:text-xs font-bold shadow-sm">
+                                                <span class="absolute top-1 left-1 sm:top-2 sm:left-2 grid place-items-center min-w-[1.35rem] sm:min-w-[1.6rem] h-5 sm:h-6 px-1 rounded-full bg-surface text-ink text-[11px] sm:text-xs font-bold shadow-sm">
                                                     {{ $day['date']->day }}
                                                 </span>
 
                                                 @if($day['bookings']->count() > 1)
                                                     <span class="absolute top-1 right-1 sm:top-2 sm:right-2 grid place-items-center h-5 sm:h-6 px-1.5 rounded-full bg-pine text-cream text-[10px] font-bold">
                                                         +{{ $day['bookings']->count() - 1 }}
+                                                    </span>
+                                                @elseif($dayNo)
+                                                    {{-- Visible at every size: the title panel below is sm-only, so on a phone
+                                                         this chip is the only thing distinguishing day 2 from day 1. --}}
+                                                    <span class="absolute top-1 right-1 sm:top-2 sm:right-2 grid place-items-center h-5 sm:h-6 px-1.5 rounded-full bg-pine text-cream text-[10px] font-bold tabular-nums">
+                                                        {{ $dayNo }}/{{ $span }}
                                                     </span>
                                                 @endif
 
@@ -326,7 +275,8 @@
                                             @php($ariaParts = collect([$day['date']->format('j F')])
                                                 ->when($day['holiday'], fn ($c) => $c->push($day['holiday']))
                                                 ->push($hasTrips
-                                                    ? $day['available'].' '.\Illuminate\Support\Str::plural('trip', $day['available']).' leaving this day'
+                                                    ? $day['available'].' '.\Illuminate\Support\Str::plural('trip', $day['available'])
+                                                        .($day['continuing'] > 0 ? ' available this day' : ' leaving this day')
                                                     : 'no trips leaving this day')
                                                 ->when($hasTrips && $day['types'], fn ($c) => $c->push(collect($day['types'])->pluck('label')->implode(', '))))
 
@@ -359,7 +309,7 @@
 
                                                     {{-- ── phone ── --}}
                                                     <span class="sm:hidden flex flex-col items-center justify-center gap-0.5 w-full px-1">
-                                                        <span class="text-[10px] font-bold leading-none {{ $day['inMonth'] ? 'text-pine' : 'text-ink/25' }}">{{ $day['date']->day }}</span>
+                                                        <span class="text-[11px] font-bold leading-none {{ $day['inMonth'] ? 'text-ink' : 'text-ink/70' }}">{{ $day['date']->day }}</span>
                                                         @if($day['covers'])
                                                             <img src="{{ $day['covers'][0]['url'] }}" alt="" loading="lazy"
                                                                  class="w-4 h-4 rounded object-cover ring-1 ring-surface shadow-sm">
@@ -374,7 +324,7 @@
 
                                                     {{-- ── sm and up ── --}}
                                                     <span class="hidden sm:block absolute top-1.5 left-2 text-xs font-bold
-                                                                 {{ $day['inMonth'] ? 'text-pine' : 'text-ink/25' }}">{{ $day['date']->day }}</span>
+                                                                 {{ $day['inMonth'] ? 'text-pine' : 'text-ink/70' }}">{{ $day['date']->day }}</span>
 
                                                     {{--
                                                         What kind of trips these are.
@@ -426,7 +376,7 @@
                                                 @else
                                                     <span class="text-[11px] sm:text-xs
                                                                  {{ $day['isWeekend'] || $day['holiday'] ? 'font-bold' : 'font-semibold' }}
-                                                                 {{ $day['inMonth'] ? ($day['holiday'] ? 'text-ink' : ($day['isWeekend'] ? 'text-pine' : 'text-ink/40')) : 'text-ink/15' }}">
+                                                                 {{ $day['inMonth'] ? ($day['holiday'] ? 'text-ink' : ($day['isWeekend'] ? 'text-pine' : 'text-ink/70')) : 'text-ink/70' }}">
                                                         {{ $day['date']->day }}
                                                     </span>
                                                 @endif
@@ -477,7 +427,7 @@
                             <div class="flex items-center gap-3 mb-3">
                                 <h3 class="font-serif font-semibold text-lg">{{ $monthLabel }}</h3>
                                 <span class="h-px flex-1 bg-ink/10"></span>
-                                <span class="text-xs text-ink/50 font-semibold">{{ $monthBookings->count() }}</span>
+                                <span class="text-xs text-ink/65 font-semibold">{{ $monthBookings->count() }}</span>
                             </div>
                     <div class="grid gap-4 sm:grid-cols-2">
                         @foreach($monthBookings as $r)
@@ -498,27 +448,454 @@
             @endif
         </section>
 
-        {{-- ═══ PAST ═══ --}}
-        @if($filter !== 'past' && $past->isNotEmpty())
-            <section class="mb-8">
-                <h2 class="marker text-[11px] font-semibold text-ink/60 mb-3">Past</h2>
+        {{--
+            ═══ WHERE YOU HAVE BEEN ═══
 
-                @if($view === 'grid')
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        @foreach($past as $r)
-                            <x-booking-card :reservation="$r" variant="row" :actions="false" />
-                        @endforeach
+            A flat list of past trips answers "what did I do" and nothing else. The numbers are
+            already in the database — every trail carries its ascent, distance and summit — and a
+            history that does not add them up is throwing away the only thing it knows that a
+            calendar does not.
+
+            Newest month first: a history read forwards buries this year under every year before it.
+        --}}
+        @if($filter !== 'past' && $pastByMonth->isNotEmpty())
+            <section class="mb-8" dusk="past">
+                <div class="flex items-end justify-between gap-3 mb-3">
+                    <h2 class="marker text-[11px] font-semibold text-ink/70">Where you have been</h2>
+                    <span class="text-xs text-ink/65 font-medium">{{ $past->count() }} {{ \Illuminate\Support\Str::plural('trip', $past->count()) }}</span>
+                </div>
+
+                {{-- The whole history in one band. Dark, because it is the one celebratory thing on
+                     a page otherwise made of admin — and because it separates the summary from the
+                     months underneath without another border. --}}
+                <div class="rounded-2xl bg-pine text-cream p-5 sm:p-6 mb-4" dusk="past-totals">
+                    <p class="text-[11px] uppercase tracking-[0.09em] font-semibold text-cream/80 mb-3">All time</p>
+                    <x-trail-stats :stats="$pastTotals" tone="pine" />
+
+                    @if($pastTotals['inclusions']->isNotEmpty())
+                        <div class="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-cream/15">
+                            @foreach($pastTotals['inclusions']->take(8) as $inclusion)
+                                <span class="rounded-full bg-cream/10 px-2.5 py-1 text-[11px] font-semibold text-cream/85">{{ $inclusion }}</span>
+                            @endforeach
+                            @if($pastTotals['inclusions']->count() > 8)
+                                <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold text-cream/50">
+                                    +{{ $pastTotals['inclusions']->count() - 8 }} more
+                                </span>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+
+                <div class="space-y-4">
+                    @foreach($pastByMonth as $month => $group)
+                        <div dusk="past-month" class="rounded-2xl border border-ink/10 bg-surface overflow-hidden">
+                            {{-- The month's own header and its own totals. "6,240 m in August" is a
+                                 fact about a month; the same number spread over a year says nothing. --}}
+                            <div class="px-4 sm:px-5 py-4 border-b border-ink/8 bg-cream/40">
+                                <div class="flex items-baseline justify-between gap-3 mb-3">
+                                    <p class="font-serif font-semibold text-lg leading-tight">{{ $month }}</p>
+                                    <span class="text-xs text-ink/65 font-medium shrink-0">
+                                        {{ $group['stats']['trips'] }} {{ \Illuminate\Support\Str::plural('trip', $group['stats']['trips']) }}
+                                    </span>
+                                </div>
+                                <x-trail-stats :stats="$group['stats']" compact />
+                            </div>
+
+                            {{-- The trips themselves, hairline-separated rather than each in its own
+                                 card: inside a month card, a second card per row is a border inside
+                                 a border and the rows stop reading as one group. --}}
+                            <ul class="divide-y divide-ink/[.06]">
+                                @foreach($group['rows'] as $r)
+                                    @php($pTrip = $r->departure->trip)
+                                    @php($pHike = $pTrip->hikeDetails->first())
+                                    <li>
+                                        <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
+                                           class="flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-ink/[.02] transition-colors">
+                                            <img src="{{ $pTrip->cover_url }}" alt="" loading="lazy"
+                                                 class="w-12 h-12 rounded-xl object-cover shrink-0">
+                                            <span class="min-w-0 flex-1">
+                                                <span class="block font-semibold text-sm truncate">{{ $pTrip->title }}</span>
+                                                <span class="block text-xs text-ink/70 truncate">
+                                                    {{ $r->departure->starts_at->format('D, j M') }}
+                                                    @if($r->departure->isMultiDay())
+                                                        · {{ $r->departure->spanDays() }} days
+                                                    @endif
+                                                    · {{ $pTrip->host->name }}
+                                                </span>
+                                            </span>
+
+                                            {{-- The trail's own figures, on the row they belong to.
+                                                 Hidden below sm: at 375px this is the third column
+                                                 in a row that already has a photo and two lines of
+                                                 text, and it wrapped the title every time. --}}
+                                            @if($pHike && (filled($pHike->masl) || filled($pHike->distance_km)))
+                                                <span class="hidden sm:flex items-center gap-3 shrink-0 text-xs tabular-nums text-ink/70">
+                                                    @if(filled($pHike->masl))
+                                                        <span class="inline-flex items-center gap-1">
+                                                            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-moss" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 20 6-12 4 7 3-4 5 9Z"/></svg>
+                                                            {{ number_format($pHike->masl) }} m
+                                                        </span>
+                                                    @endif
+                                                    @if(filled($pHike->distance_km))
+                                                        <span class="inline-flex items-center gap-1">
+                                                            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-moss" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16"/><path d="M4 19a8 8 0 0 1 16 0"/></svg>
+                                                            {{ rtrim(rtrim(number_format($pHike->distance_km, 1), '0'), '.') }} km
+                                                        </span>
+                                                    @endif
+                                                </span>
+                                            @endif
+
+                                            <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink/30 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6l6 6-6 6"/></svg>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+        </div>
+
+        <aside class="xl:col-start-2 xl:row-start-1 space-y-5 mb-8 xl:mb-0 min-w-0">
+
+        {{--
+            ═══ THE RIGHT-HAND COLUMN, AS TABS ═══
+
+            These were four stacked sections, which on a 22rem sidebar meant the thing you needed
+            was usually below the fold behind two things you did not. They are stages of one
+            pipeline — waiting on the host, waiting on you, ready to go, done — so only one is ever
+            the answer to "what now?". Tabs say that; a stack says they all matter equally.
+
+            Only panels with something in them are offered. An empty tab is a promise of content
+            that is not there, and a joiner with one upcoming trip should see one tab, not four
+            with three dead ends.
+        --}}
+        @if($panels->isNotEmpty())
+            <div role="tablist" aria-label="Your bookings" dusk="panel-tabs"
+                 class="flex gap-1 p-1 rounded-2xl bg-ink/[.04] border border-ink/8 overflow-x-auto"
+                 x-data
+                 {{-- Arrow keys move between tabs, which is what a tablist is expected to do and
+                      what a row of buttons does not do on its own. --}}
+                 x-on:keydown.right.prevent="$el.querySelector('[aria-selected=true]')?.nextElementSibling?.focus()"
+                 x-on:keydown.left.prevent="$el.querySelector('[aria-selected=true]')?.previousElementSibling?.focus()">
+                @foreach($panels as $key => $meta)
+                    <button type="button" wire:click="setPanel('{{ $key }}')"
+                            role="tab" id="tab-{{ $key }}" aria-controls="panel-{{ $key }}"
+                            aria-selected="{{ $activePanel === $key ? 'true' : 'false' }}"
+                            tabindex="{{ $activePanel === $key ? '0' : '-1' }}"
+                            dusk="tab-{{ $key }}"
+                            class="flex-1 whitespace-nowrap rounded-xl px-3 min-h-[44px] text-[13px] font-semibold
+                                   inline-flex items-center justify-center gap-1.5 transition-colors
+                                   {{ $activePanel === $key
+                                        ? 'bg-surface text-ink shadow-[0_1px_3px_rgba(31,28,21,.12)]'
+                                        : 'text-ink/70 hover:text-ink' }}">
+                        {{ $meta['label'] }}
+                        <span class="rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums
+                                     {{ ($meta['urgent'] ?? false) ? 'bg-terra text-cream' : 'bg-ink/10 text-ink' }}">{{ $meta['count'] }}</span>
+                    </button>
+                @endforeach
+            </div>
+        @endif
+
+        {{-- ═══ PANEL · NEXT UP ═══ --}}
+        @if($activePanel === 'next')
+        <div role="tabpanel" id="panel-next" aria-labelledby="tab-next" tabindex="0">
+        {{-- ═══ NEXT UP ═══ --}}
+        @if($nextUp)
+            @php($nextTrip = $nextUp->departure->trip)
+            @php($nextDep = $nextUp->departure)
+            @php($packing = \App\Support\PackingItems::resolve($nextTrip->packing_items))
+            @php($nextMoney = $nextUp->money())
+            @php($nextStatus = $statusLabel[$nextUp->status] ?? null)
+
+            <section dusk="next-up">
+                <h2 class="marker text-[11px] font-semibold text-ink/70 mb-3">Next up</h2>
+
+                <div class="rounded-3xl border border-ink/8 bg-surface overflow-hidden shadow-[0_12px_34px_-22px_rgba(31,28,21,.4)]">
+                    <a href="{{ route('reservations.show', ['token' => $nextUp->public_token]) }}" wire:navigate
+                       class="group block relative aspect-[16/9] overflow-hidden">
+                        <img src="{{ $nextTrip->cover_url }}" alt="" loading="lazy"
+                             class="absolute inset-0 w-full h-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(.2,.7,.2,1)] group-hover:scale-105">
+                        <span class="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/25 to-ink/10" aria-hidden="true"></span>
+
+                        <span class="absolute inset-x-0 top-0 p-4 flex items-start justify-between gap-2">
+                            {{-- The countdown is the one number that matters on this card. --}}
+                            <span class="rounded-full glass-dark px-3 py-1.5 text-[11px] font-bold text-cream">
+                                {{ $nextDep->starts_at->isToday() ? 'Today' : $nextDep->starts_at->diffForHumans(['parts' => 1, 'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]).' away' }}
+                            </span>
+                            @if($nextStatus)
+                                <span class="rounded-full px-3 py-1.5 text-[11px] font-bold
+                                             {{ $nextStatus[1] === 'moss' ? 'bg-moss text-cream' : 'bg-amber text-ink' }}">
+                                    {{ $nextStatus[0] }}
+                                </span>
+                            @endif
+                        </span>
+
+                        <span class="absolute inset-x-0 bottom-0 p-5">
+                            <span class="block font-serif font-semibold text-2xl text-cream leading-tight">{{ $nextTrip->title }}</span>
+                            @if($nextTrip->place)
+                                <span class="flex items-center gap-1.5 text-sm text-cream/80 mt-1">
+                                    <x-icon.pin class="w-3.5 h-3.5 shrink-0" />
+                                    {{ $nextTrip->place->name }}<span class="text-cream/70">·</span>{{ $nextTrip->place->country }}
+                                </span>
+                            @endif
+                        </span>
+                    </a>
+
+                    <div class="p-5 space-y-4">
+                        <dl class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="min-w-0">
+                                <dt class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold">When</dt>
+                                <dd class="font-semibold mt-0.5">
+                                    {{ $nextDep->starts_at->format('D, j M') }}
+                                    @if($nextDep->isMultiDay())
+                                        <span class="text-ink/70">– {{ $nextDep->ends_at->format('j M') }}</span>
+                                        <span class="block text-xs font-normal text-ink/70">{{ $nextDep->spanDays() }} days</span>
+                                    @endif
+                                </dd>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold">Seats</dt>
+                                <dd class="font-semibold mt-0.5">
+                                    {{ $nextUp->party_size }} {{ \Illuminate\Support\Str::plural('seat', $nextUp->party_size) }}
+                                    @if($nextMoney['due'] > 0)
+                                        <span class="block text-xs font-normal text-terra">PHP {{ number_format($nextMoney['due']) }} still due</span>
+                                    @else
+                                        <span class="block text-xs font-normal text-moss">Fully paid</span>
+                                    @endif
+                                </dd>
+                            </div>
+                        </dl>
+
+                        @if($nextTrip->meetup_point)
+                            <p class="flex items-start gap-2 text-sm text-ink/70">
+                                <x-icon.mountain class="w-4 h-4 mt-0.5 shrink-0 text-moss" />
+                                <span><span class="font-semibold text-ink">Meet at</span> {{ $nextTrip->meetup_point }}</span>
+                            </p>
+                        @endif
+
+                        <div class="pt-4 border-t border-ink/8">
+                            {{-- py/-my grows the tap area to 44px without moving anything, the same trick used on the
+                                 other inline links in this app. --}}
+                            <x-host-link :host="$nextTrip->host" size="sm" subtitle="Your host" class="gap-2.5 text-sm font-semibold py-1.5 -my-1.5" />
+                        </div>
+
+                        {{-- ═══ WHAT TO BRING ═══ --}}
+                        <div class="pt-4 border-t border-ink/8" dusk="what-to-bring">
+                            <p class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold mb-2.5">What to bring</p>
+
+                            @if($packing)
+                                <ul class="grid sm:grid-cols-2 gap-x-4 gap-y-2">
+                                    @foreach($packing as $item)
+                                        {{-- title, not a tooltip component: the note is genuinely useful
+                                             ("at least 2 litres per person") but would triple the height
+                                             of this list if every line carried it. --}}
+                                        <li class="flex items-start gap-2 text-sm" title="{{ $item['note'] }}">
+                                            <svg viewBox="0 0 24 24" class="w-4 h-4 mt-0.5 shrink-0 text-moss" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="{{ $item['icon'] }}"/>
+                                            </svg>
+                                            <span class="text-ink/80">{{ $item['label'] }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <p class="text-sm text-ink/70">
+                                    {{ $nextTrip->host->name }} has not listed a packing list for this trip.
+                                    Ask in the trip chat if you are unsure.
+                                </p>
+                            @endif
+                        </div>
+
+                        <a href="{{ route('reservations.show', ['token' => $nextUp->public_token]) }}" wire:navigate
+                           class="flex items-center justify-center rounded-full bg-pine text-cream min-h-[44px] font-semibold hover:bg-pine/90 transition-colors">
+                            View booking
+                        </a>
                     </div>
-                @else
-                    <div class="space-y-2">
-                        @foreach($past as $r)
-                            <x-booking-card :reservation="$r" variant="row" :actions="false" />
+                </div>
+
+                @if($laterUp->isNotEmpty())
+                    <ul class="mt-3 space-y-2" dusk="later-trips">
+                        @foreach($laterUp as $r)
+                            <li>
+                                <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
+                                   class="flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface p-3 hover:border-ink/25 transition-colors">
+                                    <img src="{{ $r->departure->trip->cover_url }}" alt="" loading="lazy"
+                                         class="w-12 h-12 rounded-xl object-cover shrink-0">
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block font-semibold text-sm truncate">{{ $r->departure->trip->title }}</span>
+                                        <span class="block text-xs text-ink/70">{{ $r->departure->starts_at->format('D, j M Y') }}</span>
+                                    </span>
+                                    <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink/35 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6l6 6-6 6"/></svg>
+                                </a>
+                            </li>
                         @endforeach
-                    </div>
+                    </ul>
                 @endif
             </section>
         @endif
         </div>
+        @endif
+
+        {{-- ═══ PANEL · FOR PAYMENT ═══ --}}
+        @if($activePanel === 'pay')
+        <div role="tabpanel" id="panel-pay" aria-labelledby="tab-pay" tabindex="0" class="space-y-2.5">
+        {{-- ═══ AWAITING PAYMENT ═══ --}}
+        @if($awaitingPayment->isNotEmpty())
+            <section dusk="awaiting-payment">
+                <h2 class="marker text-[11px] font-semibold text-ink/70 mb-3">
+                    For payment
+                    <span class="ml-1 rounded-full bg-terra/12 text-terra px-2 py-0.5 text-[11px] font-bold tabular-nums">{{ $awaitingPayment->count() }}</span>
+                </h2>
+
+                <div class="space-y-2.5">
+                    @foreach($awaitingPayment as $r)
+                        @php($money = $r->money())
+                        {{-- A receipt the host has not ruled on yet. Status cannot say this any
+                             more: sending proof leaves a confirmed booking confirmed. --}}
+                        @php($submitted = $r->latestPayment && ! $r->latestPayment->confirmed_at && ! $r->latestPayment->rejected_reason)
+                        @php($payDue = $r->nextPaymentDue())
+                        <div class="rounded-2xl border p-4 {{ $submitted ? 'border-amber/25 bg-amber/[.06]' : 'border-terra/20 bg-terra/[.05]' }}"
+                             dusk="payment-{{ $r->id }}">
+                            <div class="flex items-start gap-3">
+                                <img src="{{ $r->departure->trip->cover_url }}" alt="" loading="lazy"
+                                     class="w-14 h-14 rounded-xl object-cover shrink-0">
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-semibold leading-snug truncate">{{ $r->departure->trip->title }}</p>
+                                    <p class="text-xs text-ink/70 mt-0.5">
+                                        {{ $r->departure->starts_at->format('D, j M Y') }} ·
+                                        {{ $r->party_size }} {{ \Illuminate\Support\Str::plural('seat', $r->party_size) }}
+                                    </p>
+                                    {{-- The deadline, spelled out. The hold clock used to live here,
+                                         but a hold is what runs before the host answers — those
+                                         bookings sit in the confirmation panel now. What matters on
+                                         a granted seat is when the money has to be in. --}}
+                                    <p class="text-xs font-semibold mt-1.5 {{ $submitted ? 'text-amber' : ($r->paymentOverdue() ? 'text-terra' : 'text-ink/70') }}">
+                                        @if($submitted)
+                                            Proof sent — waiting on {{ $r->departure->trip->host->name }}
+                                        @elseif($r->paymentOverdue())
+                                            {{ $r->overdueLabel() }} — due {{ $payDue->diffForHumans() }}
+                                        @elseif($payDue)
+                                            Due {{ $payDue->format('j M') }} at {{ $payDue->format('g:ia') }}
+                                        @else
+                                            Your host has set no deadline
+                                        @endif
+                                    </p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <p class="font-serif font-semibold text-lg tabular-nums">
+                                        {{ $r->departure->trip->host->hostProfile?->currency ?? 'PHP' }} {{ number_format($money['due']) }}
+                                    </p>
+                                    <p class="text-[11px] text-ink/65">due</p>
+                                </div>
+                            </div>
+
+                            <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
+                               class="mt-3 flex items-center justify-center rounded-full min-h-[44px] text-sm font-semibold transition-colors
+                                      {{ $submitted ? 'border border-ink/20 bg-surface hover:border-ink/40' : 'bg-pine text-cream hover:bg-pine/90 shadow-sm' }}">
+                                {{ $submitted ? 'See booking' : 'Pay now' }}
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+            {{-- Traveller details ride with the money: both are your move on a seat you already
+                 hold, and a fifth tab for the rarest to-do on the page earns nothing. --}}
+            @foreach($alsoNeedsYou as $item)
+                <x-attention-card :item="$item" />
+            @endforeach
+        </div>
+        @endif
+
+        {{-- ═══ PANEL · FOR CONFIRMATION ═══ --}}
+        @if($activePanel === 'confirm')
+        <div role="tabpanel" id="panel-confirm" aria-labelledby="tab-confirm" tabindex="0"
+             dusk="for-confirmation" class="space-y-2.5">
+            <p class="text-sm text-ink/70">
+                Requests your host has not answered yet. You will be asked to pay once a seat is granted.
+            </p>
+
+            @foreach($forConfirmation as $r)
+                @php($cTrip = $r->departure->trip)
+                <a href="{{ route('reservations.show', ['token' => $r->public_token]) }}" wire:navigate
+                   dusk="confirm-row-{{ $r->id }}"
+                   class="flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface p-3 hover:border-ink/25 transition-colors">
+                    <img src="{{ $cTrip->cover_url }}" alt="" loading="lazy" class="w-12 h-12 rounded-xl object-cover shrink-0">
+                    <span class="min-w-0 flex-1">
+                        <span class="block font-semibold text-sm truncate">{{ $cTrip->title }}</span>
+                        <span class="block text-xs text-ink/70">
+                            {{ $r->departure->starts_at->format('D, j M Y') }} · with {{ $cTrip->host->name }}
+                        </span>
+                        {{-- The hold clock belongs here: it is the window the host has to answer
+                             in, and a lapsed one is the only thing on this page that costs you
+                             the trip. --}}
+                        <span class="block text-xs font-semibold mt-0.5 {{ $r->expires_at && $r->expires_at->isPast() ? 'text-terra' : 'text-ink/70' }}">
+                            {{ $this->holdWording($r) }}
+                        </span>
+                    </span>
+                    <x-badge tone="ink" dot>Waiting</x-badge>
+                </a>
+            @endforeach
+        </div>
+        @endif
+
+        {{-- ═══ PANEL · FOR REVIEW ═══ --}}
+        @if($activePanel === 'review')
+        <div role="tabpanel" id="panel-review" aria-labelledby="tab-review" tabindex="0"
+             dusk="for-review" class="space-y-2.5">
+            @foreach($forReview as $item)
+                <x-attention-card :item="$item" dismissible />
+            @endforeach
+        </div>
+        @endif
+
+
+        {{-- ═══ CLAIM GUEST BOOKINGS ═══ --}}
+        <section class="rounded-2xl bg-ink/[.03] border border-ink/8 p-5">
+            @if($orphaned->isNotEmpty() && ! $claimStatus)
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-full bg-moss/10 text-moss grid place-items-center shrink-0">
+                        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold mb-1">Found {{ $orphaned->count() }} {{ \Illuminate\Support\Str::plural('booking', $orphaned->count()) }} made as a guest</p>
+                        <p class="text-sm text-ink/70 mb-3">
+                            We can email {{ auth()->user()->email }} a link to attach them to your account.
+                        </p>
+                        <button wire:click="claimGuestBookings" dusk="claim-bookings"
+                                class="inline-flex items-center rounded-full border border-ink/20 px-5 min-h-[44px] text-sm font-semibold hover:border-moss hover:bg-moss/5 transition-colors">
+                            Email me a link
+                        </button>
+                    </div>
+                </div>
+            @elseif($claimStatus)
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-full bg-moss/10 text-moss grid place-items-center shrink-0">
+                        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <p class="text-sm text-moss font-semibold" dusk="claim-status">{{ $claimStatus }}</p>
+                </div>
+            @else
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-full bg-ink/[.05] text-ink/65 grid place-items-center shrink-0">
+                        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold mb-1">Booked as a guest before?</p>
+                        <p class="text-sm text-ink/70 mb-3">
+                            Bookings made without an account are not listed here. We can email
+                            {{ auth()->user()->email }} a link to attach them.
+                        </p>
+                        <button wire:click="claimGuestBookings" dusk="claim-bookings"
+                                class="inline-flex items-center rounded-full border border-ink/20 px-5 min-h-[44px] text-sm font-semibold hover:border-moss hover:bg-moss/5 transition-colors">
+                            Email me a link
+                        </button>
+                    </div>
+                </div>
+            @endif
+        </section>
+        </aside>
     </div>
 
 {{--
@@ -569,7 +946,7 @@
             <div class="flex items-start gap-4 px-5 sm:px-6 pt-4 sm:pt-6 pb-4 shrink-0">
                 <div class="min-w-0 flex-1">
                     <p class="text-xs font-semibold uppercase tracking-wide text-moss mb-1">
-                        {{ $availableTotal > 0 ? 'Trips leaving' : 'Nothing leaving' }}
+                        {{ $availableTotal > 0 ? ($availableContinuing > 0 ? 'Trips available' : 'Trips leaving') : 'Nothing leaving' }}
                     </p>
                     <h2 id="day-sheet-title" class="font-serif font-semibold text-2xl leading-tight">
                         {{ $sheetDate->format('l j F') }}
@@ -581,14 +958,14 @@
                         @if($sheetDate->isWeekend())
                             <span class="rounded-full bg-moss/15 text-pine px-2.5 py-0.5 text-xs font-bold">Weekend</span>
                         @endif
-                        <span class="text-xs text-ink/50">{{ $sheetDate->diffForHumans(['parts' => 1]) }}</span>
+                        <span class="text-xs text-ink/65">{{ $sheetDate->diffForHumans(['parts' => 1]) }}</span>
                     </div>
                 </div>
 
                 <button type="button" x-ref="close" data-autofocus
                         @click="shown = false; setTimeout(() => $wire.closeDay(), 150)"
                         aria-label="Close" dusk="cal-free-close"
-                        class="shrink-0 grid place-items-center w-10 h-10 rounded-full text-ink/50
+                        class="shrink-0 grid place-items-center w-10 h-10 rounded-full text-ink/65
                                hover:bg-ink/5 hover:text-ink transition-colors">
                     <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                 </button>
@@ -623,8 +1000,31 @@
                                         {{ $dep->trip->title }}
                                     </span>
                                 </span>
-                                <span class="flex items-center justify-between gap-3 px-3 py-2.5">
-                                    <span class="min-w-0 text-xs text-ink/60 truncate">
+                                {{--
+                                    When it actually sets off.
+
+                                    A trip appears on every day it runs now, so a card in this sheet
+                                    can be day two of something that left yesterday. Without the
+                                    start date the sheet reads as though everything begins today.
+                                --}}
+                                @php($startsHere = $dep->starts_at->toDateString() === $selectedDate)
+                                @php($span = $dep->spanDays())
+                                <span class="flex items-center gap-1.5 px-3 pt-2.5 text-xs">
+                                    <x-icon.calendar class="w-3.5 h-3.5 shrink-0 {{ $startsHere ? 'text-moss' : 'text-amber' }}" />
+                                    <span class="truncate {{ $startsHere ? 'text-ink/70' : 'text-amber font-semibold' }}">
+                                        @if($startsHere)
+                                            Starts {{ $dep->starts_at->format('D j M') }}
+                                            @if($span > 1)
+                                                <span class="text-ink/65">· {{ $span }} days</span>
+                                            @endif
+                                        @else
+                                            Started {{ $dep->starts_at->format('D j M') }} · day {{ $dep->dayNumberOn($selectedDate) }} of {{ $span }}
+                                        @endif
+                                    </span>
+                                </span>
+
+                                <span class="flex items-center justify-between gap-3 px-3 pt-1.5 pb-2.5">
+                                    <span class="min-w-0 text-xs text-ink/70 truncate">
                                         {{ $dep->trip->host->name }}@if($dep->trip->place) · {{ $dep->trip->place->name }}@endif
                                     </span>
                                     <span class="shrink-0 text-sm font-serif font-semibold">
@@ -636,11 +1036,12 @@
                     </div>
 
                     <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-ink/8">
-                        <p class="text-xs text-ink/55">
+                        <p class="text-xs text-ink/70">
                             @if($availableTotal > $availableOnDate->count())
                                 Showing {{ $availableOnDate->count() }} of {{ $availableTotal }} trips leaving this day.
                             @else
-                                {{ $availableTotal }} {{ \Illuminate\Support\Str::plural('trip', $availableTotal) }} leaving this day.
+                                {{ $availableTotal }} {{ \Illuminate\Support\Str::plural('trip', $availableTotal) }}
+                                {{ $availableContinuing > 0 ? 'available this day.' : 'leaving this day.' }}
                             @endif
                         </p>
                         <a href="{{ route('trips.index') }}" wire:navigate
@@ -652,7 +1053,7 @@
                             <x-icon.calendar class="w-6 h-6" />
                         </span>
                         <p class="font-semibold mb-1">Nothing leaves on this day yet</p>
-                        <p class="text-sm text-ink/60 mb-5 max-w-xs mx-auto">
+                        <p class="text-sm text-ink/70 mb-5 max-w-xs mx-auto">
                             Hosts add departures all the time — try a nearby weekend, or see what else is going.
                         </p>
                         <a href="{{ route('trips.index') }}" wire:navigate

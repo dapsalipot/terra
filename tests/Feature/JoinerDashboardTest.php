@@ -4,12 +4,15 @@ use App\Livewire\Joiner\Dashboard;
 use App\Mail\MagicLinkMail;
 use App\Models\Holiday;
 use App\Models\MagicLink;
+use App\Models\Place;
 use App\Models\Reservation;
 use App\Models\Review;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\MagicLinkService;
+use App\Support\PlaceCategories;
+use App\Support\TrailStats;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -66,10 +69,14 @@ it('leads with an unpaid hold, because the seat is released when it expires', fu
     $booking = bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)],
         ['trip' => ['title' => 'Mount Pulag']]);
 
+    // An unanswered request sits in the For-confirmation panel with its hold clock. It is not a
+    // For-payment card any more: there is nothing to pay for until the host grants the seat.
     Livewire::actingAs($user)->test(Dashboard::class)
-        ->assertSee('Pay for Mount Pulag')
-        ->assertSee('Pay now')
-        ->assertSeeHtml('dusk="attention-pay-'.$booking->id.'"');
+        ->call('setPanel', 'confirm')
+        ->assertSee('Mount Pulag')
+        ->assertSeeHtml('dusk="for-confirmation"')
+        ->assertSeeHtml('dusk="confirm-row-'.$booking->id.'"')
+        ->assertSee('held for another');
 });
 
 it('asks for the traveller details the host needs for permits', function () {
@@ -78,7 +85,9 @@ it('asks for the traveller details the host needs for permits', function () {
     $r->participants()->create(['position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02']);
     $r->participants()->create(['position' => 1]);   // blank
 
+    // Traveller details ride in the For-payment panel: both are your move on a seat you hold.
     Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'pay')
         ->assertSee('1 of 2 travellers still need details')
         ->assertSeeHtml('dusk="attention-details-'.$r->id.'"');
 });
@@ -100,6 +109,7 @@ it('invites a review once the trip has actually run', function () {
     ]);
 
     Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'review')
         ->assertSee('How was Taal Sunrise?')
         ->assertSeeHtml('dusk="attention-review-'.$r->id.'"');
 });
@@ -217,6 +227,7 @@ it('words the hold as time remaining, not a bare relative date', function () {
     bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(5)->addMinute()]);
 
     Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'confirm')
         ->assertSee('held for another 5 hours')
         // diffForHumans() on its own yields "held until 5 hours from now".
         ->assertDontSee('from now');
@@ -228,6 +239,7 @@ it('rounds the remaining hold down rather than up', function () {
     bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(5)->subMinute()]);
 
     Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'confirm')
         ->assertSee('held for another 4 hours')
         ->assertDontSee('5 hours');
 });
@@ -239,6 +251,7 @@ it('says a lapsed hold has lapsed rather than held until the past', function () 
     bookingFor($user, ['status' => 'pending', 'expires_at' => now()->subHour()]);
 
     Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'confirm')
         ->assertSee('This hold has lapsed')
         ->assertDontSee('held for another');
 });
@@ -341,10 +354,15 @@ it('groups the card view by month', function () {
         ->set('view', 'grid')
         ->html();
 
+    // Measured from the September heading onwards. The right-hand column also names the next
+    // trip, so the page's *first* mention of "September Trip" is no longer the grid's copy of
+    // it — comparing raw first positions would be testing column order, not month grouping.
+    $sep = strpos($html, 'September 2026');
+
     expect($html)->toContain('September 2026')
         ->and($html)->toContain('October 2026')
-        // The month heading precedes its bookings.
-        ->and(strpos($html, 'September 2026'))->toBeLessThan(strpos($html, 'September Trip'));
+        // September's booking falls under September's heading and before October's.
+        ->and(strpos($html, 'September Trip', $sep))->toBeLessThan(strpos($html, 'October 2026', $sep));
 });
 
 // ──────────────────────────────────────────── clickable cells & planning
@@ -652,12 +670,14 @@ it('keeps a soft nudge dismissed across a re-render', function () {
     ]);
 
     Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'review')
         ->assertSee('How was Taal Sunrise?')
         ->call('dismissAttention', 'review')
         ->assertDontSee('How was Taal Sunrise?');
 
     // A dismiss button that forgets on reload is a button that does nothing.
     Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'review')
         ->assertDontSee('How was Taal Sunrise?');
 });
 
@@ -667,9 +687,12 @@ it('refuses to dismiss an expiring hold', function () {
     bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)],
         ['trip' => ['title' => 'Mount Pulag']]);
 
+    // The request still shows, hold clock and all, however hard the browser asks to hide it.
     Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'confirm')
         ->call('dismissAttention', 'pay')
-        ->assertSee('Pay for Mount Pulag');
+        ->assertSeeHtml('dusk="for-confirmation"')
+        ->assertSee('Mount Pulag');
 });
 
 it('offers no dismiss control on an urgent item', function () {
@@ -677,9 +700,15 @@ it('offers no dismiss control on an urgent item', function () {
     // the assertion passed regardless of the markup. Counting across a page that holds exactly
     // one kind of item is blunt but cannot lie.
     $user = joiner();
-    bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)]);
+    // Urgency now comes from an unpaid confirmed seat against its deadline, not from a pending
+    // hold — a request the host has not answered yet is not something the joiner can act on.
+    bookingFor($user, [
+        'status' => 'confirmed',
+        'confirmed_at' => now()->subDays(4),
+        'full_payment_due_at' => now()->subDay(),
+    ]);
 
-    $html = Livewire::actingAs($user)->test(Dashboard::class)->html();
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->call('setPanel', 'pay')->html();
 
     expect(substr_count($html, 'dismissAttention'))->toBe(0);
 });
@@ -692,7 +721,7 @@ it('does offer a dismiss control on a soft nudge', function () {
         'starts_at' => now()->subWeeks(2), 'status' => 'completed',
     ]);
 
-    $html = Livewire::actingAs($user)->test(Dashboard::class)->html();
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->call('setPanel', 'review')->html();
 
     expect(substr_count($html, 'dismissAttention'))->toBeGreaterThan(0);
 });
@@ -818,7 +847,7 @@ it('says so when nothing leaves that day', function () {
 it('names the single kind of trip leaving on a day', function () {
     $user = joiner();
     $free = now()->addMonth()->startOfMonth()->addDays(12);
-    $place = \App\Models\Place::factory()->create(['category' => 'hike']);
+    $place = Place::factory()->create(['category' => 'hike']);
 
     $trip = Trip::factory()->create(['status' => 'published', 'place_id' => $place->id]);
     TripDeparture::factory()->create([
@@ -842,7 +871,7 @@ it('lists mixed trip kinds in catalog order', function () {
 
     // created surf-first, but 'hike' comes first in the catalog
     foreach (['surf', 'hike'] as $category) {
-        $place = \App\Models\Place::factory()->create(['category' => $category]);
+        $place = Place::factory()->create(['category' => $category]);
         $trip = Trip::factory()->create(['status' => 'published', 'place_id' => $place->id]);
         TripDeparture::factory()->create([
             'trip_id' => $trip->id, 'starts_at' => $free, 'capacity' => 8, 'status' => 'open',
@@ -855,13 +884,305 @@ it('lists mixed trip kinds in catalog order', function () {
 });
 
 it('does not repeat a badge when several trips share a kind', function () {
-    $place = \App\Models\Place::factory()->create(['category' => 'island']);
+    $place = Place::factory()->create(['category' => 'island']);
 
-    expect(\App\Support\PlaceCategories::resolve(['island', 'island', 'island']))
+    expect(PlaceCategories::resolve(['island', 'island', 'island']))
         ->toHaveCount(1);
 });
 
 it('draws no badge for a category the catalog does not know', function () {
-    expect(\App\Support\PlaceCategories::resolve(['spelunking', null]))->toBe([])
-        ->and(\App\Support\PlaceCategories::label('spelunking'))->toBeNull();
+    expect(PlaceCategories::resolve(['spelunking', null]))->toBe([])
+        ->and(PlaceCategories::label('spelunking'))->toBeNull();
+});
+
+// ──────────────────────────────────────── next-up panel & what to bring
+
+it('leads the right column with the soonest trip and its packing list', function () {
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed'], [
+        'starts_at' => now()->addWeeks(1),
+        'trip' => ['title' => 'Soonest Trip', 'packing_items' => ['headlamp', 'water']],
+    ]);
+    bookingFor($user, ['status' => 'confirmed'], [
+        'starts_at' => now()->addWeeks(6),
+        'trip' => ['title' => 'Later Trip'],
+    ]);
+
+    $page = Livewire::actingAs($user)->test(Dashboard::class)->call('setPanel', 'next');
+
+    $page->assertSeeHtml('dusk="next-up"')
+        ->assertSeeHtml('dusk="what-to-bring"')
+        ->assertSee('Soonest Trip')
+        ->assertSee('Headlamp')
+        ->assertSee('Water')
+        // The rest of the diary sits underneath, not competing with it.
+        ->assertSeeHtml('dusk="later-trips"')
+        ->assertSee('Later Trip');
+
+    expect($page->viewData('nextUp')->departure->trip->title)->toBe('Soonest Trip');
+});
+
+it('says so plainly when the host has listed nothing to bring', function () {
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed'], ['trip' => ['packing_items' => null]]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'next')
+        ->assertSeeHtml('dusk="what-to-bring"')
+        ->assertSee('has not listed a packing list');
+});
+
+it('hides the next-up panel when nothing is booked', function () {
+    Livewire::actingAs(joiner())->test(Dashboard::class)
+        ->assertDontSeeHtml('dusk="next-up"')
+        ->assertDontSeeHtml('dusk="awaiting-payment"');
+});
+
+it('lists what still needs paying with the amount due', function () {
+    // Owing money requires a granted seat: a confirmed booking with nothing verified against it.
+    // A pending one owes nothing yet, which is why it is no longer in this list.
+    $user = joiner();
+    $unpaid = bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()],
+        ['trip' => ['title' => 'Unpaid Trip', 'price' => 2500]]);
+    $settled = bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now(), 'fully_paid_at' => now()],
+        ['trip' => ['title' => 'Settled Trip']]);
+
+    $page = Livewire::actingAs($user)->test(Dashboard::class)->call('setPanel', 'pay');
+
+    $page->assertSeeHtml('dusk="payment-'.$unpaid->id.'"')
+        ->assertSee('Pay now')
+        ->assertSee(number_format($unpaid->money()['due']))
+        ->assertDontSeeHtml('dusk="payment-'.$settled->id.'"');
+
+    expect($page->viewData('awaitingPayment')->pluck('id')->all())->toBe([$unpaid->id]);
+});
+
+it('shows a submitted payment as waiting rather than as still owing', function () {
+    // Proof now arrives on a confirmed seat and leaves the status alone, so "waiting" is a fact
+    // about the submission rather than about the booking's status.
+    $user = joiner();
+    $r = bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()], ['trip' => ['title' => 'Sent Trip']]);
+    $r->paymentSubmissions()->create(['reference_no' => 'GC-1', 'submitted_at' => now()]);
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->call('setPanel', 'pay')
+        ->assertSeeHtml('dusk="payment-'.$r->id.'"')
+        ->assertSee('Proof sent')
+        ->assertSee('See booking');
+});
+
+it('prompts for payment once, not twice', function () {
+    // The old "Needs you" pay nudge and the For-payment card are the same task.
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()],
+        ['trip' => ['title' => 'Mount Pulag']]);
+
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->call('setPanel', 'pay')->html();
+
+    expect(substr_count($html, 'Pay now'))->toBe(1)
+        ->and($html)->not->toContain('dusk="attention-pay-');
+});
+
+// ─────────────────────────────────────────────── the right column, as tabs
+
+it('offers only the panels that have something in them', function () {
+    // One upcoming trip, nothing owed, nothing to review. Four tabs here would be three dead
+    // ends — an empty tab is a promise of content that is not there.
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now(), 'fully_paid_at' => now()]);
+
+    $page = Livewire::actingAs($user)->test(Dashboard::class);
+
+    expect($page->viewData('panels')->keys()->all())->toBe(['next']);
+    $page->assertSeeHtml('dusk="tab-next"')
+        ->assertDontSeeHtml('dusk="tab-pay"')
+        ->assertDontSeeHtml('dusk="tab-review"');
+});
+
+it('separates what you owe from what you are waiting on', function () {
+    $user = joiner();
+    $owed = bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()],
+        ['trip' => ['title' => 'Owes Money']]);
+    $waiting = bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)],
+        ['trip' => ['title' => 'Awaiting Host']]);
+
+    $page = Livewire::actingAs($user)->test(Dashboard::class);
+
+    /*
+     * The distinction the reordered lifecycle created. Before it, both of these were "for
+     * payment" — which after the change meant listing a booking with no payment form under a
+     * heading that promised one.
+     */
+    expect($page->viewData('awaitingPayment')->pluck('id')->all())->toBe([$owed->id])
+        ->and($page->viewData('forConfirmation')->pluck('id')->all())->toBe([$waiting->id]);
+});
+
+it('shows one panel at a time, not all of them stacked', function () {
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()],
+        ['starts_at' => now()->addWeek(), 'trip' => ['title' => 'Owes Money']]);
+    bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)],
+        ['starts_at' => now()->addWeeks(2), 'trip' => ['title' => 'Awaiting Host']]);
+
+    $page = Livewire::actingAs($user)->test(Dashboard::class)->call('setPanel', 'pay');
+
+    $page->assertSeeHtml('dusk="awaiting-payment"')
+        ->assertDontSeeHtml('dusk="for-confirmation"');
+
+    $page->call('setPanel', 'confirm')
+        ->assertSeeHtml('dusk="for-confirmation"')
+        ->assertDontSeeHtml('dusk="awaiting-payment"');
+});
+
+it('falls back to a panel that exists when the remembered one empties out', function () {
+    // You dismiss the last review while sitting on the review tab. Rendering an empty panel and
+    // an unselected strip is the state this guards against.
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now(), 'fully_paid_at' => now()]);
+
+    $page = Livewire::actingAs($user)->test(Dashboard::class)->call('setPanel', 'review');
+
+    expect($page->viewData('activePanel'))->toBe('next');
+});
+
+it('refuses a panel name that is not one of the four', function () {
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()]);
+
+    $page = Livewire::actingAs($user)->test(Dashboard::class)->call('setPanel', 'javascript:alert(1)');
+
+    expect($page->get('panel'))->toBe('');
+});
+
+it('marks exactly one tab selected for assistive tech', function () {
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()],
+        ['starts_at' => now()->addWeek()]);
+    bookingFor($user, ['status' => 'pending', 'expires_at' => now()->addHours(6)],
+        ['starts_at' => now()->addWeeks(2)]);
+
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->html();
+
+    // A tablist where nothing is selected reads as a row of unrelated buttons, and one where
+    // two are reads as broken.
+    expect(substr_count($html, 'aria-selected="true"'))->toBe(1);
+});
+
+// ──────────────────────────────────── where you have been · month statistics
+
+/** A completed booking whose trail carries real figures. */
+function pastHike(User $user, array $hike, array $tripAttrs = [], ?string $when = null): Reservation
+{
+    $r = bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()], [
+        'starts_at' => $when ? Carbon::parse($when) : now()->subMonth(),
+        'status' => 'completed',
+        'trip' => $tripAttrs,
+    ]);
+
+    $destination = $r->departure->trip->destinations()->create([
+        'place_id' => Place::factory()->create()->id,
+        'position' => 0,
+    ]);
+    $destination->hikeDetail()->create($hike);
+
+    return $r->fresh();
+}
+
+it('adds up what a month of trips came to', function () {
+    $user = joiner();
+    pastHike($user, ['masl' => 2922, 'elevation_gain_m' => 1400, 'distance_km' => 14.5, 'duration_hours' => 9], [], '2026-06-10');
+    pastHike($user, ['masl' => 1170, 'elevation_gain_m' => 800, 'distance_km' => 6.5, 'duration_hours' => 5], [], '2026-06-24');
+
+    $months = Livewire::actingAs($user)->test(Dashboard::class)->viewData('pastByMonth');
+    $june = $months['June 2026']['stats'];
+
+    expect($june['trips'])->toBe(2)
+        ->and($june['ascent'])->toBe(2200)
+        ->and($june['distance'])->toBe(21.0)
+        // The highest point stood on, never a sum: adding two summits gives a number that
+        // corresponds to nowhere on earth.
+        ->and($june['peak'])->toBe(2922);
+});
+
+it('keeps each month to its own figures', function () {
+    $user = joiner();
+    pastHike($user, ['elevation_gain_m' => 1000], [], '2026-06-10');
+    pastHike($user, ['elevation_gain_m' => 400], [], '2026-05-04');
+
+    $months = Livewire::actingAs($user)->test(Dashboard::class)->viewData('pastByMonth');
+
+    expect($months['June 2026']['stats']['ascent'])->toBe(1000)
+        ->and($months['May 2026']['stats']['ascent'])->toBe(400)
+        // Newest first — a history read forwards buries this year under every year before it.
+        ->and($months->keys()->first())->toBe('June 2026');
+});
+
+it('stays quiet about a figure nobody recorded', function () {
+    // An island hop has no ascent. Rendering "0 m climbed" is worse than saying nothing: it
+    // reads as a measurement rather than as an absence.
+    $user = joiner();
+    pastHike($user, ['distance_km' => 3.0], [], '2026-06-10');
+
+    $stats = Livewire::actingAs($user)->test(Dashboard::class)->viewData('pastTotals');
+
+    expect($stats['ascent'])->toBeNull()
+        ->and($stats['distance'])->toBe(3.0)
+        ->and(collect(TrailStats::tiles($stats))->pluck('label'))->not->toContain('Climbed');
+});
+
+it('counts the trip once however many seats were booked', function () {
+    // Four friends on one departure climbed one mountain between them.
+    $user = joiner();
+    $r = pastHike($user, ['elevation_gain_m' => 1000], [], '2026-06-10');
+    $r->update(['party_size' => 4]);
+
+    $stats = Livewire::actingAs($user)->test(Dashboard::class)->viewData('pastTotals');
+
+    expect($stats['ascent'])->toBe(1000);
+});
+
+it('gathers the inclusions across everything you have been on', function () {
+    $user = joiner();
+    pastHike($user, ['masl' => 1000], ['inclusions' => ['Transport', 'Guide']], '2026-06-10');
+    pastHike($user, ['masl' => 900], ['inclusions' => ['Guide', 'Meals']], '2026-05-10');
+
+    $stats = Livewire::actingAs($user)->test(Dashboard::class)->viewData('pastTotals');
+
+    // Distinct: "Guide" twice is one thing you got, not two. Order is whatever order the trips
+    // happened in and carries no meaning, so it is deliberately not asserted.
+    expect($stats['inclusions']->sort()->values()->all())->toBe(['Guide', 'Meals', 'Transport']);
+});
+
+it('shows the month totals on the page, not just in the payload', function () {
+    $user = joiner();
+    pastHike($user, ['masl' => 2922, 'elevation_gain_m' => 1400, 'distance_km' => 14.5], [], '2026-06-10');
+
+    Livewire::actingAs($user)->test(Dashboard::class)
+        ->assertSeeHtml('dusk="past-totals"')
+        ->assertSeeHtml('dusk="past-month"')
+        ->assertSee('June 2026')
+        ->assertSee('1,400 m')
+        ->assertSee('14.5 km');
+});
+
+it('puts the calendar before the side panels in the source order', function () {
+    // On a phone there is no grid, so DOM order is reading order. Someone opening this on a
+    // phone came to see when they are away — four panels of admin above the calendar makes
+    // them scroll past the answer to reach it.
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()]);
+
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->html();
+
+    expect(strpos($html, 'dusk="calendar"'))->toBeLessThan(strpos($html, 'dusk="panel-tabs"'));
+});
+
+it('keeps the view switcher with the view it switches', function () {
+    $user = joiner();
+    bookingFor($user, ['status' => 'confirmed', 'confirmed_at' => now()]);
+
+    $html = Livewire::actingAs($user)->test(Dashboard::class)->html();
+
+    // Directly above the calendar, not a column away in the page header.
+    expect(strpos($html, 'dusk="view-calendar"'))->toBeLessThan(strpos($html, 'dusk="calendar"'));
 });

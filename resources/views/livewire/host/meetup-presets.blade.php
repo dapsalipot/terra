@@ -80,8 +80,15 @@
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <button wire:click="edit({{ $preset->id }})" class="text-sm font-semibold text-ink/65 hover:text-ink">Edit</button>
-                    <button wire:click="delete({{ $preset->id }})" wire:confirm="Delete this meetup point?"
-                            class="text-sm font-semibold text-terra">Delete</button>
+                    <x-confirm-action
+                        action="delete({{ $preset->id }})"
+                        title="Delete this meetup point?"
+                        body="{{ $preset->label }} is removed from your saved spots. Trips already using it keep their own copy, so nothing published changes."
+                        confirm-label="Yes, delete it"
+                        cancel-label="Keep it"
+                        tone="terra" icon="trash"
+                        dusk="delete-preset-{{ $preset->id }}"
+                        class="text-sm font-semibold text-terra">Delete</x-confirm-action>
                 </div>
             </div>
         @empty

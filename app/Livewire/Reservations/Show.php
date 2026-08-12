@@ -3,10 +3,11 @@
 namespace App\Livewire\Reservations;
 
 use App\Models\Reservation;
-use App\Models\ReservationParticipant;
 use App\Services\ReservationService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -15,29 +16,93 @@ class Show extends Component
     use AuthorizesRequests, WithFileUploads;
 
     public Reservation $reservation;
+
     public $proof = null;
+
     public string $method = '';
+
     public string $reference_no = '';
 
+    /**
+     * Whether the mobile payment sheet is open.
+     *
+     * Server-side rather than Alpine-only: uploading a receipt is a Livewire round trip, and a
+     * plain `x-data="{ pay: false }"` was re-initialised when the component re-rendered — so the
+     * sheet slammed shut the moment someone attached their screenshot. Entangled, the state
+     * survives every render the upload causes.
+     */
+    public bool $payOpen = false;
+
+    /** Whether the submitted-receipt sheet is open. Entangled for the same reason as $payOpen. */
+    public bool $proofOpen = false;
+
     public $editingId = null;
+
     public bool $showEditModal = false;
+
     public $edit_first_name = '';
+
     public $edit_middle_name = '';
+
     public $edit_last_name = '';
+
     public $edit_birthday = '';
+
     public $edit_gender = '';
+
     public $edit_email = '';
+
     public $edit_phone = '';
 
+    /** A staged ID photo for the participant open in the edit dialog. */
+    public $edit_id = null;
+
     public $removingId = null;
+
     public $removingName = '';
+
     public bool $removingLast = false;
+
+    /** Labels the host actually offers — the only values the method field may take. */
+    public function getPayMethodsProperty(): array
+    {
+        return $this->reservation->departure->trip->host->hostProfile?->payment_methods ?? [];
+    }
 
     public function mount(string $token): void
     {
         $this->reservation = Reservation::where('public_token', $token)
-            ->with('departure.trip.host.hostProfile', 'latestPayment', 'participants')
+            ->with('departure.trip.host.hostProfile', 'departure.trip.photos', 'departure.trip.place', 'latestPayment', 'participants')
             ->firstOrFail();
+
+        /*
+         * Preselect the first method the host offers.
+         *
+         * The form carried a $method property that nothing ever wrote to, so every submission
+         * recorded a null method and the host's roster could never say how the money arrived.
+         * A checkout asks which one you used; this makes the answer the default rather than a
+         * field someone has to remember to fill.
+         */
+        $this->method = $this->payMethods[0]['label'] ?? '';
+    }
+
+    /**
+     * Same cover precedence as the join page: the chosen cover first, then the rest of the
+     * album, and the stock fallback only when the trip has no photography of its own.
+     */
+    public function getGalleryProperty(): array
+    {
+        $trip = $this->reservation->departure->trip;
+        $shot = fn (?string $url) => $url ? ['url' => $url, 'alt' => $trip->title] : null;
+
+        $gallery = collect([$trip->cover_photo ? $shot($trip->cover_url) : null])
+            ->concat($trip->photos->map(fn ($p) => $shot($p->url)))
+            ->filter()
+            ->values();
+
+        return $gallery->isNotEmpty()
+            ? $gallery->all()
+            : array_filter([$shot($trip->cover_url)]);
     }
 
     public function canEdit(): bool
@@ -64,6 +129,7 @@ class Show extends Component
         $this->edit_gender = $participant->gender ?? '';
         $this->edit_email = $participant->email ?? '';
         $this->edit_phone = $participant->phone ?? '';
+        $this->edit_id = null;
         $this->showEditModal = true;
     }
 
@@ -87,6 +153,9 @@ class Show extends Component
             'edit_gender' => ['nullable', 'in:male,female,other,undisclosed'],
             'edit_email' => ['nullable', 'email', 'max:120'],
             'edit_phone' => ['nullable', 'string', 'max:60'],
+            // Only an image, and small enough that a phone photo goes through but a scan of a
+            // whole passport book does not sit in storage forever.
+            'edit_id' => ['nullable', 'image', 'max:5120'],
         ]);
 
         $participant->update([
@@ -98,6 +167,22 @@ class Show extends Component
             'email' => $this->edit_email ?: null,
             'phone' => $this->edit_phone ?: null,
         ]);
+
+        /*
+         * Private disk, never public storage. An ID is the most sensitive thing this app holds,
+         * and putting it where a guessed URL would serve it is the whole failure mode. The old
+         * file is dropped rather than orphaned when one replaces another.
+         */
+        if ($this->edit_id) {
+            if ($participant->id_image) {
+                Storage::disk('local')->delete($participant->id_image);
+            }
+
+            $participant->update([
+                'id_image' => $this->edit_id->store('ids', 'local'),
+                'id_uploaded_at' => now(),
+            ]);
+        }
 
         $this->reservation->refresh();
         $this->closeModal();
@@ -174,7 +259,9 @@ class Show extends Component
     {
         $this->validate([
             'reference_no' => ['required', 'string', 'max:120'],
-            'method' => ['nullable', 'string', 'max:60'],
+            // Only a method this host actually offers. Free text here would let the roster show
+            // a payment route the host never advertised.
+            'method' => ['nullable', 'string', 'max:60', Rule::in(collect($this->payMethods)->pluck('label')->filter()->all())],
             'proof' => ['nullable', 'image', 'max:5120'],
         ]);
 
@@ -185,6 +272,12 @@ class Show extends Component
         ]);
 
         $this->reservation->refresh();
+
+        // The sheet has done its job; leaving it open over a page that now says "waiting on your
+        // host" is a dialog with nothing left to do in it.
+        $this->payOpen = false;
+        $this->reference_no = '';
+        $this->proof = null;
     }
 
     public function cancel(ReservationService $service)

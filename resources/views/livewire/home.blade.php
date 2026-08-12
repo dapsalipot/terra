@@ -48,7 +48,10 @@
             </div>
 
             <h1 class="reveal display font-serif font-semibold mt-10 max-w-[60rem]" style="animation-delay:.12s">
-                Better trips with<br><span class="italic text-[#E8C58C]">better peeps.</span>
+                {{-- The break is deliberate from `sm` up, where the first clause fits one line and
+                     the amber italic lands as its own beat. On a phone the same break strands
+                     "done" alone on a line, so there it is dropped and the sentence just flows. --}}
+                Conquering trails<br class="hidden sm:inline"> <span class="italic text-[#E8C58C]">together.</span>
             </h1>
 
             <p class="reveal text-lg text-cream/80 mt-8 max-w-lg" style="animation-delay:.2s">
@@ -180,14 +183,14 @@
     <section class="max-w-6xl mx-auto px-6 mt-24">
         <div class="flex items-baseline gap-4 mb-10" data-reveal>
             <span class="font-serif italic text-terra text-xl leading-none">03</span>
-            <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">How Peeps works</h2>
+            <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">How Terra works</h2>
             <span class="hidden sm:block h-px flex-1 bg-ink/12 self-center"></span>
         </div>
         <div class="relative grid md:grid-cols-3 gap-8">
             <div class="hidden md:block absolute top-6 left-[16%] right-[16%] border-t-2 border-dashed border-moss/35"></div>
             @php($steps = [
                 ['Find a trip', 'Browse departures by terrain, country, or date. Every trip is run by a real host.'],
-                ['Reserve &amp; pay your host', 'Hold your spot, then pay the host directly — Peeps never takes a cut of the trip.'],
+                ['Reserve &amp; pay your host', 'Hold your spot, then pay the host directly — Terra never takes a cut of the trip.'],
                 ['Show up with the crew', 'Get confirmed, meet everyone in the trip chat, and just turn up at the meetup.'],
             ])
             @foreach($steps as $i => $step)

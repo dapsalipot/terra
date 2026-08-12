@@ -205,10 +205,17 @@
                                     <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background: var(--accent-soft); color: var(--accent)">Recap</span>
                                 @endif
                                 @if($this->isOwner)
-                                    <button wire:click="deletePost({{ $post->id }})" wire:confirm="Delete this post?"
-                                            aria-label="Delete post" class="ml-auto text-ink/35 hover:text-terra">
+                                    <x-confirm-action
+                                        action="deletePost({{ $post->id }})"
+                                        title="Delete this post?"
+                                        body="It disappears from your wall for everyone who follows you. This cannot be undone."
+                                        confirm-label="Yes, delete it"
+                                        cancel-label="Keep it"
+                                        tone="terra" icon="trash"
+                                        dusk="delete-post-{{ $post->id }}"
+                                        aria-label="Delete post" class="ml-auto text-ink/35 hover:text-terra">
                                         <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                                    </button>
+                                    </x-confirm-action>
                                 @endif
                             </div>
 
@@ -291,7 +298,7 @@
                 @if($p?->payment_methods)
                     <section class="rounded-2xl border border-ink/10 bg-surface p-6">
                         <h2 class="font-serif font-semibold text-lg mb-1">How you pay</h2>
-                        <p class="text-sm text-ink/60 mb-4">You pay {{ $user->name }} directly — Peeps never holds your money.</p>
+                        <p class="text-sm text-ink/60 mb-4">You pay {{ $user->name }} directly — Terra never holds your money.</p>
                         <div class="grid sm:grid-cols-2 gap-3">
                             @foreach($p->payment_methods as $m)
                                 <div class="flex items-center gap-3 rounded-2xl border border-ink/12 p-3">

@@ -4,6 +4,7 @@ namespace App\Livewire\Host;
 
 use App\Models\Reservation;
 use App\Models\TripDeparture;
+use App\Support\DaySpan;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
@@ -81,12 +82,21 @@ class Dashboard extends Component
         $gridStart = $cursor->copy()->startOfWeek(Carbon::MONDAY);
         $gridEnd = $cursor->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
 
-        $departures = TripDeparture::whereIn('trip_id', $tripIds)
-            ->whereBetween('starts_at', [$gridStart, $gridEnd->copy()->endOfDay()])
-            ->with(['trip.place', 'reservations'])
-            ->orderBy('starts_at')
-            ->get()
-            ->groupBy(fn ($d) => $d->starts_at->toDateString());
+        /*
+         * Overlapping, not starting-inside: a traverse that left on the 30th of last month and
+         * comes back on the 2nd of this one belongs in both grids. Filtering on `starts_at`
+         * alone made the days a host was actually away look free.
+         */
+        $departures = DaySpan::group(
+            TripDeparture::whereIn('trip_id', $tripIds)
+                ->overlapping($gridStart, $gridEnd)
+                ->with(['trip.place', 'reservations'])
+                ->orderBy('starts_at')
+                ->get(),
+            fn (TripDeparture $d) => [$d->starts_at, $d->ends_at],
+            $gridStart,
+            $gridEnd,
+        );
 
         // Default to the soonest day in this month that actually has something on it.
         $withTrips = $departures->keys()->sort()->values();
@@ -111,7 +121,9 @@ class Dashboard extends Component
             'host' => $host,
             'cursor' => $cursor,
             'weeks' => $days->chunk(7),
-            'monthDepartures' => $departures->flatten(),
+            // Unique: a multi-day departure sits in several day buckets, and the header counts
+            // trips, not trip-days.
+            'monthDepartures' => $departures->flatten()->unique('id')->values(),
             'isList' => $this->view === 'list',
             'selectedDepartures' => $departures->get($this->selectedDate, collect()),
             'toConfirm' => Reservation::whereIn('trip_departure_id', $departureIds)
@@ -126,6 +138,6 @@ class Dashboard extends Component
                 ->orderBy('starts_at')
                 ->take(3)
                 ->get(),
-        ])->layout('components.layouts.host', ['title' => 'Peeps · Dashboard']);
+        ])->layout('components.layouts.host', ['title' => 'Terra · Dashboard']);
     }
 }

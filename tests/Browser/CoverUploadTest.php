@@ -5,8 +5,8 @@ namespace Tests\Browser;
 use App\Models\HostProfile;
 use App\Models\Place;
 use App\Models\User;
-use Laravel\Dusk\Browser;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
 class CoverUploadTest extends DuskTestCase

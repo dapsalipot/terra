@@ -1,11 +1,19 @@
 <?php
 
-pest()->extend(Tests\DuskTestCase::class)
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Tests\DuskTestCase;
+use Tests\TestCase;
+
+/*
+ * Imports stay above every statement in this file, and Pint must not be allowed to reorder them
+ * below one. `::class` is resolved against the import table as the file is parsed top to bottom,
+ * so a `use Tests\DuskTestCase` sitting underneath this call leaves the name resolving to a
+ * global `\DuskTestCase` that does not exist — and the whole suite refuses to boot.
+ */
+pest()->extend(DuskTestCase::class)
 //  ->use(Illuminate\Foundation\Testing\DatabaseMigrations::class)
     ->in('Browser');
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,9 +37,9 @@ pest()->extend(TestCase::class)
          * dependent on a third party being up. Tests that care about holidays override this fake
          * with their own.
          */
-        Illuminate\Support\Facades\Http::preventStrayRequests();
-        Illuminate\Support\Facades\Http::fake([
-            'date.nager.at/*' => Illuminate\Support\Facades\Http::response([], 200),
+        Http::preventStrayRequests();
+        Http::fake([
+            'date.nager.at/*' => Http::response([], 200),
         ]);
     })
     ->in('Feature');

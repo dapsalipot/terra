@@ -27,6 +27,6 @@ class SendMagicLinkController extends Controller
 
         // The response is identical either way: saying whether an address is registered would
         // turn this endpoint into an account-enumeration oracle.
-        return back()->with('status', 'If that address has a Peeps account, a sign-in link is on its way.');
+        return back()->with('status', 'If that address has a Terra account, a sign-in link is on its way.');
     }
 }

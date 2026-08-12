@@ -2,11 +2,11 @@
 
 use Illuminate\Support\Facades\Blade;
 
-it('renders the site layout with the Peeps wordmark and no emoji in chrome', function () {
+it('renders the site layout with the Terra wordmark and no emoji in chrome', function () {
     $html = Blade::render('<x-layouts.site><p>hello</p></x-layouts.site>');
 
     expect($html)
-        ->toContain('Peeps')                          // wordmark present
+        ->toContain('Terra')                          // wordmark present
         ->toContain('hello')                          // slot renders
         ->not->toMatch('/[\x{1F300}-\x{1FAFF}]/u');   // no emoji in chrome
 });

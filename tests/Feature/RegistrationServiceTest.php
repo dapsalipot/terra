@@ -1,6 +1,8 @@
 <?php
 
+use App\Exceptions\HostCannotJoinException;
 use App\Exceptions\TripFullException;
+use App\Models\MagicLink;
 use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\RegistrationService;
@@ -115,7 +117,7 @@ it('never attaches a booking to an existing account by email alone', function ()
         ->and($result->magicUrl)->toContain('/magic/')
         ->and(auth()->check())->toBeFalse();
 
-    expect(\App\Models\MagicLink::where('purpose', 'attach')->count())->toBe(1);
+    expect(MagicLink::where('purpose', 'attach')->count())->toBe(1);
 });
 
 it('attaches directly for a signed-in joiner and fills only their blank profile fields', function () {
@@ -138,7 +140,7 @@ it('refuses a host account', function () {
     $host = User::factory()->create(['role' => 'host']);
 
     $this->svc->register($this->departure, regData(['actor' => $host]));
-})->throws(\App\Exceptions\HostCannotJoinException::class);
+})->throws(HostCannotJoinException::class);
 
 it('still cannot oversell through the new path', function () {
     $small = TripDeparture::factory()->create(['capacity' => 2]);

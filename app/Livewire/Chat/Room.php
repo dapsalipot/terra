@@ -5,12 +5,14 @@ namespace App\Livewire\Chat;
 use App\Models\Message;
 use App\Models\TripDeparture;
 use App\Services\ChatGate;
+use App\Services\ChatNotifier;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class Room extends Component
 {
     public TripDeparture $departure;
+
     public string $body = '';
 
     public function mount(TripDeparture $departure, ChatGate $gate): void
@@ -25,11 +27,15 @@ class Room extends Component
         abort_if($gate->isReadOnly($this->departure), 403);
         $this->validate(['body' => ['required', 'string', 'max:2000']]);
 
-        Message::create([
+        $message = Message::create([
             'trip_departure_id' => $this->departure->id,
             'user_id' => Auth::id(),
             'body' => $this->body,
         ]);
+
+        // Throttled inside the notifier: a group chat the night before a trip is bursty, and one
+        // email per message is how a useful alert becomes a filter rule.
+        app(ChatNotifier::class)->announce($message);
 
         $this->body = '';
     }

@@ -4,7 +4,7 @@
             <h1 class="font-serif font-semibold text-3xl">Your page</h1>
             <p class="text-ink/65 mt-1 text-sm">Everything here is public at
                 {{-- &commat; not a literal @, which Blade would read as the start of a directive --}}
-                <a href="{{ $user->handle ? route('hosts.show', $user) : '#' }}" class="font-semibold underline decoration-ink/25">peeps/&commat;{{ $handle ?: 'your-handle' }}</a>.
+                <a href="{{ $user->handle ? route('hosts.show', $user) : '#' }}" class="font-semibold underline decoration-ink/25">terra/&commat;{{ $handle ?: 'your-handle' }}</a>.
             </p>
         </div>
         @if($saved)
@@ -137,7 +137,7 @@
         {{-- ══════════ GETTING PAID ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
             <h2 class="font-serif font-semibold text-lg">Getting paid</h2>
-            <p class="text-sm text-ink/60 mt-1 mb-5">Joiners pay you directly — Peeps never holds your money.</p>
+            <p class="text-sm text-ink/60 mt-1 mb-5">Joiners pay you directly — Terra never holds your money.</p>
 
             <label class="block max-w-[10rem] mb-5">
                 <span class="block text-sm font-semibold text-ink/70 mb-1.5">Currency</span>
@@ -148,15 +148,19 @@
             <div class="space-y-4">
                 @foreach($payment_methods as $i => $m)
                     <div class="rounded-2xl border border-ink/10 p-4" wire:key="pm-{{ $i }}">
-                        <div class="flex gap-3 items-start">
-                            <input wire:model="payment_methods.{{ $i }}.label" type="text" placeholder="GCash" class="w-40 rounded-xl border-ink/15 focus:border-moss focus:ring-moss">
-                            <input wire:model="payment_methods.{{ $i }}.detail" type="text" placeholder="0917 000 0000" class="flex-1 rounded-xl border-ink/15 focus:border-moss focus:ring-moss">
+                        <div class="flex flex-wrap gap-3 items-start">
+                            <input wire:model="payment_methods.{{ $i }}.label" type="text" placeholder="GCash" aria-label="Payment method" class="w-40 rounded-xl border-ink/15 focus:border-moss focus:ring-moss">
+                            <input wire:model="payment_methods.{{ $i }}.detail" type="text" placeholder="0917 000 0000" aria-label="Account number" class="flex-1 min-w-[10rem] rounded-xl border-ink/15 focus:border-moss focus:ring-moss">
+                            {{-- The name on the account, so a joiner can check the e-wallet's
+                                 confirmation screen matches before they send anything. --}}
+                            <input wire:model="payment_methods.{{ $i }}.name" type="text" placeholder="Account name" aria-label="Account name" class="flex-1 min-w-[10rem] rounded-xl border-ink/15 focus:border-moss focus:ring-moss">
                             <button type="button" wire:click="removePaymentMethod({{ $i }})" aria-label="Remove payment method" class="mt-2.5 text-ink/40 hover:text-terra">
                                 <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                             </button>
                         </div>
                         @error('payment_methods.'.$i.'.label')<p class="text-terra text-xs mt-1.5">{{ $message }}</p>@enderror
                         @error('payment_methods.'.$i.'.detail')<p class="text-terra text-xs mt-1.5">{{ $message }}</p>@enderror
+                        @error('payment_methods.'.$i.'.name')<p class="text-terra text-xs mt-1.5">{{ $message }}</p>@enderror
 
                         {{-- e-wallet QR: joiners scan this instead of typing a number --}}
                         <div class="mt-3 flex items-start gap-4">

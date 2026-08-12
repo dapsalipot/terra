@@ -7,11 +7,17 @@ use App\Models\Place;
 use App\Models\Trip;
 use App\Models\TripDraft;
 use App\Support\HikeGrades;
+use App\Support\PackingItems;
+use App\Support\PaymentTerms;
 use App\Support\TrailFeatures;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
 class Create extends Component
@@ -26,14 +32,18 @@ class Create extends Component
     // Step 1 — the trip
     /** @var array<int, array{place_id:int, days:list<string>}> — days is one label per day */
     public array $destinations = [];
+
     public string $title = '';
+
     public string $description = '';
+
     /** @var array<int, array{label:string, note:string, image:mixed}> */
     public array $inclusions = [
         ['label' => 'Transport', 'note' => '', 'image' => null],
         ['label' => 'Permits', 'note' => '', 'image' => null],
         ['label' => 'Guide', 'note' => '', 'image' => null],
     ];
+
     /**
      * What joiners should bring, as keys from App\Support\PackingItems.
      *
@@ -44,7 +54,11 @@ class Create extends Component
      */
     public array $packing = [];
 
+    /** Ask every traveller for a photo of their ID. Off unless the host turns it on. */
+    public bool $requiresId = false;
+
     public $cover = null;
+
     /** @var array uploaded carousel photos */
     public array $photos = [];
 
@@ -67,11 +81,14 @@ class Create extends Component
     // Step 2 — logistics
     /** @var array<int, array{label:string, address:string, lat:string, lng:string, note:string, image:mixed, save_to_library:bool}> */
     public array $meetups = [self::BLANK_SPOT];
+
     /** Where the trip ends, and when. Separate from pickups: the return leg is its own thing. */
     public array $dropoffs = [self::BLANK_SPOT];
+
     public array $departures = [
         ['starts_at' => '', 'ends_at' => '', 'capacity' => 12],
     ];
+
     public string $price = '';
 
     /**
@@ -84,6 +101,26 @@ class Create extends Component
 
     /** Blank = pay in full. A figure holds a place and the balance is settled later. */
     public string $deposit = '';
+
+    /*
+     * Payment deadlines, one per payment type.
+     *
+     * Each is a mode plus the field that mode uses, rather than one clever field that means
+     * different things — a host switching from "48 hours" to "on 1 September" and back should
+     * find their earlier answer still there, not silently reinterpreted as the other kind.
+     * 'none' is the default and stays the common case: plenty of hosts just chase people in chat.
+     */
+    public string $downpaymentDueMode = 'none';
+
+    public string $downpaymentDueHours = '';
+
+    public string $downpaymentDueDate = '';
+
+    public string $fullDueMode = 'none';
+
+    public string $fullDueHours = '';
+
+    public string $fullDueDate = '';
 
     /**
      * Canonical shape for a pickup / drop-off row.
@@ -341,7 +378,7 @@ class Create extends Component
      */
     private function storeImage(mixed $value, string $dir): ?string
     {
-        if ($value instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+        if ($value instanceof TemporaryUploadedFile) {
             return $value->store($dir, 'public');
         }
 
@@ -349,13 +386,13 @@ class Create extends Component
             return null;
         }
 
-        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+        $disk = Storage::disk('public');
 
         if (! $disk->exists($value)) {
             return null;
         }
 
-        $copy = $dir.'/'.\Illuminate\Support\Str::random(40).'.'.pathinfo($value, PATHINFO_EXTENSION);
+        $copy = $dir.'/'.Str::random(40).'.'.pathinfo($value, PATHINFO_EXTENSION);
         $disk->copy($value, $copy);
 
         return $copy;
@@ -459,6 +496,24 @@ class Create extends Component
             'photos.*' => $this->imageRules(8192),
             'price' => ['required', 'numeric', 'min:0'],
             'deposit' => ['nullable', 'numeric', 'min:0', 'lte:price'],
+            // Only the field its own mode actually uses is required, so switching modes never
+            // strands a host behind a complaint about a box they cannot see.
+            'downpaymentDueHours' => [
+                Rule::requiredIf($this->downpaymentDueMode === 'relative' && $this->deposit !== ''),
+                'nullable', 'integer', 'min:1', 'max:'.PaymentTerms::MAX_HOURS,
+            ],
+            'downpaymentDueDate' => [
+                Rule::requiredIf($this->downpaymentDueMode === 'fixed' && $this->deposit !== ''),
+                'nullable', 'date',
+            ],
+            'fullDueHours' => [
+                Rule::requiredIf($this->fullDueMode === 'relative'),
+                'nullable', 'integer', 'min:1', 'max:'.PaymentTerms::MAX_HOURS,
+            ],
+            'fullDueDate' => [
+                Rule::requiredIf($this->fullDueMode === 'fixed'),
+                'nullable', 'date',
+            ],
             'priceTiers' => ['array', 'max:6'],
             'priceTiers.*.label' => ['required_with:priceTiers.*.amount', 'nullable', 'string', 'max:40'],
             'priceTiers.*.amount' => ['required_with:priceTiers.*.label', 'nullable', 'numeric', 'min:0'],
@@ -495,7 +550,7 @@ class Create extends Component
      */
     public function togglePacking(string $key): void
     {
-        if (! in_array($key, \App\Support\PackingItems::keys(), true)) {
+        if (! in_array($key, PackingItems::keys(), true)) {
             return;
         }
 
@@ -610,7 +665,7 @@ class Create extends Component
                 return $this->applyTo($trip, $this->departures[0], $inclusions, $meetups, $dropoffs, saveToLibrary: true);
             }
 
-            $group = (string) \Illuminate\Support\Str::uuid();
+            $group = (string) Str::uuid();
             $built = [];
 
             foreach ($this->departures as $departure) {
@@ -639,153 +694,160 @@ class Create extends Component
      */
     private function applyTo(Trip $trip, array $departure, array $inclusions, array $meetups, array $dropoffs, bool $saveToLibrary): Trip
     {
-        {
-            $trip->fill([
-                'place_id' => $this->destinations[0]['place_id'],
-                'title' => $this->title,
-                'description' => $this->description ?: null,
-                'meetup_point' => $meetups[0]['label'] ?? null,
-                'price' => $this->price,
-                'deposit_amount' => $this->deposit !== '' ? $this->deposit : null,
-                // Re-filtered through the catalog on the way in as well as the way out, so a
-                // retired key cannot survive in the column after the catalog has moved on.
-                'packing_items' => array_values(array_intersect($this->packing, \App\Support\PackingItems::keys())) ?: null,
-                'status' => 'published',
+
+        $trip->fill([
+            'place_id' => $this->destinations[0]['place_id'],
+            'title' => $this->title,
+            'description' => $this->description ?: null,
+            'meetup_point' => $meetups[0]['label'] ?? null,
+            'price' => $this->price,
+            'deposit_amount' => $this->deposit !== '' ? $this->deposit : null,
+            // Only the active mode's value is stored; the other is nulled rather than left
+            // behind, so a trip cannot end up carrying two contradictory deadlines.
+            'downpayment_due_hours' => $this->termHours('downpayment'),
+            'downpayment_due_at' => $this->termDate('downpayment'),
+            'full_payment_due_hours' => $this->termHours('full'),
+            'full_payment_due_at' => $this->termDate('full'),
+            // Re-filtered through the catalog on the way in as well as the way out, so a
+            // retired key cannot survive in the column after the catalog has moved on.
+            'packing_items' => array_values(array_intersect($this->packing, PackingItems::keys())) ?: null,
+            'requires_id' => $this->requiresId,
+            'status' => 'published',
+        ]);
+
+        // keep the stored cover when the host did not touch it
+        if ($path = $this->storeImage($this->cover, 'covers')) {
+            $trip->cover_photo = $path;
+        }
+
+        $trip->save();
+
+        $trip->photos()->delete();
+        $trip->meetups()->delete();
+        $trip->inclusionItems()->delete();
+        $trip->priceTiers()->delete();
+
+        foreach (array_values(array_filter($this->priceTiers, fn ($t) => filled($t['label'] ?? null) && filled($t['amount'] ?? null))) as $i => $tier) {
+            $trip->priceTiers()->create([
+                'label' => $tier['label'],
+                'amount' => $tier['amount'],
+                'starts_at' => ($tier['starts_at'] ?? '') ?: null,
+                'ends_at' => ($tier['ends_at'] ?? '') ?: null,
+                'position' => $i,
+            ]);
+        }
+
+        $trip->syncDestinations($this->destinations);
+
+        // Trail detail hangs off each stop, so a multi-mountain trip keeps one set of
+        // numbers per summit. Only written where the host (or the prefill) has content.
+        foreach ($trip->destinations()->get() as $destination) {
+            if (! isset($this->hikes[$destination->place_id]) || ! $destination->isHike()) {
+                continue;
+            }
+
+            $row = collect($this->hikeFor($destination->place_id))
+                ->map(fn ($v) => is_array($v) ? array_values($v) : ($v === '' ? null : $v))
+                ->all();
+
+            if (collect($row)->filter(fn ($v) => is_array($v) ? $v !== [] : $v !== null)->isNotEmpty()) {
+                $destination->hikeDetail()->create($row);
+            }
+        }
+
+        foreach (array_values($this->photos) as $i => $photo) {
+            $trip->photos()->create(['path' => $this->storeImage($photo, 'trips'), 'position' => $i]);
+        }
+
+        // Exactly one departure per trip — that is the whole point of the split.
+        // Updated, not replaced: reservations reference this row by id.
+        $existing = $trip->departures()->first();
+
+        // The date is fixed once people can book it. The view hides the input, but the
+        // lock has to live here: a tampered payload would otherwise move a date out
+        // from under everyone who already reserved a place on it.
+        $dates = $this->isEditing && $existing
+            ? ['starts_at' => $existing->starts_at, 'ends_at' => $existing->ends_at]
+            : ['starts_at' => $departure['starts_at'], 'ends_at' => $departure['ends_at'] ?: null];
+
+        $trip->departures()->updateOrCreate(
+            ['id' => $existing?->id],
+            $dates + [
+                'capacity' => (int) $departure['capacity'],
+                'status' => 'open',
+            ],
+        );
+
+        foreach ($inclusions as $i => $c) {
+            $trip->inclusionItems()->create([
+                'label' => $c['label'],
+                'note' => $c['note'] ?: null,
+                'image' => $this->storeImage($c['image'] ?? null, 'inclusions'),
+                'position' => $i,
+            ]);
+        }
+
+        foreach ($meetups as $i => $m) {
+            $image = $this->storeImage($m['image'] ?? null, 'meetups');
+
+            $trip->meetups()->create([
+                'kind' => 'pickup',
+                'label' => $m['label'],
+                'address' => $m['address'] ?: null,
+                'lat' => $m['lat'] !== '' ? $m['lat'] : null,
+                'lng' => $m['lng'] !== '' ? $m['lng'] : null,
+                'time' => ($m['time'] ?? '') ?: null,
+                'note' => $m['note'] ?: null,
+                'image' => $image,
+                'position' => $i,
             ]);
 
-            // keep the stored cover when the host did not touch it
-            if ($path = $this->storeImage($this->cover, 'covers')) {
-                $trip->cover_photo = $path;
-            }
-
-            $trip->save();
-
-            $trip->photos()->delete();
-            $trip->meetups()->delete();
-            $trip->inclusionItems()->delete();
-            $trip->priceTiers()->delete();
-
-            foreach (array_values(array_filter($this->priceTiers, fn ($t) => filled($t['label'] ?? null) && filled($t['amount'] ?? null))) as $i => $tier) {
-                $trip->priceTiers()->create([
-                    'label' => $tier['label'],
-                    'amount' => $tier['amount'],
-                    'starts_at' => ($tier['starts_at'] ?? '') ?: null,
-                    'ends_at' => ($tier['ends_at'] ?? '') ?: null,
-                    'position' => $i,
-                ]);
-            }
-
-            $trip->syncDestinations($this->destinations);
-
-            // Trail detail hangs off each stop, so a multi-mountain trip keeps one set of
-            // numbers per summit. Only written where the host (or the prefill) has content.
-            foreach ($trip->destinations()->get() as $destination) {
-                if (! isset($this->hikes[$destination->place_id]) || ! $destination->isHike()) {
-                    continue;
-                }
-
-                $row = collect($this->hikeFor($destination->place_id))
-                    ->map(fn ($v) => is_array($v) ? array_values($v) : ($v === '' ? null : $v))
-                    ->all();
-
-                if (collect($row)->filter(fn ($v) => is_array($v) ? $v !== [] : $v !== null)->isNotEmpty()) {
-                    $destination->hikeDetail()->create($row);
-                }
-            }
-
-            foreach (array_values($this->photos) as $i => $photo) {
-                $trip->photos()->create(['path' => $this->storeImage($photo, 'trips'), 'position' => $i]);
-            }
-
-            // Exactly one departure per trip — that is the whole point of the split.
-            // Updated, not replaced: reservations reference this row by id.
-            $existing = $trip->departures()->first();
-
-            // The date is fixed once people can book it. The view hides the input, but the
-            // lock has to live here: a tampered payload would otherwise move a date out
-            // from under everyone who already reserved a place on it.
-            $dates = $this->isEditing && $existing
-                ? ['starts_at' => $existing->starts_at, 'ends_at' => $existing->ends_at]
-                : ['starts_at' => $departure['starts_at'], 'ends_at' => $departure['ends_at'] ?: null];
-
-            $trip->departures()->updateOrCreate(
-                ['id' => $existing?->id],
-                $dates + [
-                    'capacity' => (int) $departure['capacity'],
-                    'status' => 'open',
-                ],
-            );
-
-            foreach ($inclusions as $i => $c) {
-                $trip->inclusionItems()->create([
-                    'label' => $c['label'],
-                    'note' => $c['note'] ?: null,
-                    'image' => $this->storeImage($c['image'] ?? null, 'inclusions'),
-                    'position' => $i,
-                ]);
-            }
-
-            foreach ($meetups as $i => $m) {
-                $image = $this->storeImage($m['image'] ?? null, 'meetups');
-
-                $trip->meetups()->create([
-                    'kind' => 'pickup',
+            if ($saveToLibrary && ($m['save_to_library'] ?? false)) {
+                HostMeetupPreset::create([
+                    'host_id' => Auth::id(),
                     'label' => $m['label'],
                     'address' => $m['address'] ?: null,
                     'lat' => $m['lat'] !== '' ? $m['lat'] : null,
                     'lng' => $m['lng'] !== '' ? $m['lng'] : null,
-                    'time' => ($m['time'] ?? '') ?: null,
                     'note' => $m['note'] ?: null,
                     'image' => $image,
-                    'position' => $i,
                 ]);
-
-                if ($saveToLibrary && ($m['save_to_library'] ?? false)) {
-                    HostMeetupPreset::create([
-                        'host_id' => Auth::id(),
-                        'label' => $m['label'],
-                        'address' => $m['address'] ?: null,
-                        'lat' => $m['lat'] !== '' ? $m['lat'] : null,
-                        'lng' => $m['lng'] !== '' ? $m['lng'] : null,
-                        'note' => $m['note'] ?: null,
-                        'image' => $image,
-                    ]);
-                }
             }
+        }
 
-            foreach (array_values($dropoffs) as $i => $d) {
-                $image = $this->storeImage($d['image'] ?? null, 'meetups');
+        foreach (array_values($dropoffs) as $i => $d) {
+            $image = $this->storeImage($d['image'] ?? null, 'meetups');
 
-                $trip->meetups()->create([
-                    'kind' => 'dropoff',
+            $trip->meetups()->create([
+                'kind' => 'dropoff',
+                'label' => $d['label'],
+                'address' => ($d['address'] ?? '') ?: null,
+                'lat' => ($d['lat'] ?? '') !== '' ? $d['lat'] : null,
+                'lng' => ($d['lng'] ?? '') !== '' ? $d['lng'] : null,
+                'time' => ($d['time'] ?? '') ?: null,
+                'note' => ($d['note'] ?? '') ?: null,
+                'image' => $image,
+                'position' => $i,
+            ]);
+
+            if ($saveToLibrary && ($d['save_to_library'] ?? false)) {
+                HostMeetupPreset::create([
+                    'host_id' => Auth::id(),
                     'label' => $d['label'],
                     'address' => ($d['address'] ?? '') ?: null,
                     'lat' => ($d['lat'] ?? '') !== '' ? $d['lat'] : null,
                     'lng' => ($d['lng'] ?? '') !== '' ? $d['lng'] : null,
-                    'time' => ($d['time'] ?? '') ?: null,
                     'note' => ($d['note'] ?? '') ?: null,
                     'image' => $image,
-                    'position' => $i,
                 ]);
-
-                if ($saveToLibrary && ($d['save_to_library'] ?? false)) {
-                    HostMeetupPreset::create([
-                        'host_id' => Auth::id(),
-                        'label' => $d['label'],
-                        'address' => ($d['address'] ?? '') ?: null,
-                        'lat' => ($d['lat'] ?? '') !== '' ? $d['lat'] : null,
-                        'lng' => ($d['lng'] ?? '') !== '' ? $d['lng'] : null,
-                        'note' => ($d['note'] ?? '') ?: null,
-                        'image' => $image,
-                    ]);
-                }
             }
-
-            // the departure exists now, so the URL can carry its date
-            $trip->refreshSlug();
-
-            return $trip;
         }
+
+        // the departure exists now, so the URL can carry its date
+        $trip->refreshSlug();
+
+        return $trip;
+
     }
 
     // ── drafts ──────────────────────────────────────────────────────
@@ -793,7 +855,9 @@ class Create extends Component
     // meaningfully restored into a fresh browser session.
     private const DRAFT_FIELDS = [
         'destinations', 'title', 'description',
-        'inclusions', 'packing', 'hikes', 'meetups', 'dropoffs', 'departures', 'price', 'priceTiers', 'deposit',
+        'inclusions', 'packing', 'requiresId', 'hikes', 'meetups', 'dropoffs', 'departures', 'price', 'priceTiers', 'deposit',
+        'downpaymentDueMode', 'downpaymentDueHours', 'downpaymentDueDate',
+        'fullDueMode', 'fullDueHours', 'fullDueDate',
     ];
 
     public bool $draftRestored = false;
@@ -904,6 +968,23 @@ class Create extends Component
         $this->description = (string) $trip->description;
         $this->price = (string) $trip->price;
         $this->deposit = $trip->deposit_amount !== null ? (string) $trip->deposit_amount : '';
+
+        // Whichever column carries a value decides the mode on the way back in.
+        $this->downpaymentDueMode = match (true) {
+            $trip->downpayment_due_at !== null => 'fixed',
+            $trip->downpayment_due_hours !== null => 'relative',
+            default => 'none',
+        };
+        $this->downpaymentDueHours = (string) ($trip->downpayment_due_hours ?? '');
+        $this->downpaymentDueDate = $trip->downpayment_due_at?->format('Y-m-d') ?? '';
+
+        $this->fullDueMode = match (true) {
+            $trip->full_payment_due_at !== null => 'fixed',
+            $trip->full_payment_due_hours !== null => 'relative',
+            default => 'none',
+        };
+        $this->fullDueHours = (string) ($trip->full_payment_due_hours ?? '');
+        $this->fullDueDate = $trip->full_payment_due_at?->format('Y-m-d') ?? '';
         $this->priceTiers = $trip->priceTiers->map(fn ($t) => [
             'label' => $t->label,
             'amount' => (string) $t->amount,
@@ -921,8 +1002,10 @@ class Create extends Component
 
         $this->packing = array_values(array_intersect(
             (array) ($trip->packing_items ?? []),
-            \App\Support\PackingItems::keys(),
+            PackingItems::keys(),
         ));
+
+        $this->requiresId = (bool) $trip->requires_id;
 
         // Photos come across as storage paths, not uploads. The upload component previews
         // them, and publish() copies the file rather than sharing it, so deleting one
@@ -976,11 +1059,6 @@ class Create extends Component
     // Each section of the form collapses to one line. These produce that line, so a
     // host can see what a closed card holds without opening it.
 
-
-
-
-
-
     /**
      * One stop's trail values, always complete. Setting a single field (a wire:model
      * write, or a test) leaves a partial array behind, so every read merges the blanks
@@ -1001,8 +1079,6 @@ class Create extends Component
             ->count();
     }
 
-
-
     public function departureSummary(): string
     {
         $dated = collect($this->departures)->filter(fn ($d) => filled($d['starts_at'] ?? null));
@@ -1011,8 +1087,8 @@ class Create extends Component
             return 'No dates yet — at least one is required';
         }
 
-        return $dated->count().' '.\Illuminate\Support\Str::plural('date', $dated->count())
-            .' · from '.\Illuminate\Support\Carbon::parse($dated->first()['starts_at'])->format('j M Y');
+        return $dated->count().' '.Str::plural('date', $dated->count())
+            .' · from '.Carbon::parse($dated->first()['starts_at'])->format('j M Y');
     }
 
     public function meetupSummary(): string
@@ -1038,7 +1114,7 @@ class Create extends Component
     {
         $days = collect($this->destinations)->sum(fn ($d) => count($d['days'] ?? []));
 
-        return $days.' '.\Illuminate\Support\Str::plural('day', $days);
+        return $days.' '.Str::plural('day', $days);
     }
 
     public function render()
@@ -1049,6 +1125,42 @@ class Create extends Component
             'pastTrips' => Trip::collapseSchedules(
                 Trip::where('host_id', Auth::id())->with('departures')->latest()->take(24)->get()
             )->take(4),
-        ])->layout('components.layouts.host', ['title' => 'Peeps · New trip']);
+        ])->layout('components.layouts.host', ['title' => 'Terra · New trip']);
+    }
+
+    /**
+     * The hours a term is stored with, or null when it is not expressed that way.
+     *
+     * A down payment deadline on a trip that takes no down payment is meaningless, so it is
+     * dropped rather than saved — otherwise switching a trip to pay-in-full would leave a stale
+     * deadline behind, invisible in the form and still stamped onto every new booking.
+     */
+    private function termHours(string $key): ?int
+    {
+        if ($key === 'downpayment' && $this->deposit === '') {
+            return null;
+        }
+
+        $mode = $key === 'downpayment' ? $this->downpaymentDueMode : $this->fullDueMode;
+        $value = $key === 'downpayment' ? $this->downpaymentDueHours : $this->fullDueHours;
+
+        return $mode === 'relative' && $value !== '' ? (int) $value : null;
+    }
+
+    /** The fixed date a term is pinned to, or null. Same drop rule as termHours(). */
+    private function termDate(string $key): ?string
+    {
+        if ($key === 'downpayment' && $this->deposit === '') {
+            return null;
+        }
+
+        $mode = $key === 'downpayment' ? $this->downpaymentDueMode : $this->fullDueMode;
+        $value = $key === 'downpayment' ? $this->downpaymentDueDate : $this->fullDueDate;
+
+        // End of day: a deadline of "1 September" that bites at midnight on the 1st gives the
+        // joiner none of the day they were told they had.
+        return $mode === 'fixed' && $value !== ''
+            ? Carbon::parse($value)->endOfDay()->toDateTimeString()
+            : null;
     }
 }

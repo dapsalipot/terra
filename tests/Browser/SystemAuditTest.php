@@ -8,7 +8,9 @@ use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
+use App\Services\ReservationService;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Illuminate\Support\Str;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
@@ -131,7 +133,7 @@ class SystemAuditTest extends DuskTestCase
                     continue 2;
                 }
             }
-            $this->note('console errors', $where.' — '.\Illuminate\Support\Str::limit($entry['message'], 160));
+            $this->note('console errors', $where.' — '.Str::limit($entry['message'], 160));
         }
     }
 
@@ -235,7 +237,7 @@ class SystemAuditTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($w) {
             $browser->resize(1440, 900);
 
-            $this->sweep($browser, '/', 'home', 'Better trips with');
+            $this->sweep($browser, '/', 'home', 'Conquering trails');
             $browser->scrollIntoView('@departing-soon')->pause(self::BEAT);
 
             $this->sweep($browser, '/trips', 'discovery', 'Mount Pulag Sunrise Traverse');
@@ -297,7 +299,7 @@ class SystemAuditTest extends DuskTestCase
     {
         $w = $this->seedWorld();
 
-        $this->browse(function (Browser $browser) use ($w) {
+        $this->browse(function (Browser $browser) {
             $browser->resize(1440, 900);
 
             // Discover the trip the way a stranger would.
@@ -315,8 +317,10 @@ class SystemAuditTest extends DuskTestCase
             $browser->clear('@party-size')->type('@party-size', '2')
                 ->waitFor('@seat-1')
                 ->pause(self::BEAT)
-                ->type('@contact-first', 'Ada')
-                ->type('@contact-last', 'Reyes')
+                // At two seats the "Your details" card steps aside and seat 1 carries the
+                // booker's name and contact, so the name fields are the seat's own hooks.
+                ->type('@seat-0-first', 'Ada')
+                ->type('@seat-0-last', 'Reyes')
                 ->type('@contact-email', 'ada@example.com')
                 ->type('@contact-phone', '09171234567')
                 ->keys('@seat-0-birthday', '04', '02', '1998')
@@ -332,6 +336,9 @@ class SystemAuditTest extends DuskTestCase
 
             $browser->uncheck('@create-account')
                 ->click('@submit-registration')
+                // the primary button opens the review sheet; the booking is confirmed inside it
+                ->waitFor('@confirm-booking')
+                ->click('@confirm-booking')
                 ->waitForText('Save this link', 10)
                 ->pause(self::BEAT);
 
@@ -346,21 +353,38 @@ class SystemAuditTest extends DuskTestCase
                 }
             }
 
-            // Pay.
-            $browser->type('reference_no', 'GC-9021-5567')
-                ->pause(self::BEAT)
-                ->press('Submit proof of payment')
-                ->waitForText('Waiting for', 10)
-                ->pause(self::BEAT);
+            // No checkout yet: payment follows the host granting the seat, so this page should
+            // be explaining that rather than asking for money.
+            if ($browser->element('@submit-proof') !== null) {
+                $this->note('booking flow', 'the checkout is offered before the host has granted the seat');
+            }
 
             $this->consoleErrors($browser, 'booking + payment');
         });
 
         $reservation = Reservation::firstOrFail();
 
-        if ($reservation->status !== 'payment_submitted') {
-            $this->note('booking flow', "after paying, status was {$reservation->status}, expected payment_submitted");
+        if ($reservation->status !== 'pending') {
+            $this->note('booking flow', "a fresh booking was {$reservation->status}, expected pending");
         }
+
+        // The host grants the seat, and only then can the joiner pay.
+        app(ReservationService::class)->confirm($reservation->fresh(), $reservation->departure->trip->host);
+
+        $this->browse(function (Browser $browser) use ($reservation) {
+            $browser->visit('/r/'.$reservation->public_token)
+                ->waitFor('@submit-proof', 10)
+                ->type('reference_no', 'GC-9021-5567')
+                ->pause(self::BEAT)
+                ->click('@submit-proof')
+                ->waitFor('@proof-sent', 10)
+                ->pause(self::BEAT);
+
+            $this->noExceptionPage($browser, 'checkout');
+            $this->consoleErrors($browser, 'checkout');
+        });
+
+        $reservation->refresh();
         if ($reservation->participants->count() !== 2) {
             $this->note('booking flow', 'two seats booked but '.$reservation->participants->count().' traveller rows written');
         }
@@ -384,15 +408,23 @@ class SystemAuditTest extends DuskTestCase
                 }
             }
 
-            $browser->click('@confirm-'.$reservation->id)
-                ->waitForText('Confirmed', 10)
+            // The seat was granted before the joiner paid, so what is left on this row is the
+            // money decision — a separate act from accepting the person.
+            $browser->click('@verify-'.$reservation->id)
+                ->waitFor('@verify-'.$reservation->id.'-yes')
+                ->pause(self::BEAT)
+                ->click('@verify-'.$reservation->id.'-yes')
+                ->waitForText('Paid in full', 10)
                 ->pause(self::BEAT);
 
             $this->consoleErrors($browser, 'host roster');
         });
 
         if ($reservation->fresh()->status !== 'confirmed') {
-            $this->note('booking flow', 'host confirmation did not move the reservation to confirmed');
+            $this->note('booking flow', 'the reservation did not stay confirmed through payment');
+        }
+        if ($reservation->fresh()->money()['paid'] <= 0) {
+            $this->note('booking flow', 'verifying the payment credited nothing');
         }
     }
 
@@ -431,7 +463,7 @@ class SystemAuditTest extends DuskTestCase
             $browser->resize(375, 812);       // iPhone-class viewport
 
             $pages = [
-                '/' => ['home', 'Better trips with'],
+                '/' => ['home', 'Conquering trails'],
                 '/trips' => ['discovery', 'Mount Pulag'],
                 '/t/'.$w['trip']->slug => ['trip detail', 'Mount Pulag'],
                 '/t/'.$w['trip']->slug.'/join' => ['registration form', 'Where the host reaches you'],

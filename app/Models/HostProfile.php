@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\Accents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class HostProfile extends Model
 {
@@ -23,16 +25,16 @@ class HostProfile extends Model
 
     public function getCoverUrlAttribute(): ?string
     {
-        return $this->cover_photo ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->cover_photo) : null;
+        return $this->cover_photo ? Storage::disk('public')->url($this->cover_photo) : null;
     }
 
     public function getAccentHexAttribute(): string
     {
-        return \App\Support\Accents::hex($this->accent);
+        return Accents::hex($this->accent);
     }
 
     public function getAccentSoftAttribute(): string
     {
-        return \App\Support\Accents::soft($this->accent);
+        return Accents::soft($this->accent);
     }
 }

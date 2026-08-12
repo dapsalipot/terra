@@ -16,7 +16,9 @@
         <div class="absolute inset-x-0 top-0 p-5">
             <a href="{{ route('trips.index') }}" class="inline-flex items-center gap-1.5 rounded-full glass-dark px-3.5 py-2 text-sm font-semibold text-cream">‹ Explore</a>
         </div>
-        <div class="absolute inset-x-0 bottom-0 p-6 md:p-10 max-w-5xl mx-auto w-full">
+        {{-- Matches the content container below exactly, so the title sits on the same left edge
+             as the host row rather than floating in from somewhere else. --}}
+        <div class="absolute inset-x-0 bottom-0 px-6 lg:px-10 pb-6 md:pb-10 max-w-[1600px] mx-auto w-full">
             <div class="flex flex-wrap items-center gap-2 mb-3">
                 <span class="rounded-full glass px-3 py-1 text-xs font-semibold capitalize">{{ $trip->place->category }}</span>
                 @if($trip->effective_difficulty)
@@ -30,18 +32,23 @@
         </div>
     </div>
 
-    <div class="max-w-5xl mx-auto px-6 py-10 grid md:grid-cols-[1fr_360px] gap-10 items-start">
+    {{--
+        max-w-5xl left 352px of empty canvas down each side of a 1728px screen — 41% of the
+        display — while squeezing the content column to 576px, which is what made the page run
+        nearly 4,000px deep. The container is wide now and the width is spent on card grids that
+        gain columns, not on line length: prose and ordered lists below stay capped at a readable
+        measure, because a 1,100px line is harder to read, not easier.
+    --}}
+    <div class="max-w-[1600px] mx-auto px-6 lg:px-10 py-10 grid lg:grid-cols-[minmax(0,1fr)_380px] gap-8 xl:gap-12 items-start">
         {{-- LEFT --}}
-        <div>
+        <div class="min-w-0">
             {{-- host row --}}
-            <div class="flex items-center gap-3 pb-6 border-b border-ink/8">
-                <span class="grid place-items-center w-12 h-12 rounded-full bg-pine text-cream font-serif font-semibold text-lg">{{ strtoupper(substr($trip->host->name,0,1)) }}</span>
-                <div>
-                    <div class="font-semibold">Hosted by
-                        @if($trip->host->handle)<a href="{{ route('hosts.show', $trip->host) }}" class="inline-flex items-center py-1.5 -my-1.5 underline decoration-ink/20 hover:decoration-ink">{{ $trip->host->name }}</a>@else{{ $trip->host->name }}@endif
-                    </div>
-                    <div class="text-sm text-ink/70">{{ $trip->host->hostProfile?->trips_count }} trips led · {{ $trip->host->hostProfile?->rating ?? '—' }} ★</div>
-                </div>
+            <div class="pb-6 border-b border-ink/8">
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink/50 mb-2">Hosted by</p>
+                {{-- Avatar and name are one target now. The photo used to be inert while only the
+                     name was a link, which is the half of the pair people actually aim at. --}}
+                <x-host-link :host="$trip->host" size="lg" class="gap-3 font-semibold"
+                             :subtitle="($trip->host->hostProfile?->trips_count ?? 0).' trips led · '.($trip->host->hostProfile?->rating ?? '—').' ★'" />
             </div>
 
             {{-- ═══ THE TRAIL — one panel per hiking stop ═══ --}}
@@ -108,7 +115,9 @@
 
                 @if($h->features)
                     <h3 class="text-sm font-semibold text-ink/70 mb-2">On the trail</h3>
-                    <div class="grid sm:grid-cols-2 gap-2 mb-4">
+                    {{-- Eight features at two columns is four rows; at three it is three. This is
+                         the single biggest vertical saving on the page. --}}
+                    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2 mb-4">
                         {{-- catalogue order, not click order, so every trip reads the same way --}}
                         @foreach(array_intersect(\App\Support\TrailFeatures::keys(), $h->features) as $key)
                             <div class="flex items-start gap-3 rounded-xl border border-ink/8 bg-surface px-3.5 py-3">
@@ -146,7 +155,9 @@
                 @if($trip->day_count)
                     <p class="text-sm text-ink/65 mb-4">{{ $trip->day_count }} {{ \Illuminate\Support\Str::plural('day', $trip->day_count) }} across {{ $trip->destinations->count() }} {{ \Illuminate\Support\Str::plural('stop', $trip->destinations->count()) }}</p>
                 @endif
-                <ol class="space-y-4">
+                {{-- Capped, not stretched. A numbered route is read top to bottom; running each
+                     line to 1,100px would make it harder to follow, not easier. --}}
+                <ol class="space-y-4 max-w-3xl">
                     @php($dayNo = 0)
                     @foreach($trip->destinations as $i => $stop)
                         <li class="flex items-start gap-3">
@@ -173,7 +184,7 @@
             @endif
 
             @if($trip->description)
-                <p class="text-ink/75 leading-relaxed mt-6">{{ $trip->description }}</p>
+                <p class="text-ink/75 leading-relaxed mt-6 max-w-3xl">{{ $trip->description }}</p>
             @endif
 
             {{-- ═══ PHOTO CAROUSEL ═══ --}}
@@ -190,7 +201,7 @@
                 @php($withPhotos = $trip->inclusionItems->filter->image)
                 @if($withPhotos->isNotEmpty())
                     {{-- richer card grid once a host has photographed what joiners actually get --}}
-                    <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
                         @foreach($trip->inclusionItems as $inc)
                             <div class="rounded-2xl border border-ink/8 bg-surface overflow-hidden">
                                 @if($inc->image_url)
@@ -229,7 +240,7 @@
             @php($packing = \App\Support\PackingItems::resolve($trip->packing_items))
             @if($packing)
                 <h2 class="font-serif font-semibold text-xl mt-9 mb-4">What to bring</h2>
-                <div class="grid sm:grid-cols-2 gap-2" dusk="trip-packing">
+                <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2" dusk="trip-packing">
                     @foreach($packing as $item)
                         <div class="flex items-start gap-3 rounded-xl border border-ink/8 bg-surface px-4 py-3">
                             <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0 mt-0.5 text-moss" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $item['icon'] }}"/></svg>
@@ -330,6 +341,41 @@
                                 <span class="font-semibold text-sm">{{ $review->joiner->name }}</span>
                             </div>
                             @if($review->body)<p class="text-ink/70 mt-1.5">{{ $review->body }}</p>@endif
+
+                            {{-- The host's answer, and the way to write one.
+
+                                 Indented under the review it answers rather than presented as a peer comment: a reply is
+                                 a response to that person, and floating it alongside would read as a second review. --}}
+                            @if($review->hasReply())
+                                <div class="mt-3 ml-4 pl-4 border-l-2 border-moss/30" dusk="reply-{{ $review->id }}">
+                                    <p class="text-xs font-semibold text-moss">
+                                        {{ $trip->host->name }} replied
+                                        <span class="font-normal text-ink/45">· {{ $review->replied_at->format('j M Y') }}</span>
+                                    </p>
+                                    <p class="text-ink/70 text-sm mt-1">{{ $review->reply_body }}</p>
+                                </div>
+                            @endif
+
+                            @if(auth()->id() === $trip->host_id)
+                                @if($replyingTo === $review->id)
+                                    <form wire:submit="reply({{ $review->id }})" class="mt-3 ml-4 pl-4 border-l-2 border-ink/10">
+                                        <textarea wire:model="replyBody.{{ $review->id }}" rows="3" dusk="reply-box-{{ $review->id }}"
+                                                  class="field" placeholder="Answer this review — everyone reading it will see your reply."></textarea>
+                                        @error('replyBody.'.$review->id)<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <button dusk="save-reply-{{ $review->id }}"
+                                                    class="rounded-full bg-pine text-cream px-4 min-h-[40px] text-sm font-semibold hover:bg-pine/90 transition-colors">Post reply</button>
+                                            <button type="button" wire:click="cancelReply"
+                                                    class="rounded-full border border-ink/20 px-4 min-h-[40px] text-sm font-semibold hover:border-ink/40 transition-colors">Cancel</button>
+                                        </div>
+                                    </form>
+                                @else
+                                    <button type="button" wire:click="startReply({{ $review->id }})" dusk="start-reply-{{ $review->id }}"
+                                            class="mt-2 text-xs font-semibold text-moss hover:underline">
+                                        {{ $review->hasReply() ? 'Edit your reply' : 'Reply' }}
+                                    </button>
+                                @endif
+                            @endif
                         </div>
                     @empty
                         <p class="text-ink/65">No reviews yet — be the first to come back and rate it.</p>

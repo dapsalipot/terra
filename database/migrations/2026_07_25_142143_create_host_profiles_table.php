@@ -23,5 +23,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::dropIfExists('host_profiles'); }
+    public function down(): void
+    {
+        Schema::dropIfExists('host_profiles');
+    }
 };

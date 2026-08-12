@@ -2,8 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\StockPhotos;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -18,8 +23,11 @@ class Trip extends Model
         return [
             'inclusions' => 'array',
             'packing_items' => 'array',
+            'requires_id' => 'boolean',
             'price' => 'decimal:2',
             'deposit_amount' => 'decimal:2',
+            'downpayment_due_at' => 'datetime',
+            'full_payment_due_at' => 'datetime',
         ];
     }
 
@@ -48,8 +56,8 @@ class Trip extends Model
     {
         $date = $this->departures()->min('starts_at');
 
-        $base = \Illuminate\Support\Str::slug(
-            $this->title.($date ? ' '.\Illuminate\Support\Carbon::parse($date)->format('M Y') : '')
+        $base = Str::slug(
+            $this->title.($date ? ' '.Carbon::parse($date)->format('M Y') : '')
         );
 
         if ($base === '') {
@@ -150,8 +158,8 @@ class Trip extends Model
      * the group, and each survivor carries `schedule_count` so a card can say how many
      * other dates are behind it.
      *
-     * @param  \Illuminate\Support\Collection<int, static>  $trips
-     * @return \Illuminate\Support\Collection<int, static>
+     * @param  Collection<int, static>  $trips
+     * @return Collection<int, static>
      */
     public static function collapseSchedules($trips)
     {
@@ -264,15 +272,22 @@ class Trip extends Model
     public function getCoverUrlAttribute(): ?string
     {
         if ($this->cover_photo) {
-            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->cover_photo);
+            return Storage::disk('public')->url($this->cover_photo);
         }
 
         // Stock-photo fallback keyed to the place category until the host uploads their own.
-        return \App\Support\StockPhotos::cover($this);
+        return StockPhotos::cover($this);
     }
 
     public function scopePublished($q)
     {
-        return $q->where('status', 'published');
+        /*
+         * Suspension takes a host's trips out of discovery without touching the bookings already
+         * made on them — those joiners still need their pages, their passes and their host's
+         * payment details. Enforced on the scope rather than at each call site so a new listing
+         * cannot forget it.
+         */
+        return $q->where('status', 'published')
+            ->whereHas('host', fn ($h) => $h->whereNull('suspended_at'));
     }
 }

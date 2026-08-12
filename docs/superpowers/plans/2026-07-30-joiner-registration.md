@@ -2297,7 +2297,7 @@ Create `resources/views/livewire/reservations/register.blade.php`:
                 <input type="checkbox" wire:model="createAccount" dusk="create-account"
                        class="mt-0.5 rounded border-ink/25 text-moss focus:ring-moss">
                 <span class="text-sm">
-                    <b class="font-semibold">Create my Peeps account</b>
+                    <b class="font-semibold">Create my Terra account</b>
                     <span class="block text-ink/70 mt-0.5">Track this trip, chat with your group, and rebook in one tap. No password needed.</span>
                 </span>
             </label>
@@ -2541,7 +2541,7 @@ class SendMagicLinkController extends Controller
 
         // The response is identical either way: telling a stranger whether an address is
         // registered turns this endpoint into an account-enumeration oracle.
-        return back()->with('status', 'If that address has a Peeps account, a sign-in link is on its way.');
+        return back()->with('status', 'If that address has a Terra account, a sign-in link is on its way.');
     }
 }
 ```
@@ -2565,7 +2565,7 @@ class MagicLinkMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject('Your Peeps sign-in link')
+        return $this->subject('Your Terra sign-in link')
             ->view('emails.magic-link');
     }
 }
@@ -2578,7 +2578,7 @@ Create `resources/views/emails/magic-link.blade.php`:
 
 <p>Here's your sign-in link. It works once and expires in 30 minutes.</p>
 
-<p><a href="{{ $url }}">Sign in to Peeps</a></p>
+<p><a href="{{ $url }}">Sign in to Terra</a></p>
 
 <p>If you didn't ask for this, you can ignore this email — nobody can get into your account without the link.</p>
 ```

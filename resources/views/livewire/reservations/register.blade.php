@@ -30,39 +30,91 @@
                class="inline-flex items-center rounded-full bg-pine text-cream px-6 min-h-[48px] font-semibold hover:bg-pine/90 transition-colors">Find another trip</a>
         </div>
     </div>
+@elseif($soldOut)
+    {{-- Sold out is a queue, not a closure: an unpaid hold lapses here every few hours, so this
+         is very often temporary and the only page that was throwing away demand it already had. --}}
+    <div class="max-w-xl mx-auto px-5 py-16">
+        <a href="{{ route('trips.show', $trip) }}" wire:navigate class="inline-flex items-center py-1.5 -my-1.5 text-sm text-ink/65 hover:text-ink">← {{ $trip->title }}</a>
+
+        @if($waitlisted)
+            <div class="rounded-2xl bg-moss/10 border border-moss/25 p-8 mt-6 text-center" dusk="waitlisted">
+                <span class="inline-grid place-items-center w-14 h-14 rounded-full bg-moss/15 text-moss mb-4">
+                    <x-icon.check class="w-7 h-7" />
+                </span>
+                <h1 class="font-serif font-semibold text-2xl">You're on the list</h1>
+                <p class="text-ink/70 mt-2">
+                    We'll email {{ $waitlistEmail }} the moment a seat opens on {{ $departure->starts_at->format('j M') }}.
+                    Seats go to whoever books first, so be quick when it lands.
+                </p>
+            </div>
+        @else
+            <h1 class="font-serif font-semibold text-3xl mt-2">This departure is full</h1>
+            <p class="text-ink/65 mt-2">
+                Seats open up often — an unpaid hold is released every few hours. Leave your details
+                and we'll tell you the moment one does.
+            </p>
+
+            <form wire:submit="joinWaitlist" class="mt-6 rounded-2xl border border-ink/10 bg-surface p-5 space-y-4">
+                <label class="block">
+                    <span class="field-label">Your name</span>
+                    <input wire:model="waitlistName" dusk="waitlist-name" class="field">
+                    @error('waitlistName')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                </label>
+
+                <label class="block">
+                    <span class="field-label">Email</span>
+                    <input type="email" wire:model="waitlistEmail" dusk="waitlist-email" class="field">
+                    @error('waitlistEmail')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                </label>
+
+                <label class="block">
+                    <span class="field-label">Mobile <span class="font-normal text-ink/45">optional</span></span>
+                    <input type="tel" wire:model="waitlistPhone" dusk="waitlist-phone" class="field">
+                    @error('waitlistPhone')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                </label>
+
+                <button dusk="join-waitlist"
+                        class="w-full rounded-full bg-pine text-cream min-h-[52px] font-semibold hover:bg-pine/90 transition-colors">
+                    Tell me when a seat opens
+                </button>
+                <p class="text-xs text-ink/50 text-center">One email, only if a seat actually frees up.</p>
+            </form>
+        @endif
+    </div>
 @else
 
 {{--
     A checkout: form on the left, what you are buying pinned on the right.
 
-    Two thirds / one third of the viewport, both panes at least a screen tall, and the rail pinned
-    under the nav so the trip and its total never leave the screen no matter how many travellers
-    get added below. Nothing here is a fixed pixel width — the columns are fractions of whatever
-    display it lands on, and the rail's photo takes whatever height is left after its own text, so
-    a short laptop screen and a tall monitor both fill correctly rather than one of them cropping.
+    Two thirds / one third of the viewport. From `xl` the rail is taken clean out of the document
+    flow with `fixed` rather than kept in a grid track with `sticky` — sticky only holds its
+    position while its own containing block still has room underneath it, and a short form (few
+    seats, nothing typed into the optional fields) ends before the rail's own height does. The
+    rail would then detach and fall to the bottom of that track, leaving the gap where it used to
+    be sitting empty. `fixed` has no track to run out of: it is pinned to the viewport itself, so
+    there is no length of form that can out-scroll it and no bottom edge for it to expose.
 
-    The rail is written first in the source. On a phone, where the grid collapses to a single
-    column, that puts the trip and its price above the form they belong to; from xl the explicit
-    column placement moves it to the right without a second copy of the markup existing.
+    The trade a fixed rail makes is that the form column has to leave room for it itself, since a
+    fixed element does not push document flow around the way an in-flow one does — `xl:w-2/3` on
+    the wrapper below is that reserved space, sized to match the rail's own `xl:w-1/3`.
 --}}
-<div class="xl:grid xl:grid-cols-3 xl:grid-rows-[auto_1fr] xl:min-h-[calc(100dvh-var(--nav-h))]">
+<div>
 
     {{--
-        The heading is its own grid child rather than the first thing in the form column.
-
-        That is what lets the source order read heading → trip → form on a phone, which is the
-        order someone actually needs it in: what am I doing, what am I booking, now fill this in.
-        On xl it takes the top of the left column and the rail spans past it to the full height.
+        The heading sits above the form, not inside the same wrapper — this is what keeps the
+        source order reading heading → trip → form on a phone, the order someone actually needs
+        it in: what am I doing, what am I booking, now fill this in. It shares the form's `xl:w-2/3`
+        so the two line up under the same left edge once the rail is pinned beside them.
     --}}
-    <header class="px-5 sm:px-8 2xl:px-12 pt-8 xl:col-start-1 xl:col-span-2 xl:row-start-1">
+    <header class="px-4 sm:px-8 2xl:px-12 pt-6 sm:pt-8 xl:w-2/3">
         <a href="{{ route('trips.show', $trip) }}" wire:navigate class="inline-flex items-center py-1.5 -my-1.5 text-sm text-ink/65 hover:text-ink">← {{ $trip->title }}</a>
         <h1 class="font-serif font-semibold text-3xl mt-2">Join this trip</h1>
         <p class="text-ink/65">Takes about a minute. Nothing is charged here — you pay the host directly.</p>
     </header>
 
-    <aside class="px-5 sm:px-8 pt-6 xl:p-0
-                  xl:col-start-3 xl:row-start-1 xl:row-span-2 xl:self-start
-                  xl:sticky xl:top-[var(--nav-h)] xl:h-[calc(100dvh-var(--nav-h))]">
+    <aside class="px-4 sm:px-8 pt-5 xl:p-0
+                  xl:fixed xl:top-[var(--nav-h)] xl:right-0 xl:z-10
+                  xl:w-1/3 xl:h-[calc(100dvh-var(--nav-h))]">
         {{--
             Three shapes, one card.
 
@@ -153,15 +205,10 @@
                     @endif
                 </dl>
 
-                <div class="flex items-center gap-3 mt-4 pt-4 border-t border-ink/8">
-                    <span class="grid place-items-center w-9 h-9 rounded-full bg-pine text-cream font-serif font-semibold shrink-0">{{ strtoupper(substr($trip->host->name, 0, 1)) }}</span>
-                    <div class="min-w-0">
-                        <div class="text-sm font-semibold truncate">{{ $trip->host->name }}</div>
-                        <div class="text-xs text-ink/60">
-                            Hosting
-                            @if($trip->host->hostProfile?->trips_count)· {{ $trip->host->hostProfile->trips_count }} trips led @endif
-                        </div>
-                    </div>
+                <div class="mt-4 pt-4 border-t border-ink/8">
+                    {{-- One target covering the photo and the name, so the rail is a way
+                         through to the host rather than a dead credit. --}}
+                    <x-host-link :host="$trip->host" size="md" class="gap-3" subtitle="Hosting" />
                 </div>
 
                 {{--
@@ -194,7 +241,7 @@
         </div>
     </aside>
 
-    <div class="px-5 sm:px-8 2xl:px-12 pt-6 pb-8 xl:col-start-1 xl:col-span-2 xl:row-start-2">
+    <div class="px-4 sm:px-8 2xl:px-12 pt-5 pb-8 xl:w-2/3">
 
     @if($error)
         <div class="rounded-xl bg-terra/10 text-terra px-4 py-3 mb-5 text-sm font-semibold" dusk="reg-error">{{ $error }}</div>
@@ -230,11 +277,11 @@
         single largest stretch of empty pixels on the page, and it pushed everything below it a
         card-height further down.
     --}}
-    <div class="grid lg:grid-cols-5 gap-4 mb-4">
-
     {{-- ═══ 1 · SEATS ═══ --}}
-    {{-- self-start: stretching it to Your details' height opened a hole under the stepper --}}
-    <section class="lg:col-span-2 lg:self-start rounded-2xl border border-ink/10 bg-surface p-5">
+    {{-- Full width. Boxed into two of five columns it was a title and a 150px stepper marooned
+         in a card three times their size, which read as something broken rather than something
+         small. Across the column the question and its answer sit at opposite ends of one line. --}}
+    <section class="rounded-2xl border border-ink/10 bg-surface p-4 sm:p-5 mb-3 sm:mb-4">
         {{--
             Heading and control on one line.
 
@@ -277,10 +324,41 @@
         </div>
 
         @error('partySize')<p class="text-terra text-sm mt-3 font-semibold">{{ $message }}</p>@enderror
+
+        {{--
+            This decides whether a travellers section is needed at all, so it cannot live inside
+            one. It used to, and hiding that section on a one-seat booking took the toggle with
+            it — leaving a booker who was paying for someone else no way to say so.
+        --}}
+        <label class="flex items-start gap-3 rounded-xl bg-moss/8 border border-moss/15 p-3.5 mt-4 cursor-pointer hover:bg-moss/12 transition-colors">
+            <input type="checkbox" wire:model.live="bookerIsTraveling" dusk="booker-traveling"
+                   class="mt-0.5 rounded border-ink/25 text-moss focus:ring-moss">
+            <span class="text-sm">
+                <b class="font-semibold">I'm joining this trip too</b>
+                @unless($bookerIsTraveling)
+                    <span class="block text-ink/70 mt-1">
+                        You book and pay; {{ $seats }} {{ \Illuminate\Support\Str::plural('person', $seats) }} travel.
+                        Your details are for contact only and take no seat.
+                    </span>
+                @endunless
+            </span>
+        </label>
     </section>
 
-    {{-- ═══ 2 · BOOKER ═══ --}}
-    <section class="lg:col-span-3 rounded-2xl border border-ink/10 bg-surface p-5">
+    {{--
+        ═══ 2 · BOOKER ═══
+
+        Shown only when it is not a duplicate of a seat.
+
+        On a one-seat booking the booker is the traveller, so this block alone is the whole
+        answer and "Who's going" below is switched off. Add a second seat and the reverse
+        applies: seat 1 becomes "You" and collects the same three names, so this card would ask
+        for them twice on one screen — it steps aside and the seat carries the contact fields.
+        A booker who is not travelling has no seat to hide behind, so it always returns for them.
+    --}}
+    @php($showBookerCard = $seats === 1 || ! $bookerIsTraveling)
+    @if($showBookerCard)
+    <section class="rounded-2xl border border-ink/10 bg-surface p-4 sm:p-5 mb-3 sm:mb-4">
         <div class="flex items-baseline gap-3">
             <span class="grid place-items-center w-6 h-6 rounded-full bg-pine text-cream text-xs font-bold shrink-0">2</span>
             <div>
@@ -322,12 +400,52 @@
                 @error('contact.phone')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
             </label>
         </div>
+
+        {{--
+            Birthday and gender come here when there is no travellers section to hold them.
+
+            On a one-seat booking the booker is the only traveller, so hiding "Who's going"
+            removed the only place these were ever asked — and a host needs a birthday for
+            permits. They keep their seat-0 bindings and dusk hooks, so nothing downstream
+            notices they moved.
+        --}}
+        @if($seats === 1 && $bookerIsTraveling)
+            <div class="mt-3 sm:flex sm:items-start sm:gap-5">
+                <label class="block sm:w-40 sm:shrink-0"><span class="field-label">Birthday <span class="font-normal text-ink/45">optional</span></span>
+                    <input type="date" max="{{ now()->toDateString() }}"
+                           wire:model.blur="participants.0.birthday" dusk="seat-0-birthday"
+                           id="{{ $fieldId('participants.0.birthday') }}"
+                           class="field !px-3 @error('participants.0.birthday') !border-terra @enderror">
+                    @error('participants.0.birthday')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                </label>
+
+                <div class="mt-3 sm:mt-0 sm:flex-1 sm:min-w-0">
+                    <span class="field-label">Gender <span class="font-normal text-ink/45">optional</span></span>
+                    <div class="flex flex-wrap gap-2">
+                        @php($current = $participants[0]['gender'] ?? '')
+                        @foreach(['male' => 'Male', 'female' => 'Female', 'other' => 'Other', 'undisclosed' => 'Rather not say'] as $value => $label)
+                            <button type="button" wire:click="setGender(0, '{{ $value }}')"
+                                    aria-pressed="{{ $current === $value ? 'true' : 'false' }}"
+                                    class="{{ $chip }} {{ $current === $value ? $chipOn : $chipOff }}">{{ $label }}</button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
     </section>
 
-    </div>{{-- end steps 1+2 row --}}
+    @endif
 
-    {{-- ═══ 3 · TRAVELLERS ═══ --}}
-    <section class="rounded-2xl border border-ink/10 bg-surface p-5 mb-4">
+    {{--
+        ═══ 3 · TRAVELLERS ═══
+
+        Hidden on a one-seat booking. There, the only traveller is the person filling the form in,
+        and "Your details" above has already asked for every field this section would repeat — a
+        whole numbered step whose one card restated the answers directly above it.
+    --}}
+    @php($showTravellers = $seats > 1 || ! $bookerIsTraveling)
+    @if($showTravellers)
+    <section class="rounded-2xl border border-ink/10 bg-surface p-4 sm:p-5 mb-3 sm:mb-4">
         <div class="flex items-baseline gap-3">
             <span class="grid place-items-center w-6 h-6 rounded-full bg-pine text-cream text-xs font-bold shrink-0">3</span>
             <div>
@@ -335,20 +453,6 @@
                 <p class="text-sm text-ink/65">The host needs a name and an email for every seat.</p>
             </div>
         </div>
-
-        <label class="flex items-start gap-3 rounded-xl bg-moss/8 border border-moss/15 p-4 my-4 cursor-pointer hover:bg-moss/12 transition-colors">
-            <input type="checkbox" wire:model.live="bookerIsTraveling" dusk="booker-traveling"
-                   class="mt-0.5 rounded border-ink/25 text-moss focus:ring-moss">
-            <span class="text-sm">
-                <b class="font-semibold">I'm joining this trip too</b>
-                @unless($bookerIsTraveling)
-                    <span class="block text-ink/70 mt-1">
-                        You book and pay; {{ $seats }} {{ \Illuminate\Support\Str::plural('person', $seats) }} travel.
-                        Your details above are for contact only and take no seat.
-                    </span>
-                @endunless
-            </span>
-        </label>
 
         {{--
             Two seats abreast once there is room for it.
@@ -374,44 +478,71 @@
                     <p class="font-semibold text-sm">{{ $isBooker ? 'You' : 'Seat '.($i + 1) }}</p>
                 </div>
 
-                @if($isBooker)
-                    {{--
-                        The booker's own seat mirrors the contact block, so rendering the name boxes
-                        again asked for the same three answers twice on one screen — the single
-                        biggest source of clutter on this page. Shown as a read-only summary now;
-                        the seat still collects what it alone adds, the birthday and gender.
-                    --}}
-                    <div class="rounded-lg bg-canvas px-3 py-2.5 mb-3">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold truncate">
-                                {{ trim(($contact['first_name'] ?? '').' '.($contact['last_name'] ?? '')) ?: 'Name from your details above' }}
-                            </span>
-                            <span class="text-xs text-ink/50 shrink-0">from step 2</span>
-                        </div>
-                        @if(filled($contact['email'] ?? '') && blank($p['email'] ?? ''))
-                            <p class="text-xs text-ink/60 mt-0.5 truncate">{{ $contact['email'] }}</p>
-                        @endif
+                {{--
+                    Same three boxes on every card, booker included.
+
+                    Where they write to depends on whether the "Your details" card is on screen.
+                    While it is, these mirror it and are disabled — one place to fix a typo rather
+                    than two copies that can drift. Once it steps aside (two or more seats) this
+                    seat *is* the contact block, so the very same boxes bind straight to it and
+                    become editable. Without that swap the booker would have no way to correct
+                    their own name anywhere on the page.
+                --}}
+                @php($bookerOwnsContact = $isBooker && ! $showBookerCard)
+                @php($nameModel = fn ($field) => $bookerOwnsContact ? "contact.$field" : "participants.$i.$field")
+                @php($nameError = fn ($field) => $bookerOwnsContact ? "contact.$field" : "participants.$i.$field")
+                @php($locked = $isBooker && ! $bookerOwnsContact)
+
+                <div class="grid sm:grid-cols-3 gap-3">
+                    <label class="block"><span class="field-label">First name</span>
+                        <input wire:model.blur="{{ $nameModel('first_name') }}" dusk="seat-{{ $i }}-first"
+                               id="{{ $fieldId('participants.'.$i.'.first_name') }}"
+                               @disabled($locked)
+                               @error($nameError('first_name')) aria-invalid="true" @enderror
+                               class="field @error($nameError('first_name')) !border-terra @enderror
+                                      {{ $locked ? 'disabled:bg-canvas disabled:text-ink/70 disabled:cursor-not-allowed' : '' }}">
+                        @error($nameError('first_name'))<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                    </label>
+                    <label class="block"><span class="field-label">Middle <span class="font-normal text-ink/45">optional</span></span>
+                        <input wire:model.blur="{{ $nameModel('middle_name') }}"
+                               @disabled($locked)
+                               class="field {{ $locked ? 'disabled:bg-canvas disabled:text-ink/70 disabled:cursor-not-allowed' : '' }}">
+                    </label>
+                    <label class="block"><span class="field-label">Last name</span>
+                        <input wire:model.blur="{{ $nameModel('last_name') }}" dusk="seat-{{ $i }}-last"
+                               id="{{ $fieldId('participants.'.$i.'.last_name') }}"
+                               @disabled($locked)
+                               @error($nameError('last_name')) aria-invalid="true" @enderror
+                               class="field @error($nameError('last_name')) !border-terra @enderror
+                                      {{ $locked ? 'disabled:bg-canvas disabled:text-ink/70 disabled:cursor-not-allowed' : '' }}">
+                        @error($nameError('last_name'))<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                    </label>
+                </div>
+
+                {{-- The contact channel comes with the seat when the card above is gone. --}}
+                @if($bookerOwnsContact)
+                    <div class="grid sm:grid-cols-2 gap-3 mt-3">
+                        <label class="block"><span class="field-label">Email</span>
+                            <input type="email" inputmode="email" autocomplete="email"
+                                   wire:model.blur="contact.email" dusk="contact-email"
+                                   id="{{ $fieldId('contact.email') }}"
+                                   @error('contact.email') aria-invalid="true" @enderror
+                                   class="field @error('contact.email') !border-terra @enderror">
+                            @error('contact.email')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
+                        <label class="block"><span class="field-label">Mobile</span>
+                            <input type="tel" inputmode="tel" autocomplete="tel"
+                                   wire:model.blur="contact.phone" dusk="contact-phone"
+                                   placeholder="0917 123 4567" id="{{ $fieldId('contact.phone') }}"
+                                   @error('contact.phone') aria-invalid="true" @enderror
+                                   class="field @error('contact.phone') !border-terra @enderror">
+                            @error('contact.phone')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
                     </div>
-                @else
-                    <div class="grid sm:grid-cols-3 gap-3">
-                        <label class="block"><span class="field-label">First name</span>
-                            <input wire:model.blur="participants.{{ $i }}.first_name" dusk="seat-{{ $i }}-first"
-                                   id="{{ $fieldId('participants.'.$i.'.first_name') }}"
-                                   @error('participants.'.$i.'.first_name') aria-invalid="true" @enderror
-                                   class="field @error('participants.'.$i.'.first_name') !border-terra @enderror">
-                            @error('participants.'.$i.'.first_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
-                        </label>
-                        <label class="block"><span class="field-label">Middle <span class="font-normal text-ink/45">optional</span></span>
-                            <input wire:model.blur="participants.{{ $i }}.middle_name" class="field">
-                        </label>
-                        <label class="block"><span class="field-label">Last name</span>
-                            <input wire:model.blur="participants.{{ $i }}.last_name" dusk="seat-{{ $i }}-last"
-                                   id="{{ $fieldId('participants.'.$i.'.last_name') }}"
-                                   @error('participants.'.$i.'.last_name') aria-invalid="true" @enderror
-                                   class="field @error('participants.'.$i.'.last_name') !border-terra @enderror">
-                            @error('participants.'.$i.'.last_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
-                        </label>
-                    </div>
+                @elseif($isBooker && filled($contact['email'] ?? '') && blank($p['email'] ?? ''))
+                    {{-- Their address is filled in further down only if they choose to override it;
+                         until then, this is the one that will be used. --}}
+                    <p class="text-xs text-ink/50 mt-1.5">{{ $contact['email'] }} · from your details above</p>
                 @endif
 
                 {{--
@@ -455,6 +586,21 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Asked here, at the moment of booking, because that is the only point at which
+                     it can be made a condition. Collecting it afterwards means a host discovers a
+                     missing ID at the permit desk, which is the failure this requirement exists to
+                     prevent. Only rendered when the host turned it on. --}}
+                @if($trip->requires_id)
+                    <div class="mt-4 pt-4 border-t border-ink/8">
+                        <x-upload wire:model="ids.{{ $i }}" dusk="seat-{{ $i }}-id" :multiple="false"
+                                  label="Photo ID"
+                                  prompt="Add {{ trim(($p['first_name'] ?? '')) ?: 'this traveller' }}'s ID"
+                                  sub="Passport, licence or any government ID"
+                                  hint="{{ $trip->host->name }} needs this for permits. Only they see it." />
+                        @error('ids.'.$i)<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                    </div>
+                @endif
 
                 @if($isBooker)
                     {{-- Their address is already on file from step 2; this is only for overriding it. --}}
@@ -531,6 +677,7 @@
             <b class="font-semibold text-ink/75">Use account email</b> and the host will reach them through you.
         </p>
     </section>
+    @endif
 
     {{--
         ═══ 4 · CONFIRM ═══
@@ -538,7 +685,25 @@
         A row rather than a stack on a laptop: the account offer takes the width it needs for its
         two lines of prose, and the button sits beside it instead of below a band of empty card.
     --}}
-    <section class="rounded-2xl border border-ink/10 bg-surface p-5 lg:flex lg:items-center lg:gap-6">
+    {{-- Pinned to the bottom of the phone viewport. The form is long enough that the button
+         was often a screen or two below whatever the joiner was filling in; sticky keeps the way
+         forward on screen without a second copy of the button to keep in sync. --}}
+    {{-- The account offer stays in normal flow. Pinning it along with the button made the sticky
+         block a third of a phone screen tall, which is a panel that follows you rather than a bar.
+         Only the thing you press should be always-on. --}}
+    @unless($this->isSignedIn)
+        <label class="flex lg:hidden items-start gap-3 rounded-2xl bg-moss/8 border border-moss/15 p-4 mb-3 cursor-pointer">
+            <input type="checkbox" wire:model="createAccount" dusk="create-account-mobile"
+                   class="mt-0.5 rounded border-ink/25 text-moss focus:ring-moss">
+            <span class="text-sm">
+                <b class="font-semibold">Create my Terra account</b>
+                <span class="block text-ink/70 mt-0.5">Track this trip, chat with your group, and rebook in one tap. No password needed.</span>
+            </span>
+        </label>
+    @endunless
+
+    <section class="rounded-2xl border border-ink/10 bg-surface p-4 sm:p-5 lg:flex lg:items-center lg:gap-6
+                    max-lg:sticky max-lg:bottom-0 max-lg:z-20 max-lg:shadow-[0_-8px_24px_-12px_rgba(31,28,21,.25)]">
         @if($this->isSignedIn)
             {{-- Signed in there is no account offer, so the reassurance takes the left side rather
                  than leaving the button to stretch across the whole column as a 1100px pill. --}}
@@ -547,11 +712,11 @@
                 and your seat is held while you pay.
             </p>
         @else
-            <label class="flex items-start gap-3 rounded-xl bg-moss/8 border border-moss/15 p-4 mb-4 lg:mb-0 lg:flex-1 cursor-pointer hover:bg-moss/12 transition-colors">
+            <label class="hidden lg:flex items-start gap-3 rounded-xl bg-moss/8 border border-moss/15 p-4 mb-4 lg:mb-0 lg:flex-1 cursor-pointer hover:bg-moss/12 transition-colors">
                 <input type="checkbox" wire:model="createAccount" dusk="create-account"
                        class="mt-0.5 rounded border-ink/25 text-moss focus:ring-moss">
                 <span class="text-sm">
-                    <b class="font-semibold">Create my Peeps account</b>
+                    <b class="font-semibold">Create my Terra account</b>
                     <span class="block text-ink/70 mt-0.5">Track this trip, chat with your group, and rebook in one tap. No password needed.</span>
                 </span>
             </label>
@@ -568,21 +733,113 @@
             have to press again. Validation is the gate; this button's job is to run it and say
             plainly what is missing.
         --}}
-        <button wire:click="submit" wire:loading.attr="disabled" wire:target="submit" dusk="submit-registration"
+        <button wire:click="review" wire:loading.attr="disabled" wire:target="review" dusk="submit-registration"
                 class="w-full rounded-full bg-pine text-cream py-4 font-semibold text-base hover:bg-pine/90
                        disabled:opacity-60 transition-colors">
-            <span wire:loading.remove wire:target="submit">Confirm registration · {{ $money($payableNow) }}</span>
-            <span wire:loading wire:target="submit">Booking your {{ \Illuminate\Support\Str::plural('seat', $seats) }}…</span>
+            <span wire:loading.remove wire:target="review">Review booking · {{ $money($payableNow) }}</span>
+            <span wire:loading wire:target="review">Checking your {{ \Illuminate\Support\Str::plural('seat', $seats) }}…</span>
         </button>
 
-            <p class="text-xs text-ink/55 text-center mt-3 {{ $this->isSignedIn ? 'lg:hidden' : '' }}">
+            <p class="hidden lg:block text-xs text-ink/55 text-center mt-3 {{ $this->isSignedIn ? 'lg:hidden' : '' }}">
                 No payment now. You'll get the host's payment details on the next screen.
                 @unless($this->isSignedIn) Booking as a guest? Untick the box. @endunless
             </p>
         </div>
     </section>
 
+    {{--
+        ═══ REVIEW BEFORE BOOKING ═══
+
+        Rendered only once review() has validated, so this is always a summary of something that
+        will actually go through. It restates the three things a joiner cannot check anywhere else
+        at once: which departure, who is on it, and what the money is.
+    --}}
+    @if($showReview)
+        <div class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+             x-data x-on:keydown.escape.window="$wire.closeReview()"
+             x-init="document.body.classList.add('overflow-hidden')"
+             x-on:livewire:navigating.window="document.body.classList.remove('overflow-hidden')"
+             role="dialog" aria-modal="true" aria-labelledby="review-title" dusk="review-sheet">
+
+            <div class="absolute inset-0 bg-ink/50 backdrop-blur-[2px]" wire:click="closeReview" aria-hidden="true"></div>
+
+            <div class="confirm-pop relative w-full sm:max-w-lg max-h-[92dvh] flex flex-col
+                        bg-surface rounded-t-3xl sm:rounded-2xl shadow-2xl sm:m-4">
+
+                <div class="flex items-start gap-3 p-5 sm:p-6 pb-4 shrink-0">
+                    <div class="min-w-0 flex-1">
+                        <p class="marker text-[10px] font-semibold text-moss">Check before booking</p>
+                        <h2 id="review-title" class="font-serif font-semibold text-xl leading-snug mt-1">{{ $trip->title }}</h2>
+                        <p class="text-sm text-ink/65 mt-1">
+                            {{ $departure->starts_at->format('D, j M Y') }}@if($departure->ends_at && ! $departure->ends_at->isSameDay($departure->starts_at)) → {{ $departure->ends_at->format('j M') }}@endif
+                            @if($trip->place) · {{ $trip->place->name }} @endif
+                        </p>
+                    </div>
+                    <button type="button" wire:click="closeReview" aria-label="Close"
+                            class="shrink-0 grid place-items-center w-9 h-9 rounded-full text-ink/50 hover:bg-ink/5 hover:text-ink transition-colors">
+                        <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </div>
+
+                <div class="px-5 sm:px-6 pb-5 sm:pb-6 overflow-y-auto">
+                    <div class="rounded-xl border border-ink/10 divide-y divide-ink/8">
+                        @foreach($participants as $i => $p)
+                            @php($who = trim(($p['first_name'] ?? '').' '.($p['last_name'] ?? '')))
+                            <div class="flex items-center gap-3 px-4 py-3">
+                                <span class="grid place-items-center w-7 h-7 rounded-full text-xs font-bold shrink-0
+                                             {{ $bookerIsTraveling && $i === 0 ? 'bg-moss text-cream' : 'bg-ink/8 text-ink/70' }}">{{ $i + 1 }}</span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-semibold text-sm truncate">{{ $who ?: 'Seat '.($i + 1) }}</p>
+                                    <p class="text-xs text-ink/60 truncate">
+                                        {{ ($bookerIsTraveling && $i === 0 ? ($p['email'] ?: ($contact['email'] ?? '')) : $p['email']) ?: 'no email' }}
+                                    </p>
+                                </div>
+                                @if($bookerIsTraveling && $i === 0)
+                                    <span class="text-[11px] font-bold text-moss shrink-0">you</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-4 rounded-xl bg-canvas p-4">
+                        <div class="flex items-baseline justify-between gap-3 text-sm">
+                            <span class="text-ink/70">{{ $money($perSeat) }} × {{ $seats }} {{ \Illuminate\Support\Str::plural('seat', $seats) }}</span>
+                            <span class="font-semibold tabular-nums">{{ $money($total) }}</span>
+                        </div>
+                        <div class="flex items-baseline justify-between gap-3 mt-2.5 pt-2.5 border-t border-ink/10">
+                            <span class="font-semibold">Total</span>
+                            <span class="font-serif font-semibold text-xl tabular-nums">{{ $money($total) }}</span>
+                        </div>
+                        @if($trip->takesDeposit())
+                            <div class="flex items-baseline justify-between gap-3 mt-2.5 pt-2.5 border-t border-dashed border-ink/15 text-sm">
+                                <span class="text-ink/70">To reserve now</span>
+                                <span class="font-semibold tabular-nums">{{ $money($payableNow) }}</span>
+                            </div>
+                            <p class="text-xs text-ink/55 mt-1">Balance of {{ $money($total - $payableNow) }} paid to {{ $trip->host->name }} on the day.</p>
+                        @endif
+                    </div>
+
+                    <p class="text-xs text-ink/55 mt-3">
+                        Nothing is charged here. You'll get {{ $trip->host->name }}'s payment details on the next screen.
+                    </p>
+
+                    <div class="flex items-center gap-2 mt-5">
+                        <button type="button" wire:click="closeReview"
+                                class="rounded-full border border-ink/20 px-5 min-h-[48px] text-sm font-semibold hover:border-ink/40 transition-colors">
+                            Back
+                        </button>
+                        <button wire:click="submit" wire:loading.attr="disabled" wire:target="submit" dusk="confirm-booking"
+                                class="flex-1 rounded-full bg-pine text-cream min-h-[48px] font-semibold hover:bg-pine/90 disabled:opacity-60 transition-colors">
+                            <span wire:loading.remove wire:target="submit">Confirm registration · {{ $money($payableNow) }}</span>
+                            <span wire:loading wire:target="submit">Booking your {{ \Illuminate\Support\Str::plural('seat', $seats) }}…</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     </div>{{-- end form column --}}
-</div>{{-- end checkout grid --}}
+</div>{{-- end checkout wrapper --}}
 
 @endif

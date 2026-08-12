@@ -1,13 +1,14 @@
 <?php
 
 use App\Models\Holiday;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
     // Pest.php installs a catch-all fake so no test reaches the network, and Laravel evaluates
     // stubs in registration order — so that catch-all would win over the stubs below. A fresh
     // factory gives each test a clean slate.
-    Http::swap(new Illuminate\Http\Client\Factory());
+    Http::swap(new Factory);
 });
 
 function nagerResponse(array $rows): void

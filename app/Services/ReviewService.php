@@ -42,9 +42,30 @@ class ReviewService
         );
     }
 
+    /**
+     * The host answers a review of their own trip or page.
+     *
+     * Guarded here rather than in the component: the gate is a fact about who may speak for the
+     * thing reviewed, and a second surface offering replies must not have to remember it.
+     */
+    public function reply(Review $review, User $host, string $body): Review
+    {
+        $owner = $review->repliableBy();
+
+        abort_unless($owner && $owner->id === $host->id, 403);
+
+        $review->update([
+            'reply_body' => trim($body) ?: null,
+            'replied_at' => trim($body) === '' ? null : now(),
+        ]);
+
+        return $review;
+    }
+
     private function reviewsFor($target)
     {
-        return Review::where('reviewable_type', $target::class)->where('reviewable_id', $target->id);
+        // visible(): a hidden review must not move a public average.
+        return Review::visible()->where('reviewable_type', $target::class)->where('reviewable_id', $target->id);
     }
 
     private function recompute(Place|Trip $target): void

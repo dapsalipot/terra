@@ -38,6 +38,7 @@ class MagicLinkController extends Controller
 
         return redirect()->route('home');
     }
+
     /**
      * Attach the named booking, and any other guest booking made with the same address.
      *
@@ -57,5 +58,4 @@ class MagicLinkController extends Controller
             ->where('contact_email', $link->email)
             ->update(['joiner_id' => $link->user->id]);
     }
-
 }

@@ -4,7 +4,6 @@ namespace App\Livewire\Trips;
 
 use App\Models\Review;
 use App\Models\Trip;
-use App\Models\TripDeparture;
 use App\Services\ReviewGate;
 use App\Services\ReviewService;
 use Illuminate\Support\Facades\Auth;
@@ -13,16 +12,28 @@ use Livewire\Component;
 class Show extends Component
 {
     public Trip $trip;
+
     public ?int $departureId = null;
+
     public int $party = 1;
+
     public ?string $error = null;
 
     // review composer
     public bool $showReview = false;
+
     public int $tripRating = 5;
+
     public int $hostRating = 5;
+
     public int $placeRating = 5;
+
     public string $reviewBody = '';
+
+    /** Host replies, keyed by review id, so several drafts can sit open at once. */
+    public array $replyBody = [];
+
+    public ?int $replyingTo = null;
 
     public function mount(Trip $trip): void
     {
@@ -64,9 +75,33 @@ class Show extends Component
             && app(ReviewGate::class)->allows(Auth::user(), $this->trip);
     }
 
+    public function startReply(int $reviewId): void
+    {
+        $this->replyingTo = $reviewId;
+        $this->replyBody[$reviewId] ??= (string) Review::find($reviewId)?->reply_body;
+    }
+
+    public function cancelReply(): void
+    {
+        $this->replyingTo = null;
+    }
+
+    public function reply(int $reviewId, ReviewService $reviews): void
+    {
+        $this->validate(
+            ["replyBody.{$reviewId}" => ['required', 'string', 'max:1000']],
+            attributes: ["replyBody.{$reviewId}" => 'reply'],
+        );
+
+        $reviews->reply(Review::findOrFail($reviewId), Auth::user(), $this->replyBody[$reviewId]);
+
+        $this->replyingTo = null;
+    }
+
     public function render()
     {
-        $reviews = Review::where('reviewable_type', Trip::class)
+        // visible(): a hidden review is gone from the page as well as from the average.
+        $reviews = Review::visible()->where('reviewable_type', Trip::class)
             ->where('reviewable_id', $this->trip->id)
             ->with('joiner')
             ->latest()

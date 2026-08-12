@@ -547,3 +547,62 @@ it('refuses to submit with an empty seat field', function () {
 
     expect(Reservation::count())->toBe(0);
 });
+
+/*
+ * ── Review before booking ────────────────────────────────────────────────────────────────
+ */
+
+it('refuses to open the review sheet over a form that would be rejected', function () {
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->call('review')
+        ->assertHasErrors(['contact.first_name'])
+        // Showing a tidy summary and only then reporting a missing field is worse than never
+        // showing the summary at all.
+        ->assertSet('showReview', false);
+
+    expect(Reservation::count())->toBe(0);
+});
+
+it('opens the review sheet once everything checks out, without booking yet', function () {
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('contact.first_name', 'Ada')
+        ->set('contact.last_name', 'Reyes')
+        ->set('contact.email', 'ada@example.com')
+        ->set('contact.phone', '09171234567')
+        ->call('review')
+        ->assertHasNoErrors()
+        ->assertSet('showReview', true)
+        ->assertSee('Check before booking')
+        ->assertSeeHtml('dusk="confirm-booking"');
+
+    // Reviewing is not booking.
+    expect(Reservation::count())->toBe(0);
+});
+
+it('only hides the travellers section when the booker is the single traveller', function () {
+    // escape: false is load-bearing. assertSee escapes its needle, so "Who's going?" was
+    // hunting for "Who&#039;s going?" — a string the page never contains either way, which made
+    // the assertDontSee half pass no matter what rendered.
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->assertDontSee("Who's going?", false)
+        // one seat, booker travelling: their own fields live in Your details, no seat cards
+        ->assertSeeHtml('dusk="seat-0-birthday"');
+
+    // One seat booked for somebody else still needs a card to name them.
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('bookerIsTraveling', false)
+        ->assertSee("Who's going?", false)
+        ->assertSeeHtml('dusk="seat-0-first"');
+});
+
+/*
+ * The toggle decides whether a travellers section is needed, so it must never live inside one.
+ * It did, and hiding that section took the toggle with it — leaving a booker paying for someone
+ * else no way to say they were not travelling.
+ */
+it('always offers the not-travelling toggle', function () {
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->assertSeeHtml('dusk="booker-traveling"')
+        ->set('partySize', 3)
+        ->assertSeeHtml('dusk="booker-traveling"');
+});

@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -28,6 +29,9 @@ class User extends Authenticatable
         'role',
         'handle',
         'avatar',
+        'suspended_at',
+        'suspended_reason',
+        'suspended_by',
         'phone',
         'birthday',
         'gender',
@@ -56,7 +60,7 @@ class User extends Authenticatable
 
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar) : null;
+        return $this->avatar ? Storage::disk('public')->url($this->avatar) : null;
     }
 
     /** Cream-on-pine monogram fallback when a host has not uploaded an avatar. */
@@ -85,6 +89,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'suspended_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birthday' => 'date',
@@ -94,6 +99,17 @@ class User extends Authenticatable
     public function isHost(): bool
     {
         return $this->role === 'host';
+    }
+
+    /** The platform's own staff. Deliberately not a host — a moderator is not a seller. */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
     }
 
     public function hostProfile()

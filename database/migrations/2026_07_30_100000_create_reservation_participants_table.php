@@ -26,5 +26,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::dropIfExists('reservation_participants'); }
+    public function down(): void
+    {
+        Schema::dropIfExists('reservation_participants');
+    }
 };

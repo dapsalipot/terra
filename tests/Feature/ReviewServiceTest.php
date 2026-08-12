@@ -8,6 +8,7 @@ use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\ReviewService;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 it('records trip, host and place reviews and recomputes aggregates', function () {
     $host = User::factory()->create(['role' => 'host']);
@@ -32,4 +33,4 @@ it('refuses a review from a non-attendee', function () {
     $stranger = User::factory()->create(['role' => 'joiner']);
 
     app(ReviewService::class)->record($stranger, $trip, ['trip' => 5]);
-})->throws(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+})->throws(HttpException::class);

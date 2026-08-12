@@ -2,6 +2,7 @@
 
 namespace Tests\Browser;
 
+use App\Models\HostProfile;
 use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
@@ -17,7 +18,7 @@ class ChatFlowTest extends DuskTestCase
     public function test_a_confirmed_joiner_can_post_to_the_trip_chat(): void
     {
         $host = User::factory()->create(['role' => 'host', 'name' => 'Ridgeline']);
-        \App\Models\HostProfile::factory()->for($host)->create();
+        HostProfile::factory()->for($host)->create();
         $trip = Trip::factory()->published()->create(['host_id' => $host->id, 'title' => 'Mount Rinjani Traverse']);
         $departure = TripDeparture::factory()->for($trip)->create();
         $joiner = User::factory()->create(['role' => 'joiner', 'name' => 'Mika Ramos']);

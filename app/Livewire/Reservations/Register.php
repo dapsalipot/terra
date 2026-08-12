@@ -6,13 +6,19 @@ use App\Exceptions\TripFullException;
 use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
+use App\Models\User;
 use App\Services\RegistrationService;
+use App\Services\WaitlistService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Register extends Component
 {
+    use WithFileUploads;
+
     public Trip $trip;
+
     public TripDeparture $departure;
 
     /**
@@ -24,16 +30,42 @@ class Register extends Component
      * backspacing over a number.
      */
     public $partySize = 1;
+
     public array $contact = [
         'first_name' => '', 'middle_name' => '', 'last_name' => '', 'email' => '', 'phone' => '',
     ];
+
     public bool $bookerIsTraveling = true;
+
     public array $participants = [];
+
+    /**
+     * A photo ID per seat, keyed by seat index, staged until the booking is written.
+     *
+     * Separate from $participants because a Livewire temporary upload is an object, and mixing
+     * one into the array that gets normalised and serialised straight into the database is how
+     * you end up storing a file handle in a name column.
+     */
+    public array $ids = [];
+
     public bool $createAccount = true;
+
     public ?string $error = null;
 
     /** True when this departure can no longer be joined. Renders a dead-end notice, not a form. */
     public bool $closed = false;
+
+    /** Sold out, which is a queue rather than a closure. */
+    public bool $soldOut = false;
+
+    public bool $waitlisted = false;
+
+    public string $waitlistName = '';
+
+    public string $waitlistEmail = '';
+
+    public string $waitlistPhone = '';
+
     public string $closedReason = '';
 
     public const BLANK_PARTICIPANT = [
@@ -66,6 +98,24 @@ class Register extends Component
         if ($this->departure->starts_at->isPast()) {
             $this->closed = true;
             $this->closedReason = 'This trip has already left.';
+
+            return null;
+        }
+
+        /*
+         * Sold out is not a dead end, it is a queue.
+         *
+         * An unpaid hold lapses every few hours here, so "no seats" is very often temporary — and
+         * a page that simply says no is the one place this app throws away demand it already has.
+         */
+        if ($this->departure->spotsLeft() < 1) {
+            $this->soldOut = true;
+
+            if ($user = Auth::user()) {
+                $this->waitlistName = $user->name ?? '';
+                $this->waitlistEmail = $user->email ?? '';
+                $this->waitlistPhone = $user->phone ?? '';
+            }
 
             return null;
         }
@@ -112,7 +162,7 @@ class Register extends Component
      *
      * @return array{0: string, 1: string}
      */
-    private function nameParts(\App\Models\User $user): array
+    private function nameParts(User $user): array
     {
         if (filled($user->first_name) || filled($user->last_name)) {
             return [$user->first_name ?? '', $user->last_name ?? ''];
@@ -305,6 +355,29 @@ class Register extends Component
         return $same('first_name') && $same('middle_name') && $same('last_name');
     }
 
+    public function joinWaitlist(WaitlistService $waitlist): void
+    {
+        $this->validate([
+            'waitlistName' => ['required', 'string', 'max:120'],
+            'waitlistEmail' => ['required', 'email', 'max:180'],
+            'waitlistPhone' => ['nullable', 'string', 'max:32'],
+        ], attributes: [
+            'waitlistName' => 'name',
+            'waitlistEmail' => 'email',
+            'waitlistPhone' => 'mobile',
+        ]);
+
+        $waitlist->join($this->departure, [
+            'user_id' => Auth::id(),
+            'name' => $this->waitlistName,
+            'email' => $this->waitlistEmail,
+            'phone' => $this->waitlistPhone ?: null,
+            'party_size' => 1,
+        ]);
+
+        $this->waitlisted = true;
+    }
+
     protected function rules(): array
     {
         $rules = [
@@ -318,6 +391,7 @@ class Register extends Component
             'participants.*.birthday' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'participants.*.gender' => ['nullable', 'string', 'max:24'],
             'participants.*.phone' => ['nullable', 'string', 'max:32'],
+            'ids.*' => ['nullable', 'image', 'max:5120'],
         ];
 
         /*
@@ -335,6 +409,17 @@ class Register extends Component
             $rules["participants.{$i}.first_name"] = [$presence, 'string', 'max:80'];
             $rules["participants.{$i}.last_name"] = [$presence, 'string', 'max:80'];
             $rules["participants.{$i}.email"] = [$presence, 'email', 'max:180'];
+
+            /*
+             * The whole point of the host's toggle.
+             *
+             * Without this rule the requirement was decoration: a joiner booked, was never asked,
+             * and the host found out at the permit desk. Required per seat rather than by
+             * wildcard so the message names the traveller it is missing for.
+             */
+            if ($this->trip->requires_id) {
+                $rules["ids.{$i}"] = ['required', 'image', 'max:5120'];
+            }
         }
 
         return $rules;
@@ -392,6 +477,33 @@ class Register extends Component
         }
 
         return $messages;
+    }
+
+    /** Set once the form has passed validation and the review sheet is on screen. */
+    public bool $showReview = false;
+
+    /**
+     * Check everything, then show what is about to be booked.
+     *
+     * Validation runs here rather than on the final button so the review sheet can never open
+     * over a form that is going to be rejected — being shown a tidy summary and *then* told a
+     * seat is missing an email is worse than never seeing the summary at all.
+     */
+    public function review(): void
+    {
+        if ($this->closed) {
+            return;
+        }
+
+        $this->mirrorBookerSeat();
+        $this->validate();
+
+        $this->showReview = true;
+    }
+
+    public function closeReview(): void
+    {
+        $this->showReview = false;
     }
 
     public function submit(RegistrationService $service)
@@ -465,6 +577,12 @@ class Register extends Component
             }
 
             return [
+                // Private disk, like every other identity document here. Stored at the moment
+                // the booking is written so a half-finished registration leaves nothing behind.
+                'id_image' => isset($this->ids[$i])
+                    ? $this->ids[$i]->store('ids', 'local')
+                    : null,
+                'id_uploaded_at' => isset($this->ids[$i]) ? now() : null,
                 'first_name' => trim($p['first_name'] ?? '') ?: null,
                 'middle_name' => trim($p['middle_name'] ?? '') ?: null,
                 'last_name' => trim($p['last_name'] ?? '') ?: null,

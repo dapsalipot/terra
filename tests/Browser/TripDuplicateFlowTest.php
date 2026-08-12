@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests\Browser;
 
 use App\Models\HostProfile;

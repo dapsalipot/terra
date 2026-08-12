@@ -7,13 +7,13 @@ use App\Support\SocialLinks;
 it('turns however a host types a handle into an openable url', function (string $kind, string $typed, string $expected) {
     expect(SocialLinks::url($kind, $typed))->toBe($expected);
 })->with([
-    'bare handle'      => ['instagram', 'trailco', 'https://instagram.com/trailco'],
-    'at-prefixed'      => ['instagram', '@trailco', 'https://instagram.com/trailco'],
-    'pasted path'      => ['instagram', 'instagram.com/trailco', 'https://instagram.com/trailco'],
-    'full url kept'    => ['instagram', 'https://instagram.com/trailco', 'https://instagram.com/trailco'],
-    'facebook handle'  => ['facebook', '@trailco', 'https://facebook.com/trailco'],
-    'bare domain'      => ['website', 'trailco.ph', 'https://trailco.ph'],
-    'http kept'        => ['website', 'http://trailco.ph', 'http://trailco.ph'],
+    'bare handle' => ['instagram', 'trailco', 'https://instagram.com/trailco'],
+    'at-prefixed' => ['instagram', '@trailco', 'https://instagram.com/trailco'],
+    'pasted path' => ['instagram', 'instagram.com/trailco', 'https://instagram.com/trailco'],
+    'full url kept' => ['instagram', 'https://instagram.com/trailco', 'https://instagram.com/trailco'],
+    'facebook handle' => ['facebook', '@trailco', 'https://facebook.com/trailco'],
+    'bare domain' => ['website', 'trailco.ph', 'https://trailco.ph'],
+    'http kept' => ['website', 'http://trailco.ph', 'http://trailco.ph'],
 ]);
 
 it('returns null for an empty link so the pill is skipped', function () {

@@ -613,7 +613,7 @@ class MeetupPresets extends Component
     {
         return view('livewire.host.meetup-presets', [
             'presets' => Auth::user()->meetupPresets()->get(),
-        ])->layout('components.layouts.host', ['title' => 'Peeps · Meetup points']);
+        ])->layout('components.layouts.host', ['title' => 'Terra · Meetup points']);
     }
 }
 ```
@@ -1481,7 +1481,7 @@ class Create extends Component
         return view('livewire.host.trips.create', [
             'places' => Place::orderBy('name')->get(),
             'presets' => Auth::user()->meetupPresets()->get(),
-        ])->layout('components.layouts.host', ['title' => 'Peeps · New trip']);
+        ])->layout('components.layouts.host', ['title' => 'Terra · New trip']);
     }
 }
 ```
@@ -1790,7 +1790,7 @@ Expected: build succeeds, full Pest suite green (99 existing + new tests).
 
 - [ ] **Step 3: Verify in the browser**
 
-Log in as `host@peeps.test` / `password`, visit `http://127.0.0.1:8020/host/trips/create`. Confirm: the rail shows 3 steps, typing in the destination search filters places, adding two destinations shows numbered chips with reorder arrows, and the right-hand preview updates as you type the title.
+Log in as `host@terra.test` / `password`, visit `http://127.0.0.1:8020/host/trips/create`. Confirm: the rail shows 3 steps, typing in the destination search filters places, adding two destinations shows numbered chips with reorder arrows, and the right-hand preview updates as you type the title.
 
 ---
 

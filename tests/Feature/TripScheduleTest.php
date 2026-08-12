@@ -1,12 +1,17 @@
 <?php
 
+use App\Livewire\Home;
 use App\Livewire\Host\Trips\Create;
 use App\Livewire\Host\Trips\Index;
+use App\Livewire\Hosts\Show;
+use App\Models\HostMeetupPreset;
 use App\Models\HostProfile;
 use App\Models\Place;
 use App\Models\Reservation;
 use App\Models\Trip;
+use App\Models\TripDraft;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 
@@ -174,7 +179,6 @@ it('shows a host only their own trips', function () {
         ->assertDontSee('Theirs');
 });
 
-
 it('ignores a forged departure date on edit', function () {
     $host = scheduleHost();
     $place = Place::factory()->create();
@@ -213,7 +217,7 @@ it('adds a spot blank or from the library', function () {
     $host = scheduleHost();
     $place = Place::factory()->create();
 
-    $preset = \App\Models\HostMeetupPreset::create([
+    $preset = HostMeetupPreset::create([
         'host_id' => $host->id, 'label' => 'Cubao terminal',
         'address' => 'EDSA', 'lat' => 14.62, 'lng' => 121.05, 'note' => 'Blue van',
     ]);
@@ -245,7 +249,7 @@ it('will not seed a spot from another host’s library', function () {
     $theirs = scheduleHost();
     $place = Place::factory()->create();
 
-    $notMine = \App\Models\HostMeetupPreset::create([
+    $notMine = HostMeetupPreset::create([
         'host_id' => $theirs->id, 'label' => 'Their spot',
     ]);
 
@@ -254,7 +258,7 @@ it('will not seed a spot from another host’s library', function () {
         Livewire::actingAs($mine)->test(Create::class)
             ->call('addDestination', $place->id)
             ->call('addSpot', 'pickup', $notMine->id);
-    } catch (Illuminate\Database\Eloquent\ModelNotFoundException) {
+    } catch (ModelNotFoundException) {
         $blocked = true;
     }
 
@@ -271,7 +275,7 @@ it('shows one card per offering, not one per date', function () {
         now()->addMonths(2)->toDateString(),
     ], 'Mount Pulag 2 Day Hike');
 
-    foreach ([\App\Livewire\Home::class, \App\Livewire\Trips\Index::class] as $component) {
+    foreach ([Home::class, App\Livewire\Trips\Index::class] as $component) {
         $html = Livewire::test($component)->html();
 
         // a card prints the title in its img alt as well as its heading, so count headings
@@ -289,7 +293,7 @@ it('says how many other dates are behind the card', function () {
         now()->addMonths(2)->toDateString(),
     ], 'Thrice');
 
-    Livewire::test(\App\Livewire\Trips\Index::class)
+    Livewire::test(App\Livewire\Trips\Index::class)
         ->assertSee('Thrice')
         ->assertSee('+2 more dates');
 });
@@ -315,7 +319,7 @@ it('does not repeat an offering on the host’s public page', function () {
 
     publishSchedules($host, $place, [now()->addWeek()->toDateString(), now()->addMonth()->toDateString()], 'Once Only');
 
-    $html = Livewire::test(\App\Livewire\Hosts\Show::class, ['user' => $host])->html();
+    $html = Livewire::test(Show::class, ['user' => $host])->html();
 
     expect(substr_count($html, '>Once Only<'))->toBe(1);
 });
@@ -330,7 +334,7 @@ it('offers each past offering once when starting a new trip', function () {
         now()->addMonths(2)->toDateString(),
     ], 'Repeatable');
 
-    \App\Models\TripDraft::query()->delete();
+    TripDraft::query()->delete();
 
     $html = Livewire::actingAs($host)->test(Create::class)->html();
 

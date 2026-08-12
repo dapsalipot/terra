@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class TripPriceTier extends Model
 {
@@ -19,7 +20,7 @@ class TripPriceTier extends Model
     }
 
     /** Is this tier the one in force at $when? Null bounds mean open-ended. */
-    public function coversDate(?\Illuminate\Support\Carbon $when = null): bool
+    public function coversDate(?Carbon $when = null): bool
     {
         $when = ($when ?? now())->startOfDay();
 

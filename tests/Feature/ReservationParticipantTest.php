@@ -3,6 +3,7 @@
 use App\Models\Reservation;
 use App\Models\ReservationParticipant;
 use App\Models\TripDeparture;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -35,12 +36,12 @@ it('measures minority against the departure date, not today', function () {
     // Turns 18 on 2026-09-01. Departure is after that, so they are NOT a minor on the trip.
     $participant = new ReservationParticipant(['birthday' => '2008-09-01']);
 
-    expect($participant->isMinorAt(\Carbon\Carbon::parse('2026-10-01')))->toBeFalse()
-        ->and($participant->isMinorAt(\Carbon\Carbon::parse('2026-08-01')))->toBeTrue();
+    expect($participant->isMinorAt(Carbon::parse('2026-10-01')))->toBeFalse()
+        ->and($participant->isMinorAt(Carbon::parse('2026-08-01')))->toBeTrue();
 });
 
 it('treats a participant with no birthday as not a minor', function () {
-    expect((new ReservationParticipant([]))->isMinorAt(\Carbon\Carbon::parse('2026-10-01')))->toBeFalse();
+    expect((new ReservationParticipant([]))->isMinorAt(Carbon::parse('2026-10-01')))->toBeFalse();
 });
 
 it('separates the booker from the travelers', function () {
