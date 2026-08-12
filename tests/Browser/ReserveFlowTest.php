@@ -118,8 +118,8 @@ class ReserveFlowTest extends DuskTestCase
                 ->click('@open-'.$reservation->id)
                 ->waitFor('@verify-'.$reservation->id)
                 ->click('@verify-'.$reservation->id)
-                ->waitFor('@verify-'.$reservation->id.'-yes')
-                ->click('@verify-'.$reservation->id.'-yes')
+                ->waitFor('@pay-form')
+                ->click('@pay-confirm')
                 ->waitForText('Paid in full');
         });
 

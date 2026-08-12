@@ -192,4 +192,52 @@ JS)[0];
             $browser->resize(1920, 1080);
         });
     }
+
+    public function test_accepting_a_payment_is_a_form_not_a_yes_no(): void
+    {
+        $host = User::factory()->create(['role' => 'host', 'handle' => 'rl2', 'name' => 'Ridgeline']);
+        HostProfile::factory()->for($host)->create(['currency' => 'PHP']);
+        $trip = Trip::factory()->published()->create(['host_id' => $host->id, 'title' => 'Group Trip', 'price' => 1000]);
+        $departure = TripDeparture::factory()->for($trip)->create(['capacity' => 10, 'starts_at' => now()->addWeek()]);
+
+        $r = Reservation::factory()->for($departure, 'departure')->create([
+            'joiner_id' => null, 'party_size' => 3, 'status' => 'confirmed', 'confirmed_at' => now(),
+            'contact_first_name' => 'Ada', 'contact_last_name' => 'Reyes', 'contact_email' => 'ada@example.com',
+        ]);
+        $people = collect(['Ada', 'Ben', 'Cee'])->map(fn ($n, $i) => ReservationParticipant::factory()
+            ->for($r)->create(['position' => $i, 'first_name' => $n, 'last_name' => 'Cruz']));
+        PaymentSubmission::factory()->for($r)->create([
+            'reference_no' => 'GC-1', 'method' => 'GCash', 'submitted_at' => now(),
+        ]);
+
+        $this->browse(function (Browser $browser) use ($host, $departure, $r, $people) {
+            $browser->loginAs($host)
+                ->resize(1600, 1000)
+                ->visit('/host/departures/'.$departure->id.'/roster')
+                ->waitFor('@roster')
+                // The list says at a glance that this is a group and how much of it has paid.
+                // Rendered case, not source case: the label is text-transform: uppercase, and
+                // getText() returns what is on screen.
+                ->assertSeeIn('@reservation-'.$r->id, 'GROUP OF 3')
+                ->assertSeeIn('@reservation-'.$r->id, '0/3 paid')
+                ->click('@open-'.$r->id)
+                ->waitFor('@verify-'.$r->id)
+                ->click('@verify-'.$r->id)
+                ->waitFor('@pay-form')
+                // Pre-filled with what is owed, everyone ticked.
+                ->assertInputValue('@pay-amount', '3000');
+
+            // Two of the three sent their share; the host unticks the one who did not.
+            $browser->uncheck('@pay-for-'.$people[2]->id)
+                ->clear('@pay-amount')
+                ->type('@pay-amount', '2000')
+                ->click('@pay-confirm')
+                ->waitUntilMissing('@pay-form')
+                ->waitForTextIn('@reservation-'.$r->id, '2/3 paid');
+        });
+
+        expect($r->fresh()->money()['due'])->toBe(1000.0)
+            ->and($people[0]->fresh()->pass_code)->not->toBeNull()
+            ->and($people[2]->fresh()->pass_code)->toBeNull();
+    }
 }

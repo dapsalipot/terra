@@ -3,6 +3,7 @@
 use App\Livewire\Host\Roster;
 use App\Livewire\Reservations\Show;
 use App\Models\HostProfile;
+use App\Models\ReservationParticipant;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
@@ -228,4 +229,111 @@ it('offers the host a way to accept a proof that is separate from granting the s
 
     // The deposit lands, and only the deposit.
     expect($r->fresh()->money())->toMatchArray(['total' => 3000.0, 'paid' => 1000.0, 'due' => 2000.0]);
+});
+
+/*
+ * ── Recording what actually arrived ─────────────────────────────────────────────────────────
+ */
+
+it('records the amount the host says arrived rather than guessing one', function () {
+    [$host, , $departure] = deadlineTrip(['price' => 3000]);
+    $service = app(ReservationService::class);
+    $r = $service->reserve($departure, ['joiner_id' => User::factory()->create()->id, 'party_size' => 2]);
+    $service->confirm($r->fresh(), $host);
+    $service->submitPayment($r->fresh(), ['reference_no' => 'GC-1']);
+
+    // A joiner sent an odd figure because that is what they had. Money is recorded now, not
+    // derived from the booking's state, so an odd figure is expressible.
+    $service->verifyPayment($r->fresh(), $host, 1750.00);
+
+    expect($r->fresh()->money())->toMatchArray(['total' => 6000.0, 'paid' => 1750.0, 'due' => 4250.0]);
+});
+
+it('settles only the travellers the payment was for', function () {
+    [$host, , $departure] = deadlineTrip(['price' => 1000]);
+    $service = app(ReservationService::class);
+    $r = $service->reserve($departure, ['joiner_id' => User::factory()->create()->id, 'party_size' => 3]);
+    $service->confirm($r->fresh(), $host);
+
+    $people = collect(range(0, 2))->map(fn ($i) => ReservationParticipant::factory()
+        ->for($r)->create(['position' => $i, 'first_name' => 'Trav'.$i, 'last_name' => 'Cruz']));
+
+    $service->submitPayment($r->fresh(), ['reference_no' => 'GC-1']);
+    // Two friends sent their share; the third has not.
+    $service->verifyPayment($r->fresh(), $host, 2000.00, [$people[0]->id, $people[1]->id]);
+
+    $fresh = $r->fresh()->load('paymentSubmissions.participants', 'participants');
+
+    expect($fresh->participantIsPaid($people[0]))->toBeTrue()
+        ->and($fresh->participantIsPaid($people[1]))->toBeTrue()
+        ->and($fresh->participantIsPaid($people[2]))->toBeFalse()
+        ->and($fresh->money()['due'])->toBe(1000.0);
+});
+
+it('gives a pass to whoever has paid, not only to a wholly settled booking', function () {
+    [$host, , $departure] = deadlineTrip(['price' => 1000]);
+    $service = app(ReservationService::class);
+    $r = $service->reserve($departure, ['joiner_id' => User::factory()->create()->id, 'party_size' => 2]);
+    $service->confirm($r->fresh(), $host);
+
+    $paid = ReservationParticipant::factory()->for($r)->create(['position' => 0, 'first_name' => 'Ada']);
+    $unpaid = ReservationParticipant::factory()->for($r)->create(['position' => 1, 'first_name' => 'Ben']);
+
+    $service->submitPayment($r->fresh(), ['reference_no' => 'GC-1']);
+    $service->verifyPayment($r->fresh(), $host, 1000.00, [$paid->id]);
+
+    /*
+     * Passes used to require the whole booking to be tagged fully paid, which held one person's
+     * pass hostage to a friend who had not sent theirs.
+     */
+    expect($paid->fresh()->pass_code)->toStartWith('TRA-')
+        ->and($unpaid->fresh()->pass_code)->toBeNull();
+});
+
+it('reads a legacy payment with no figure the old way', function () {
+    [$host, , $departure] = deadlineTrip(['price' => 2000, 'deposit_amount' => 500]);
+    $service = app(ReservationService::class);
+    $r = $service->reserve($departure, ['joiner_id' => User::factory()->create()->id]);
+    $service->confirm($r->fresh(), $host);
+
+    // A submission from before amounts existed: confirmed, but carrying no figure.
+    $r->fresh()->paymentSubmissions()->create([
+        'reference_no' => 'OLD-1', 'submitted_at' => now()->subMonth(),
+        'confirmed_at' => now()->subMonth(), 'confirmed_by' => $host->id,
+    ]);
+
+    // Reading it as zero would make historical bookings look unpaid; reading it as the full
+    // price would invent money. The old derivation is the only honest answer.
+    expect($r->fresh()->money()['paid'])->toBe(500.0);
+});
+
+it('caps a recorded payment at what the booking is worth', function () {
+    [$host, , $departure] = deadlineTrip(['price' => 1000]);
+    $service = app(ReservationService::class);
+    $r = $service->reserve($departure, ['joiner_id' => User::factory()->create()->id]);
+    $service->confirm($r->fresh(), $host);
+    $service->submitPayment($r->fresh(), ['reference_no' => 'GC-1']);
+
+    // A fat-fingered figure should not make the roster report money that was never owed.
+    $service->verifyPayment($r->fresh(), $host, 99999.00);
+
+    expect($r->fresh()->money())->toMatchArray(['total' => 1000.0, 'paid' => 1000.0, 'due' => 0.0]);
+});
+
+it('offers the form already filled in with what is owed next', function () {
+    [$host, , $departure] = deadlineTrip(['price' => 3000, 'deposit_amount' => 900]);
+    $service = app(ReservationService::class);
+    $r = $service->reserve($departure, ['joiner_id' => User::factory()->create()->id]);
+    $service->confirm($r->fresh(), $host);
+    ReservationParticipant::factory()->for($r)->create(['position' => 0, 'first_name' => 'Ada']);
+    $service->submitPayment($r->fresh(), ['reference_no' => 'GC-1']);
+
+    $page = Livewire::actingAs($host)
+        ->test(Roster::class, ['departure' => $departure])
+        ->call('openPayment', $r->id);
+
+    // The deposit, because that is what a joiner sends first — not the whole price.
+    expect($page->get('payAmount'))->toBe('900')
+        // And everyone unpaid is ticked, because "all of them" is the common case.
+        ->and($page->get('payFor'))->toHaveCount(1);
 });

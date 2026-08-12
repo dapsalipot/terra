@@ -21,10 +21,26 @@
     Four cells that never change. Whatever this booking's state allows is in the drawer, which is
     why a cancelled row and a row with a proof waiting are the same height.
 --}}
-<li dusk="reservation-{{ $r->id }}">
+<li dusk="reservation-{{ $r->id }}" class="{{ $isOpen ? 'bg-moss/[.05]' : '' }}">
+    @if($r->participants->count() > 1)
+        {{-- The group's own line. Four friends on one booking are one thing the host deals with,
+             and a flat list of names cannot say which four arrived together or who paid for them. --}}
+        <div class="flex items-center justify-between gap-3 px-4 pt-3 pb-1">
+            <p class="text-[11px] font-semibold text-ink/70 truncate">
+                <span class="uppercase tracking-[0.09em]">Group of {{ $r->participants->count() }}</span>
+                · booked by {{ $r->displayName() }}
+            </p>
+            @if($mode === 'money')
+                <span class="text-[11px] text-ink/70 tabular-nums shrink-0">
+                    {{ $r->participants->filter(fn ($p) => $r->participantIsPaid($p))->count() }}/{{ $r->participants->count() }} paid
+                </span>
+            @endif
+        </div>
+    @endif
+
     <div class="sm:grid sm:gap-3 sm:items-center px-4 py-3 sm:min-h-[4.75rem]
                 {{ $mode === 'checkin' ? 'sm:grid-cols-[1fr_11rem_6rem]' : 'sm:grid-cols-[1fr_12rem_8.5rem_2.75rem]' }}
-                {{ $isOpen ? 'bg-moss/[.07]' : '' }}">
+                {{ $r->participants->count() > 1 ? 'border-l-[3px] border-l-pine/25 pl-3.5' : '' }}">
 
         {{-- Who. The traveller, not the booker — this is a list of who is coming. --}}
         <div class="min-w-0 flex items-center gap-3">

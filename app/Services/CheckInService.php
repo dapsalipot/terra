@@ -19,14 +19,21 @@ class CheckInService
     /** Give every named traveller on a fully-paid booking a code, without disturbing existing ones. */
     public function issueFor(Reservation $reservation): int
     {
-        if (! $reservation->isFullyPaid()) {
+        if ($reservation->status === 'cancelled') {
             return 0;
         }
 
         $issued = 0;
 
+        /*
+         * A pass per traveller whose share is settled, not per booking.
+         *
+         * This used to require the whole reservation to be tagged fully paid, which on a group
+         * booking held four people's passes hostage to a fifth who had not sent theirs. Payment
+         * is recorded per participant now, so the pass follows the money.
+         */
         foreach ($reservation->participants as $participant) {
-            if ($participant->pass_code) {
+            if ($participant->pass_code || ! $reservation->participantIsPaid($participant)) {
                 continue;
             }
 

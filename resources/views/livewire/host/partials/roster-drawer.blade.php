@@ -146,15 +146,59 @@
                 @endif
 
                 @if($canRule)
-                    <x-confirm-action
-                        action="verifyPayment({{ $r->id }})"
-                        title="Accept this payment?"
-                        body="Credits {{ $fmt($trip->payable_now * $r->party_size) }} against {{ $r->displayName() }}'s booking. Settling the rest is a separate step."
-                        confirm-label="Yes, it's in"
-                        cancel-label="Keep reviewing"
-                        tone="moss" icon="money"
-                        dusk="verify-{{ $r->id }}"
-                        class="w-full rounded-xl bg-moss text-cream min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-moss/90 transition-colors">Accept payment</x-confirm-action>
+                    {{--
+                        Accepting money is a form, not a yes/no.
+
+                        A confirmation dialog could only ever say "the whole thing arrived", which
+                        is wrong twice over: joiners send odd amounts, and a booking is often a
+                        group of friends where two have paid and two have not. The host types what
+                        actually landed and ticks whose share it covers.
+                    --}}
+                    @if($payOpen)
+                        <div class="rounded-xl border border-moss/40 bg-moss/[.05] p-3 space-y-3" dusk="pay-form">
+                            <label class="block">
+                                <span class="field-label">How much arrived?</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-ink/70 shrink-0">{{ $currency }}</span>
+                                    <input wire:model="payAmount" type="text" inputmode="decimal" dusk="pay-amount"
+                                           class="field flex-1 min-w-0 @error('payAmount') !border-terra @enderror">
+                                </div>
+                                @error('payAmount')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                                <p class="text-xs text-ink/70 mt-1">{{ $fmt($owed['due']) }} still owed on this booking.</p>
+                            </label>
+
+                            @if($r->participants->isNotEmpty())
+                                <fieldset>
+                                    <legend class="field-label">Whose share does this cover?</legend>
+                                    <div class="space-y-1 mt-1">
+                                        @foreach($r->participants as $p)
+                                            @php($alreadyPaid = $r->participantIsPaid($p))
+                                            <label class="flex items-center gap-2.5 min-h-[44px] text-sm {{ $alreadyPaid ? 'text-ink/45' : '' }}">
+                                                <input type="checkbox" wire:model="payFor" value="{{ $p->id }}"
+                                                       dusk="pay-for-{{ $p->id }}" @disabled($alreadyPaid)
+                                                       class="rounded border-ink/30 text-moss focus:ring-moss w-5 h-5">
+                                                <span class="min-w-0 truncate">
+                                                    {{ $p->fullName() ?: 'Seat '.($loop->index + 1) }}
+                                                    @if($alreadyPaid)<span class="text-xs">· already settled</span>@endif
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                    <p class="text-xs text-ink/70">Tick nobody to record it against the whole booking.</p>
+                                </fieldset>
+                            @endif
+
+                            <div class="flex gap-2">
+                                <button wire:click="verifyPayment({{ $r->id }})" dusk="pay-confirm"
+                                        class="flex-1 rounded-xl bg-moss text-cream min-h-[44px] text-sm font-semibold hover:bg-moss/90 transition-colors">Record it</button>
+                                <button wire:click="closePayment" dusk="pay-cancel"
+                                        class="rounded-xl border border-ink/15 px-4 min-h-[44px] text-sm font-semibold hover:border-ink/35 transition-colors">Cancel</button>
+                            </div>
+                        </div>
+                    @else
+                        <button wire:click="openPayment({{ $r->id }})" dusk="verify-{{ $r->id }}"
+                                class="w-full rounded-xl bg-moss text-cream min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-moss/90 transition-colors">Accept payment</button>
+                    @endif
 
                     <input wire:model="rejectReason.{{ $r->id }}" type="text"
                            placeholder="Why are you rejecting it? (optional)"

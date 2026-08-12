@@ -177,8 +177,24 @@ class ReservationService
      * It credits `payable_now` — the deposit on a trip that takes one, the whole price otherwise.
      * Settling the remaining balance is markFullyPaid(), still a separate act.
      */
-    public function verifyPayment(Reservation $reservation, User $host): Reservation
-    {
+    /**
+     * The host has looked at a proof and says the money is really there.
+     *
+     * Takes the figure and, optionally, which travellers it settles. A booking is often a group
+     * of friends where two have sent their share and two have not, and a host who can only accept
+     * the whole booking has to either lie or wait.
+     *
+     * `$participantIds` empty means the payment covers everybody on the booking, which is what a
+     * host means when they accept without narrowing it.
+     *
+     * @param  array<int, int>  $participantIds
+     */
+    public function verifyPayment(
+        Reservation $reservation,
+        User $host,
+        ?float $amount = null,
+        array $participantIds = [],
+    ): Reservation {
         $this->assertStatus($reservation, ['confirmed', 'payment_submitted'], 'verify payment for');
 
         $payment = $reservation->latestPayment;
@@ -189,12 +205,39 @@ class ReservationService
             throw InvalidTransitionException::from($reservation->status, 'verify payment for');
         }
 
+        /*
+         * Default to what this joiner owes *next*, not to everything they will ever owe.
+         *
+         * On a deposit trip with nothing paid that is the deposit — which is what the joiner has
+         * actually just sent — and once it is in, it becomes the balance. On a trip with no
+         * deposit the two are the same number. Making the host retype a figure the app already
+         * knows is how a typo gets recorded as fact.
+         */
+        $money = $reservation->money();
+        $trip = $reservation->departure?->trip;
+        $depositOutstanding = $trip
+            ? max(0, ($trip->payable_now * $reservation->party_size) - $money['paid'])
+            : 0;
+
+        $amount ??= $depositOutstanding > 0 ? $depositOutstanding : $money['due'];
+
         $payment->update([
+            'amount' => max(0, $amount),
             'confirmed_at' => now(),
             'confirmed_by' => $host->id,
             // A proof cannot be both refused and accepted. Verifying supersedes an earlier no.
             'rejected_reason' => null,
         ]);
+
+        // Only ids that actually belong to this booking — the list comes from a form.
+        $payment->participants()->sync(
+            $reservation->participants->whereIn('id', $participantIds)->pluck('id')->all()
+        );
+
+        // A traveller whose share is settled gets their pass, whether or not the rest of the
+        // group has paid. Waiting for the whole booking would hold four people's passes hostage
+        // to a fifth who has not sent theirs.
+        $this->passes->issueFor($reservation->fresh());
 
         return $reservation->fresh();
     }

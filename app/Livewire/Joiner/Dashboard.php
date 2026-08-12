@@ -377,6 +377,8 @@ class Dashboard extends Component
             ->with([
                 'departure.trip.host', 'departure.trip.priceTiers', 'departure.trip.place',
                 'departure.trip.hikeDetails', 'participants', 'latestPayment',
+                // money() sums confirmed submission amounts, so the whole set is needed per booking.
+                'paymentSubmissions',
             ])
             ->get()
             ->filter(fn (Reservation $r) => $r->departure !== null);

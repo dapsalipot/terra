@@ -77,10 +77,14 @@ it('renders within its query budget', function () {
      * One more since: the trail figures behind the "where you have been" totals, eager-loaded
      * through trip_destinations. Also one for the page rather than one per past trip.
      *
+     * And one more again: money() sums confirmed payment amounts, so the submissions come with
+     * the bookings. One grouped query for the page — without it, every booking asks separately
+     * and the sibling flatness test below fails loudly.
+     *
      * The ceiling sits one above. It is not a target to grow into: an N+1 regression costs six
      * or more at this fixture size, so it still fails loudly.
      */
-    expect(count($queries))->toBeLessThanOrEqual(15);
+    expect(count($queries))->toBeLessThanOrEqual(16);
 });
 
 it('does not issue more queries as bookings grow', function () {

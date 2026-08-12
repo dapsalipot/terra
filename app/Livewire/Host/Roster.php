@@ -145,9 +145,64 @@ class Roster extends Component
      * settled (markFullyPaid). Confirming used to quietly do the middle one too, which is how
      * accepting somebody onto a trip ended up marking them paid.
      */
+    /** The accept-payment form: what arrived, and whose share it settles. */
+    public string $payAmount = '';
+
+    public array $payFor = [];
+
+    public bool $payOpen = false;
+
+    /**
+     * Open the form with the figure already filled in.
+     *
+     * Seeded with what this booking owes next — the deposit if one is outstanding, the balance
+     * otherwise — and with every unpaid traveller ticked, because "all of them" is what a host
+     * means most of the time and unticking two is less work than ticking three.
+     */
+    public function openPayment(int $reservationId): void
+    {
+        $r = $this->guardedReservation($reservationId);
+        $trip = $this->departure->trip;
+        $money = $r->money();
+
+        $depositOutstanding = max(0, ($trip->payable_now * $r->party_size) - $money['paid']);
+
+        $this->open = $r->id;
+        $this->payOpen = true;
+        $this->payAmount = (string) ($depositOutstanding > 0 ? $depositOutstanding : $money['due']);
+        $this->payFor = $r->participants
+            ->reject(fn ($p) => $r->participantIsPaid($p))
+            ->pluck('id')->all();
+    }
+
+    public function closePayment(): void
+    {
+        $this->payOpen = false;
+        $this->payAmount = '';
+        $this->payFor = [];
+    }
+
     public function verifyPayment(int $reservationId, ReservationService $service): void
     {
-        $service->verifyPayment($this->guardedReservation($reservationId), Auth::user());
+        $r = $this->guardedReservation($reservationId);
+
+        // Only when the form was used; a bare call keeps the old behaviour of accepting whatever
+        // is owed next for the whole booking.
+        if ($this->payOpen) {
+            $this->validate(
+                ['payAmount' => ['required', 'numeric', 'min:0.01']],
+                ['payAmount.required' => 'How much arrived?', 'payAmount.min' => 'That has to be more than zero.'],
+            );
+        }
+
+        $service->verifyPayment(
+            $r,
+            Auth::user(),
+            $this->payOpen && $this->payAmount !== '' ? (float) $this->payAmount : null,
+            $this->payOpen ? array_map('intval', $this->payFor) : [],
+        );
+
+        $this->closePayment();
     }
 
     /** Separate from confirm(): accepting the seat and the money all being in are two facts. */

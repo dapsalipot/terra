@@ -417,9 +417,8 @@ class SystemAuditTest extends DuskTestCase
             $browser->click('@open-'.$reservation->id)
                 ->waitFor('@verify-'.$reservation->id)
                 ->click('@verify-'.$reservation->id)
-                ->waitFor('@verify-'.$reservation->id.'-yes')
-                ->pause(self::BEAT)
-                ->click('@verify-'.$reservation->id.'-yes')
+                ->waitFor('@pay-form')
+                ->click('@pay-confirm')
                 ->waitForText('Paid in full', 10)
                 ->pause(self::BEAT);
 

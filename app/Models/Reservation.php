@@ -110,10 +110,9 @@ class Reservation extends Model
     /**
      * What this booking is worth, and what has actually been collected.
      *
-     * Payments are not itemised with amounts anywhere — a submission records the method
-     * and a reference, not a figure — so money is derived from the trip's live price and
-     * the reservation's state. A deposit trip collects `payable_now`; the rest is due to
-     * the host on the day.
+     * A submission records what the host says arrived, so `paid` is a sum of real figures rather
+     * than a guess from the booking's state. Submissions predating that carry no amount and fall
+     * back to the old derivation.
      *
      * @return array{total: float, paid: float, due: float}
      */
@@ -128,17 +127,28 @@ class Reservation extends Model
         $total = $trip->current_price * $this->party_size;
 
         /*
-         * Credited against money that was actually recorded, never against the seat decision.
+         * Recorded money first, derived money only as a fallback.
          *
-         * Keying the middle branch on `status === 'confirmed'` meant accepting a seat credited
-         * `payable_now` — which on a trip with no deposit is the entire price, so confirming
-         * made a booking fully paid on its own and the two host actions collapsed into one.
-         * A verified payment submission is the thing that says money arrived; the fully-paid tag
-         * is the host saying the rest of it did too.
+         * Never credited against the seat decision: confirming a booking used to credit
+         * `payable_now`, which on a no-deposit trip is the whole price, so accepting somebody
+         * onto a trip silently settled their bill.
+         *
+         * A host now types what arrived when they accept a proof, so `paid` is a sum of real
+         * figures. Submissions made before that existed carry no amount, and for those the old
+         * derivation still applies — reading them as zero would make historical bookings look
+         * unpaid, and reading them as the full price would invent money.
          */
+        $recorded = (float) $this->paymentSubmissions
+            ->filter(fn ($p) => $p->confirmed_at && $p->amount !== null)
+            ->sum('amount');
+
+        $legacy = $this->paymentSubmissions
+            ->contains(fn ($p) => $p->confirmed_at && $p->amount === null);
+
         $paid = match (true) {
             $this->isFullyPaid() => $total,
-            $this->hasVerifiedPayment() => $trip->payable_now * $this->party_size,
+            $recorded > 0 => min($recorded, $total),
+            $legacy => $trip->payable_now * $this->party_size,
             default => 0.0,
         };
 
@@ -154,6 +164,25 @@ class Reservation extends Model
     public function hasVerifiedPayment(): bool
     {
         return $this->latestPayment?->confirmed_at !== null;
+    }
+
+    /**
+     * Whether this traveller's share has been settled.
+     *
+     * A payment that named participants covers exactly those; one that named none covers the
+     * whole booking, which is what a host means when they accept without narrowing it and what
+     * every pre-existing submission means.
+     */
+    public function participantIsPaid(ReservationParticipant $participant): bool
+    {
+        if ($this->isFullyPaid()) {
+            return true;
+        }
+
+        return $this->paymentSubmissions
+            ->filter(fn ($p) => $p->confirmed_at)
+            ->contains(fn ($p) => $p->participants->isEmpty()
+                || $p->participants->contains('id', $participant->id));
     }
 
     /** Money the joiner paid that has not been sent back yet. */
