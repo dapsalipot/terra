@@ -82,7 +82,8 @@ it('leads with an unpaid hold, because the seat is released when it expires', fu
 it('asks for the traveller details the host needs for permits', function () {
     $user = joiner();
     $r = bookingFor($user, ['status' => 'confirmed', 'party_size' => 2]);
-    $r->participants()->create(['position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02']);
+    $r->participants()->create(['position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02',
+        'emergency_contact_name' => 'Rosa Reyes', 'emergency_contact_phone' => '09171112222']);
     $r->participants()->create(['position' => 1]);   // blank
 
     // Traveller details ride in the For-payment panel: both are your move on a seat you hold.
@@ -95,7 +96,8 @@ it('asks for the traveller details the host needs for permits', function () {
 it('does not nag when every traveller is accounted for', function () {
     $user = joiner();
     $r = bookingFor($user, ['status' => 'confirmed', 'party_size' => 1]);
-    $r->participants()->create(['position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02']);
+    $r->participants()->create(['position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02',
+        'emergency_contact_name' => 'Rosa Reyes', 'emergency_contact_phone' => '09171112222']);
 
     Livewire::actingAs($user)->test(Dashboard::class)
         ->assertDontSeeHtml('dusk="attention-details"');

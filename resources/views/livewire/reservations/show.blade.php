@@ -858,6 +858,28 @@
                         </label>
                     </div>
 
+                    {{-- Required, and the reason this modal exists for older bookings: every seat
+                         taken before this field existed has none, and this is where that gets
+                         closed rather than discovered at a trailhead. --}}
+                    <div class="mt-4 pt-4 border-t border-ink/8">
+                        <span class="field-label">Emergency contact</span>
+                        <p class="text-xs text-ink/70 -mt-1 mb-2">Someone not on this trip.</p>
+                        <div class="sm:flex sm:gap-3">
+                            <label class="block sm:flex-1 sm:min-w-0">
+                                <span class="sr-only">Emergency contact name</span>
+                                <input wire:model="edit_emergency_contact_name" dusk="edit-ec-name"
+                                       placeholder="Full name" class="field">
+                                @error('edit_emergency_contact_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                            </label>
+                            <label class="block mt-3 sm:mt-0 sm:w-44 sm:shrink-0">
+                                <span class="sr-only">Emergency contact mobile</span>
+                                <input type="tel" wire:model="edit_emergency_contact_phone" dusk="edit-ec-phone"
+                                       placeholder="09XX XXX XXXX" class="field">
+                                @error('edit_emergency_contact_phone')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                            </label>
+                        </div>
+                    </div>
+
                     @if($trip->requires_id)
                         {{-- Only when the trip asks for one. A beach day has no permit desk, and
                              a field that requests a stranger's passport for nothing is a cost

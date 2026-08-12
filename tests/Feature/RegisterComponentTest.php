@@ -57,6 +57,9 @@ it('preserves a seat the booker edited when they stop travelling', function () {
 
 it('requires the booker contact block', function () {
     Livewire::test(Register::class, ['trip' => $this->trip])
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasErrors([
             'contact.first_name' => 'required',
@@ -79,6 +82,11 @@ it('requires a name on every traveller seat', function () {
         ->set('contact.email', 'ada@example.com')
         ->set('contact.phone', '09171234567')
         ->set('partySize', 2)   // seat 1 is left untouched
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->set('participants.1.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.1.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasErrors([
             'participants.1.first_name' => 'required',
@@ -99,6 +107,11 @@ it('names the seat in the message so the booker knows which card to fix', functi
         ->set('contact.email', 'ada@example.com')
         ->set('contact.phone', '09171234567')
         ->set('partySize', 2)
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->set('participants.1.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.1.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertSee('Seat 2 needs a first name.');
 });
@@ -116,6 +129,11 @@ it('requires an email on every traveller seat', function () {
         ->set('partySize', 2)
         ->set('participants.1.first_name', 'Ben')
         ->set('participants.1.last_name', 'Cruz')
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->set('participants.1.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.1.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasErrors(['participants.1.email' => 'required'])
         ->assertSee('Seat 2 needs an email address.');
@@ -133,6 +151,11 @@ it('rejects a traveller email that is not an email', function () {
         ->set('participants.1.first_name', 'Ben')
         ->set('participants.1.last_name', 'Cruz')
         ->set('participants.1.email', 'ben-at-example')
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->set('participants.1.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.1.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasErrors(['participants.1.email' => 'email']);
 });
@@ -165,6 +188,13 @@ it('accepts the same email on more than one seat', function () {
         ->call('useBookerEmail', 1)
         ->call('useBookerEmail', 2)
         ->set('createAccount', false)
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->set('participants.1.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.1.emergency_contact_phone', '09171112222')
+        ->set('participants.2.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.2.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasNoErrors()
         ->assertRedirect();
@@ -185,6 +215,9 @@ it('fills the booker seat email from their contact details without asking twice'
         ->set('contact.email', 'ada@example.com')
         ->set('contact.phone', '09171234567')
         ->set('createAccount', false)
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasNoErrors('participants.0.email')
         ->assertRedirect();
@@ -204,6 +237,9 @@ it('keeps a different email the booker chose for their own seat', function () {
         ->set('contact.phone', '09171234567')
         ->set('participants.0.email', 'ada.personal@example.com')
         ->set('createAccount', false)
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertRedirect();
 
@@ -276,6 +312,9 @@ it('does not report the booker seat and the contact block as two separate proble
     $component = Livewire::test(Register::class, ['trip' => $this->trip])
         ->set('contact.email', 'ada@example.com')
         ->set('contact.phone', '09171234567')
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit');
 
     $component->assertHasErrors('contact.first_name')
@@ -294,6 +333,9 @@ it('requires seat one when the booker is not travelling', function () {
         ->set('contact.email', 'ada@example.com')
         ->set('contact.phone', '09171234567')
         ->set('bookerIsTraveling', false)
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasErrors(['participants.0.first_name' => 'required']);
 });
@@ -307,6 +349,9 @@ it('registers a guest and sends them to their booking', function () {
         ->set('participants.0.birthday', '1998-04-02')
         ->set('participants.0.gender', 'female')
         ->set('createAccount', false)
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertRedirect();
 
@@ -325,6 +370,9 @@ it('normalises a +63 mobile number to the 09 form', function () {
         ->set('contact.phone', '+63 917 123 4567')
         ->set('participants.0.birthday', '1998-04-02')
         ->set('createAccount', false)
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit');
 
     expect(Reservation::first()->contact_phone)->toBe('09171234567');
@@ -422,7 +470,18 @@ it('refuses to oversell and says how many seats are left', function () {
             ->set("participants.{$i}.email", "guest{$i}@example.com");
     }
 
-    $component->call('submit')
+    $component
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->set('participants.1.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.1.emergency_contact_phone', '09171112222')
+        ->set('participants.2.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.2.emergency_contact_phone', '09171112222')
+        ->set('participants.3.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.3.emergency_contact_phone', '09171112222')
+        ->set('participants.4.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.4.emergency_contact_phone', '09171112222')
+        ->call('submit')
         ->assertHasNoErrors()
         ->assertSet('closed', false)
         ->assertNoRedirect();
@@ -452,6 +511,9 @@ it('rejects a birthday with an implausible year', function () {
         ->set('contact.email', 'ada@example.com')
         ->set('contact.phone', '09171234567')
         ->set('participants.0.birthday', '0514-09-12')
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasErrors(['participants.0.birthday'])
         // The wording, not just the failure: these messages sat in a method Livewire never reads,
@@ -461,7 +523,10 @@ it('rejects a birthday with an implausible year', function () {
 
 it('names fields in plain language when validation fails', function () {
     // Laravel would otherwise render "The contact.first name field is required."
-    $component = Livewire::test(Register::class, ['trip' => $this->trip])->call('submit');
+    $component = Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->call('submit');
 
     $messages = collect($component->errors()->all())->implode(' ');
 
@@ -541,6 +606,9 @@ it('refuses to submit with an empty seat field', function () {
         ->set('contact.last_name', 'Reyes')
         ->set('contact.email', 'ada@example.com')
         ->set('contact.phone', '09171234567')
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasErrors(['partySize'])
         ->assertNoRedirect();
@@ -569,6 +637,8 @@ it('opens the review sheet once everything checks out, without booking yet', fun
         ->set('contact.last_name', 'Reyes')
         ->set('contact.email', 'ada@example.com')
         ->set('contact.phone', '09171234567')
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('review')
         ->assertHasNoErrors()
         ->assertSet('showReview', true)

@@ -79,6 +79,11 @@ class Show extends Component
 
     public $edit_phone = '';
 
+    /** Required here as well as at registration — this is where a legacy gap gets closed. */
+    public $edit_emergency_contact_name = '';
+
+    public $edit_emergency_contact_phone = '';
+
     /** A staged ID photo for the participant open in the edit dialog. */
     public $edit_id = null;
 
@@ -154,6 +159,8 @@ class Show extends Component
         $this->edit_gender = $participant->gender ?? '';
         $this->edit_email = $participant->email ?? '';
         $this->edit_phone = $participant->phone ?? '';
+        $this->edit_emergency_contact_name = $participant->emergency_contact_name ?? '';
+        $this->edit_emergency_contact_phone = $participant->emergency_contact_phone ?? '';
         $this->edit_id = null;
         $this->showEditModal = true;
     }
@@ -178,6 +185,8 @@ class Show extends Component
             'edit_gender' => ['nullable', 'in:male,female,other,undisclosed'],
             'edit_email' => ['nullable', 'email', 'max:120'],
             'edit_phone' => ['nullable', 'string', 'max:60'],
+            'edit_emergency_contact_name' => ['required', 'string', 'max:120'],
+            'edit_emergency_contact_phone' => ['required', 'string', 'max:32'],
             // Only an image, and small enough that a phone photo goes through but a scan of a
             // whole passport book does not sit in storage forever.
             'edit_id' => ['nullable', 'image', 'max:5120'],
@@ -191,6 +200,8 @@ class Show extends Component
             'gender' => $this->edit_gender ?: null,
             'email' => $this->edit_email ?: null,
             'phone' => $this->edit_phone ?: null,
+            'emergency_contact_name' => $this->edit_emergency_contact_name ?: null,
+            'emergency_contact_phone' => $this->edit_emergency_contact_phone ?: null,
         ]);
 
         /*

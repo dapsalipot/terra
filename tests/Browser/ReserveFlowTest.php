@@ -69,6 +69,8 @@ class ReserveFlowTest extends DuskTestCase
                 ->waitForText('Your details')
                 ->type('@contact-phone', '09171234567')
                 ->keys('@seat-0-birthday', '05', '14', '1996')
+                ->type('@seat-0-ec-name', 'Rosa Reyes')
+                ->type('@seat-0-ec-phone', '09171112222')
                 ->click('@submit-registration')
                 // the primary button opens the review sheet; the request is sent inside it
                 ->waitFor('@confirm-booking')

@@ -71,6 +71,7 @@ class Register extends Component
     public const BLANK_PARTICIPANT = [
         'first_name' => '', 'middle_name' => '', 'last_name' => '',
         'birthday' => '', 'gender' => '', 'email' => '', 'phone' => '',
+        'emergency_contact_name' => '', 'emergency_contact_phone' => '',
         'show_contact' => false,
     ];
 
@@ -391,6 +392,10 @@ class Register extends Component
             'participants.*.birthday' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'participants.*.gender' => ['nullable', 'string', 'max:24'],
             'participants.*.phone' => ['nullable', 'string', 'max:32'],
+            // Required, unlike every other per-traveller field. A trip up a mountain with
+            // nobody to call is the one gap worth blocking a booking over.
+            'participants.*.emergency_contact_name' => ['required', 'string', 'max:120'],
+            'participants.*.emergency_contact_phone' => ['required', 'string', 'max:32'],
             'ids.*' => ['nullable', 'image', 'max:5120'],
         ];
 
@@ -590,6 +595,10 @@ class Register extends Component
                 'gender' => ($p['gender'] ?? '') ?: null,
                 'email' => $email,
                 'phone' => ($p['phone'] ?? '') ? $this->normalisePhone($p['phone']) : null,
+                'emergency_contact_name' => trim($p['emergency_contact_name'] ?? '') ?: null,
+                'emergency_contact_phone' => ($p['emergency_contact_phone'] ?? '')
+                    ? $this->normalisePhone($p['emergency_contact_phone'])
+                    : null,
             ];
         })->all();
     }

@@ -41,6 +41,8 @@ class JoinerRegistrationTest extends DuskTestCase
                 ->type('@contact-email', 'ada@example.com')
                 ->type('@contact-phone', '09171234567')
                 ->keys('@seat-0-birthday', '04', '02', '1998')
+                ->type('@seat-0-ec-name', 'Rosa Reyes')
+                ->type('@seat-0-ec-phone', '09171112222')
                 ->uncheck('@create-account')
                 ->click('@submit-registration')
                 // the primary button opens the review sheet; the booking is confirmed inside it
@@ -71,6 +73,8 @@ class JoinerRegistrationTest extends DuskTestCase
                 ->type('@contact-email', 'ben@example.com')
                 ->type('@contact-phone', '09998887777')
                 ->keys('@seat-0-birthday', '01', '10', '1995')
+                ->type('@seat-0-ec-name', 'Rosa Reyes')
+                ->type('@seat-0-ec-phone', '09171112222')
                 ->click('@submit-registration')
                 // the primary button opens the review sheet; the booking is confirmed inside it
                 ->waitFor('@confirm-booking')
@@ -105,6 +109,8 @@ class JoinerRegistrationTest extends DuskTestCase
                 ->click('@seat-0-use-my-email')
                 ->waitUsing(5, 100, fn () => $browser->value('@seat-0-email') === 'cara@example.com')
                 ->keys('@seat-0-birthday', '03', '15', '2000')
+                ->type('@seat-0-ec-name', 'Rosa Reyes')
+                ->type('@seat-0-ec-phone', '09171112222')
                 ->uncheck('@create-account')
                 ->click('@submit-registration')
                 // the primary button opens the review sheet; the booking is confirmed inside it

@@ -46,8 +46,10 @@ it('creates one participant row per seat even when details are deferred', functi
     $result = $this->svc->register($this->departure, regData([
         'party_size' => 3,
         'participants' => [
-            ['first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02', 'gender' => 'female'],
-            ['first_name' => 'Ben', 'last_name' => 'Cruz', 'birthday' => '1995-01-10', 'gender' => 'male'],
+            ['first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02', 'gender' => 'female',
+                'emergency_contact_name' => 'Rosa Reyes', 'emergency_contact_phone' => '09171112222'],
+            ['first_name' => 'Ben', 'last_name' => 'Cruz', 'birthday' => '1995-01-10', 'gender' => 'male',
+                'emergency_contact_name' => 'Lito Cruz', 'emergency_contact_phone' => '09171113333'],
             [],   // "I'll add this later"
         ],
     ]));

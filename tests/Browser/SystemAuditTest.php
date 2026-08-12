@@ -324,11 +324,15 @@ class SystemAuditTest extends DuskTestCase
                 ->type('@contact-email', 'ada@example.com')
                 ->type('@contact-phone', '09171234567')
                 ->keys('@seat-0-birthday', '04', '02', '1998')
+                ->type('@seat-0-ec-name', 'Rosa Reyes')
+                ->type('@seat-0-ec-phone', '09171112222')
                 ->pause(self::BEAT)
                 ->type('@seat-1-first', 'Ben')
                 ->type('@seat-1-last', 'Cruz')
                 ->type('@seat-1-email', 'ben@example.com')
                 ->keys('@seat-1-birthday', '01', '10', '1995')
+                ->type('@seat-1-ec-name', 'Rosa Reyes')
+                ->type('@seat-1-ec-phone', '09171112222')
                 ->pause(self::BEAT);
 
             $this->a11y($browser, 'registration form (filled)');

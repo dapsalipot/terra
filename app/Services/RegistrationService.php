@@ -80,6 +80,8 @@ class RegistrationService
                 'gender' => $row['gender'] ?? null,
                 'email' => $row['email'] ?? null,
                 'phone' => $row['phone'] ?? null,
+                'emergency_contact_name' => $row['emergency_contact_name'] ?? null,
+                'emergency_contact_phone' => $row['emergency_contact_phone'] ?? null,
                 // Already stored by the caller; only the path travels this far.
                 'id_image' => $row['id_image'] ?? null,
                 'id_uploaded_at' => $row['id_uploaded_at'] ?? null,

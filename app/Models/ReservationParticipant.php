@@ -44,7 +44,20 @@ class ReservationParticipant extends Model
 
     public function isComplete(): bool
     {
-        return filled($this->first_name) && filled($this->last_name) && filled($this->birthday);
+        return filled($this->first_name) && filled($this->last_name) && filled($this->birthday)
+            && $this->hasEmergencyContact();
+    }
+
+    /**
+     * Somebody reachable if this person is hurt.
+     *
+     * Both halves or neither — a name with no number is not a contact, and a number with no
+     * name is a stranger's phone. Counting a half-filled pair as present is how a host finds
+     * out at the trailhead that they cannot actually call anyone.
+     */
+    public function hasEmergencyContact(): bool
+    {
+        return filled($this->emergency_contact_name) && filled($this->emergency_contact_phone);
     }
 
     /**

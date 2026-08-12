@@ -310,6 +310,11 @@ class FakeDataSeeder extends Seeder
                 'birthday' => fake()->dateTimeBetween('-60 years', '-18 years'),
                 'email' => $p === 0 ? $reservation->contact_email : null,
                 'phone' => $p === 0 ? $reservation->contact_phone : null,
+                // Required at registration, so every seeded seat carries one — except the odd
+                // legacy-shaped row below, which is what the host's "details missing" filter is
+                // there to surface.
+                'emergency_contact_name' => fake()->boolean(90) ? fake()->name() : null,
+                'emergency_contact_phone' => fake()->boolean(90) ? '09'.fake()->numerify('#########') : null,
                 // On an ID trip, most but not all travellers have uploaded — the gap is the
                 // whole reason the host-side "No ID" badge exists.
                 'id_image' => $trip->requires_id && fake()->boolean(70) ? 'ids/placeholder.jpg' : null,

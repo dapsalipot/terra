@@ -83,7 +83,8 @@ it('shows the booking link so a guest can get back without email', function () {
 
 it('leads with the outstanding-details prompt when travellers are unnamed', function () {
     $reservation = Reservation::factory()->create(['joiner_id' => null, 'party_size' => 2]);
-    $reservation->participants()->create(['position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02']);
+    $reservation->participants()->create(['position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02',
+        'emergency_contact_name' => 'Rosa Reyes', 'emergency_contact_phone' => '09171112222']);
     $reservation->participants()->create(['position' => 1]);
 
     $this->get(route('reservations.show', ['token' => $reservation->public_token]))

@@ -431,6 +431,34 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Same reasoning as the birthday above: on a one-seat booking there is no travellers
+                 section to hold this, and it is required, so it has to be asked here or the form
+                 refuses a booking over a field nobody was shown. Keeps the seat-0 binding and
+                 hook, so validation and tests find it in either layout. --}}
+            <div class="mt-4 pt-4 border-t border-ink/8">
+                <span class="field-label">Emergency contact</span>
+                <p class="text-xs text-ink/70 -mt-1 mb-2">Someone not on this trip we could call.</p>
+                <div class="sm:flex sm:gap-3">
+                    <label class="block sm:flex-1 sm:min-w-0">
+                        <span class="sr-only">Emergency contact name</span>
+                        <input wire:model.blur="participants.0.emergency_contact_name"
+                               dusk="seat-0-ec-name" placeholder="Full name"
+                               id="{{ $fieldId('participants.0.emergency_contact_name') }}"
+                               class="field @error('participants.0.emergency_contact_name') !border-terra @enderror">
+                        @error('participants.0.emergency_contact_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                    </label>
+                    <label class="block mt-3 sm:mt-0 sm:w-48 sm:shrink-0">
+                        <span class="sr-only">Emergency contact mobile</span>
+                        <input type="tel" inputmode="tel"
+                               wire:model.blur="participants.0.emergency_contact_phone"
+                               dusk="seat-0-ec-phone" placeholder="09XX XXX XXXX"
+                               id="{{ $fieldId('participants.0.emergency_contact_phone') }}"
+                               class="field @error('participants.0.emergency_contact_phone') !border-terra @enderror">
+                        @error('participants.0.emergency_contact_phone')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                    </label>
+                </div>
+            </div>
         @endif
     </section>
 
@@ -584,6 +612,43 @@
                                         class="{{ $chip }} {{ ($p['gender'] ?? '') === $value ? $chipOn : $chipOff }}">{{ $label }}</button>
                             @endforeach
                         </div>
+                    </div>
+                </div>
+
+                {{--
+                    Who to call if this goes wrong.
+
+                    Required, and asked at the moment of booking for the same reason the ID is:
+                    it is the only point at which it can be a condition. Chased afterwards, a host
+                    finds out there is nobody to ring while standing over somebody with a broken
+                    ankle — which is the exact situation the field exists for.
+
+                    Both halves are required together. A name with no number is not a contact and
+                    a number with no name is a stranger's phone.
+                --}}
+                <div class="mt-4 pt-4 border-t border-ink/8">
+                    <span class="field-label">Emergency contact</span>
+                    <p class="text-xs text-ink/70 -mt-1 mb-2">
+                        Someone not on this trip who {{ trim(($p['first_name'] ?? '')) ?: 'this traveller' }} would want called.
+                    </p>
+                    <div class="sm:flex sm:gap-3">
+                        <label class="block sm:flex-1 sm:min-w-0">
+                            <span class="sr-only">Emergency contact name</span>
+                            <input wire:model.blur="participants.{{ $i }}.emergency_contact_name"
+                                   dusk="seat-{{ $i }}-ec-name" placeholder="Full name"
+                                   id="{{ $fieldId('participants.'.$i.'.emergency_contact_name') }}"
+                                   class="field @error('participants.'.$i.'.emergency_contact_name') !border-terra @enderror">
+                            @error('participants.'.$i.'.emergency_contact_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
+                        <label class="block mt-3 sm:mt-0 sm:w-48 sm:shrink-0">
+                            <span class="sr-only">Emergency contact mobile</span>
+                            <input type="tel" inputmode="tel"
+                                   wire:model.blur="participants.{{ $i }}.emergency_contact_phone"
+                                   dusk="seat-{{ $i }}-ec-phone" placeholder="09XX XXX XXXX"
+                                   id="{{ $fieldId('participants.'.$i.'.emergency_contact_phone') }}"
+                                   class="field @error('participants.'.$i.'.emergency_contact_phone') !border-terra @enderror">
+                            @error('participants.'.$i.'.emergency_contact_phone')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                        </label>
                     </div>
                 </div>
 

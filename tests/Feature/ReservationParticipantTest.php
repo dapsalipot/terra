@@ -1,11 +1,15 @@
 <?php
 
+use App\Livewire\Reservations\Register;
+use App\Livewire\Reservations\Show;
 use App\Models\Reservation;
 use App\Models\ReservationParticipant;
+use App\Models\Trip;
 use App\Models\TripDeparture;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
 
 it('generates a public token on create', function () {
     $reservation = Reservation::factory()->create();
@@ -22,12 +26,20 @@ it('builds a full name and skips a missing middle name', function () {
         ->and($without->fullName())->toBe('Ada Reyes');
 });
 
-it('is complete only with first name, last name and birthday', function () {
-    $complete = new ReservationParticipant(['first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02']);
-    $noBirthday = new ReservationParticipant(['first_name' => 'Ada', 'last_name' => 'Reyes']);
+it('is complete only with a name, a birthday and someone to call', function () {
+    $ec = ['emergency_contact_name' => 'Rosa Reyes', 'emergency_contact_phone' => '09171112222'];
+
+    $complete = new ReservationParticipant(['first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02'] + $ec);
+    $noBirthday = new ReservationParticipant(['first_name' => 'Ada', 'last_name' => 'Reyes'] + $ec);
     $blank = new ReservationParticipant([]);
+    // Half a contact is not a contact: a name with no number cannot be rung.
+    $halfContact = new ReservationParticipant([
+        'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02',
+        'emergency_contact_name' => 'Rosa Reyes',
+    ]);
 
     expect($complete->isComplete())->toBeTrue()
+        ->and($halfContact->isComplete())->toBeFalse()
         ->and($noBirthday->isComplete())->toBeFalse()
         ->and($blank->isComplete())->toBeFalse();
 });
@@ -110,4 +122,77 @@ it('backfills a public token for every pre-existing row, past the first chunk', 
 
     expect(DB::table('reservations')->whereNull('public_token')->count())->toBe(0)
         ->and(DB::table('reservations')->distinct()->count('public_token'))->toBe(1200);
+});
+
+// ─────────────────────────────────────────────────── emergency contact
+
+it('will not take a booking without someone to call', function () {
+    $trip = Trip::factory()->published()->create(['price' => 1000]);
+    TripDeparture::factory()->for($trip)->create(['capacity' => 10, 'starts_at' => now()->addWeek()]);
+
+    Livewire::test(Register::class, ['trip' => $trip])
+        ->set('contact.first_name', 'Ada')
+        ->set('contact.last_name', 'Reyes')
+        ->set('contact.email', 'ada@example.com')
+        ->set('contact.phone', '09171234567')
+        ->call('submit')
+        // The one per-traveller field worth blocking a booking over: a trip up a mountain with
+        // nobody to ring.
+        ->assertHasErrors([
+            'participants.0.emergency_contact_name' => 'required',
+            'participants.0.emergency_contact_phone' => 'required',
+        ]);
+
+    expect(Reservation::count())->toBe(0);
+});
+
+it('carries the emergency contact all the way to the row', function () {
+    // The form validated it and the service used to drop it on the floor — collected, then lost.
+    $trip = Trip::factory()->published()->create(['price' => 1000]);
+    TripDeparture::factory()->for($trip)->create(['capacity' => 10, 'starts_at' => now()->addWeek()]);
+
+    Livewire::test(Register::class, ['trip' => $trip])
+        ->set('contact.first_name', 'Ada')
+        ->set('contact.last_name', 'Reyes')
+        ->set('contact.email', 'ada@example.com')
+        ->set('contact.phone', '09171234567')
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '0917 111 2222')
+        ->set('createAccount', false)
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    $p = Reservation::first()->participants->first();
+
+    expect($p->emergency_contact_name)->toBe('Rosa Reyes')
+        // Normalised the same way every other mobile number on the booking is.
+        ->and($p->emergency_contact_phone)->toBe('09171112222')
+        ->and($p->hasEmergencyContact())->toBeTrue();
+});
+
+it('asks a legacy traveller for one through the edit modal', function () {
+    // Every seat booked before this field existed has none. This is where that gets closed,
+    // rather than discovered at a trailhead.
+    $r = Reservation::factory()->create([
+        'joiner_id' => null, 'status' => 'confirmed', 'confirmed_at' => now(),
+    ]);
+    $p = ReservationParticipant::factory()->for($r)->withoutEmergencyContact()->create([
+        'position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'birthday' => '1998-04-02',
+    ]);
+
+    expect($p->isComplete())->toBeFalse();
+
+    Livewire::test(Show::class, ['token' => $r->public_token])
+        ->call('editParticipant', $p->id)
+        // Saving without one is refused here too, not just at registration — otherwise the
+        // requirement is a thing new joiners carry and existing ones never have to.
+        ->call('updateParticipant')
+        ->assertHasErrors(['edit_emergency_contact_name' => 'required'])
+        ->set('edit_emergency_contact_name', 'Rosa Reyes')
+        ->set('edit_emergency_contact_phone', '09171112222')
+        ->call('updateParticipant')
+        ->assertHasNoErrors();
+
+    expect($p->fresh()->hasEmergencyContact())->toBeTrue()
+        ->and($p->fresh()->isComplete())->toBeTrue();
 });

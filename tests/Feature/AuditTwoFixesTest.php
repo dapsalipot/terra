@@ -33,6 +33,9 @@ it('refuses a registration with no ID when the trip requires one', function () {
         ->set('contact.first_name', 'Ada')->set('contact.last_name', 'Reyes')
         ->set('contact.email', 'ada@example.com')->set('contact.phone', '09171234567')
         ->set('participants.0.birthday', '1998-04-02')
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasErrors('ids.0');
 
@@ -48,6 +51,9 @@ it('accepts one and files it against the traveller', function () {
         ->set('contact.email', 'ada@example.com')->set('contact.phone', '09171234567')
         ->set('participants.0.birthday', '1998-04-02')
         ->set('ids.0', UploadedFile::fake()->image('licence.jpg'))
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasNoErrors();
 
@@ -64,6 +70,9 @@ it('asks for nothing extra on a trip that does not require an ID', function () {
         ->set('contact.first_name', 'Ada')->set('contact.last_name', 'Reyes')
         ->set('contact.email', 'ada@example.com')->set('contact.phone', '09171234567')
         ->set('participants.0.birthday', '1998-04-02')
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
         ->call('submit')
         ->assertHasNoErrors();
 
