@@ -148,6 +148,7 @@ it('lets a host remove a booking and tells the joiner', function () {
 
     Livewire\Livewire::actingAs($r->departure->trip->host)
         ->test(Roster::class, ['departure' => $r->departure])
+        ->call('openBooking', $r->id)
         ->assertSeeHtml('dusk="cancel-booking-'.$r->id.'"')
         ->call('cancelBooking', $r->id);
 

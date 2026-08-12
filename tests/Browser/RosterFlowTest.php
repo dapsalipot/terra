@@ -91,9 +91,11 @@ class RosterFlowTest extends DuskTestCase
              * other's, the columns are not columns — that is the "sometimes stacked, sometimes
              * side by side" complaint, and it is invisible to any assertion on text alone.
              */
+            // Rows are list items now, not table rows: the redesign dropped the table because a
+            // cell that had to hold six controls in one row and one in the next is what made the
+            // columns stop being columns.
             $lefts = $browser->script(
-                // The name cell is a <th scope="row">, not a <td> — it labels the row it heads.
-                "return Array.from(document.querySelectorAll('tbody[dusk^=\"reservation-\"] tr > :first-child'))
+                "return Array.from(document.querySelectorAll('li[dusk^=\"reservation-\"] > div'))
                  .map(c => Math.round(c.getBoundingClientRect().left))"
             )[0];
 
@@ -110,7 +112,10 @@ class RosterFlowTest extends DuskTestCase
             $browser->loginAs($host)
                 ->visit('/host/departures/'.$departure->id.'/roster')
                 ->waitFor('@new-proof-'.$booked->id)
-                ->click('@proof-'.$booked->id)
+                // Actions live in the drawer now, so the booking has to be opened first.
+                ->click('@open-'.$booked->id)
+                ->waitFor('@roster-drawer')
+                ->click('@modal-proof-'.$booked->id)
                 ->waitFor('@proof-modal')
                 // The reference number is the part a host reconciles against their bank app, so
                 // it has to be readable in the modal, not only the image.
@@ -163,6 +168,7 @@ class RosterFlowTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($host, $departure, $unpaid) {
             $browser->loginAs($host)
                 ->visit('/host/departures/'.$departure->id.'/roster')
+                ->click('@open-'.$unpaid->id)
                 ->waitFor('@confirm-'.$unpaid->id)
                 ->click('@confirm-'.$unpaid->id)
                 ->waitForText('uploaded no proof')

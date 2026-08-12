@@ -31,6 +31,7 @@ it('lists every traveller by name', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->assertSee('Ada Reyes')
         ->assertSee('Ben Cruz');
 });
@@ -47,6 +48,7 @@ it('marks each traveller whose details are still missing', function () {
     // than counted in a badge that never said which of the three names it meant.
     $html = Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->html();
 
     expect(substr_count($html, 'Details still needed'))->toBe(2);
@@ -64,6 +66,7 @@ it('shows a young traveller their age rather than a minor flag', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->assertSee('15y')
         // The flag was dropped at the host's request: the age says the same thing and says
         // which of the names it applies to.
@@ -84,6 +87,7 @@ it('ages a traveller against the departure date, not today', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->assertSee('18y')
         ->assertDontSee('17y');
 });
@@ -99,6 +103,7 @@ it('marks a booking whose booker is not travelling', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         // Phrased as an attribution now that it sits inline under the traveller.
         ->assertSee('Booked by');
 });
@@ -114,6 +119,7 @@ it('offers a mark-as-paid button on a booking that submitted nothing', function 
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSeeHtml('dusk="confirm-'.$r->id.'"')
         ->assertSee('Confirm seat')
         // Nothing was submitted, so there is nothing to send back.
@@ -127,6 +133,7 @@ it('confirms a seat without moving any money', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->call('confirm', $r->id);
 
     // The seat is accepted; nothing was paid, so nothing is credited and no payment record
@@ -148,6 +155,7 @@ it('says confirm rather than mark-as-paid when there is a submission to review',
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSee('Confirm seat')
         ->assertSeeHtml('dusk="reject-'.$r->id.'"');
 });
@@ -162,19 +170,21 @@ it('links to the proof whenever one exists, including after confirming', functio
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         // A host re-checking what they approved should not have to un-confirm to see it.
-        ->assertSeeHtml('dusk="proof-'.$r->id.'"')
+        ->assertSeeHtml('dusk="modal-proof-'.$r->id.'"')
         // The control now names how many attempts there are and opens the list.
         ->assertSee('1 proof');
 });
 
 it('says so plainly when a booking has no proof attached', function () {
-    Reservation::factory()->create([
+    $r = Reservation::factory()->create([
         'trip_departure_id' => $this->departure->id, 'party_size' => 1, 'status' => 'pending',
     ]);
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSee('No proof sent');
 });
 
@@ -185,6 +195,7 @@ it('offers no payment actions on a cancelled booking', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertDontSeeHtml('dusk="confirm-'.$r->id.'"');
 });
 
@@ -199,6 +210,7 @@ it('puts a confirmation step in front of marking a booking paid', function () {
 
     $html = Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->html();
 
     // The trigger opens a dialog rather than calling the method, so the wire:click that used
@@ -215,8 +227,9 @@ it('warns that marking paid without proof is on the host', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSee('uploaded no proof')
-        ->assertSee('Only confirm if you have been paid another way');
+        ->assertSee('Only confirm if you have agreed the seat another way');
 });
 
 /*
@@ -231,6 +244,7 @@ it('shows the fully-paid tag and its date, with an undo', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSeeHtml('dusk="paid-chip-'.$r->id.'"')
         ->assertSeeHtml('dusk="paid-date-'.$r->id.'"')
         ->assertSee('Paid in full '.now()->subDay()->format('j M Y'))
@@ -248,6 +262,7 @@ it('undoes a fully-paid tag without touching the confirmation', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->call('unmarkFullyPaid', $r->id);
 
     expect($r->fresh()->isFullyPaid())->toBeFalse()
@@ -270,6 +285,7 @@ it('offers marking fully paid on a booking that is confirmed but still owing', f
     // The money column carries the numbers now, so the chip no longer has to narrate them.
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSeeHtml('dusk="mark-paid-'.$r->id.'"')
         ->assertSee('2,000 due');
 });
@@ -290,6 +306,7 @@ it('finds a booking by a traveller name, not just the booker', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->set('search', 'zoë')
         ->assertSee('Ada Reyes')       // matched via the traveller on the booking
         ->assertDontSee('Ben Cruz');
@@ -347,6 +364,7 @@ it('ignores a filter it does not recognise instead of hiding everyone', function
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->set('filter', 'nonsense')     // as a stray ?filter= would arrive
         ->assertSee('Ada Reyes');
 });
@@ -368,6 +386,7 @@ it('shows each traveller age instead of a minor count on the booking', function 
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
         ->assertSee('34y')
         ->assertSee('12y')
         // the old badge said a minor existed but never which of the names it was
@@ -397,6 +416,7 @@ it('does not settle the price just because the seat was confirmed', function () 
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertDontSee('Fully paid ')
         // the host still has the second decision to make
         ->assertSeeHtml('dusk="mark-paid-'.$r->id.'"');
@@ -412,6 +432,7 @@ it('reads as fully paid once the host says the money is in', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSee('Fully paid')
         ->assertDontSee('Deposit paid')
         // and no button that would change nothing
@@ -432,6 +453,7 @@ it('puts the payment record inside the mark-fully-paid confirmation', function (
 
     $html = Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSeeHtml('dusk="mark-paid-'.$r->id.'"')
         ->html();
 
@@ -450,6 +472,7 @@ it('says plainly when there is no receipt to look at', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSee('No receipt was uploaded')
         ->assertDontSeeHtml('dusk="modal-proof-'.$r->id.'"');
 });
@@ -465,6 +488,7 @@ it('flags a receipt nobody has ruled on yet', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSeeHtml('dusk="new-proof-'.$r->id.'"')
         ->assertSee('New proof');
 });
@@ -487,6 +511,7 @@ it('drops the flag once the host has ruled on that receipt', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $confirmed->id)
         ->assertDontSeeHtml('dusk="new-proof-'.$confirmed->id.'"')
         ->assertDontSeeHtml('dusk="new-proof-'.$rejected->id.'"');
 });
@@ -508,6 +533,7 @@ it('lists every payment attempt with its own verdict', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSee('2 proofs')
         ->call('showProofs', $r->id)
         ->assertSeeHtml('dusk="proof-modal"')
@@ -538,6 +564,7 @@ it('shows the roster the traveller own contact, not the booker s', function () {
 
     Livewire::actingAs($this->host)
         ->test(Roster::class, ['departure' => $this->departure])
+        ->call('openBooking', $r->id)
         ->assertSee('Dee Santos')
         ->assertSee('dee@example.test')
         ->assertSee('09170001111');

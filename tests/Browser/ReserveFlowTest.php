@@ -87,6 +87,8 @@ class ReserveFlowTest extends DuskTestCase
             $browser->loginAs($departure->trip->host)
                 ->visit('/host/departures/'.$departure->id.'/roster')
                 ->assertSee('Mika Ramos')
+                ->click('@open-'.$reservation->id)
+                ->waitFor('@confirm-'.$reservation->id)
                 ->click('@confirm-'.$reservation->id)
                 ->waitFor('@confirm-'.$reservation->id.'-yes')
                 ->click('@confirm-'.$reservation->id.'-yes')
@@ -113,6 +115,7 @@ class ReserveFlowTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($departure, $reservation) {
             $browser->loginAs($departure->trip->host)
                 ->visit('/host/departures/'.$departure->id.'/roster')
+                ->click('@open-'.$reservation->id)
                 ->waitFor('@verify-'.$reservation->id)
                 ->click('@verify-'.$reservation->id)
                 ->waitFor('@verify-'.$reservation->id.'-yes')

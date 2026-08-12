@@ -3,7 +3,9 @@
 namespace App\Livewire\Host;
 
 use App\Models\Reservation;
+use App\Models\ReservationParticipant;
 use App\Models\TripDeparture;
+use App\Services\CheckInService;
 use App\Services\ReservationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -29,7 +31,82 @@ class Roster extends Component
     #[Url(except: 'all')]
     public string $filter = 'all';
 
-    public const FILTERS = ['all', 'unpaid', 'paid', 'unconfirmed', 'cancelled'];
+    /**
+     * Which job this page is doing right now.
+     *
+     * The page serves three: chasing money, knowing who is coming, and running the day. One
+     * table trying to answer all three at once is how it ended up with eight possible actions
+     * per row and no two rows alike. A mode picks the columns, the filters and the row's one
+     * affordance; the set of bookings underneath never changes.
+     */
+    #[Url(except: 'money')]
+    public string $mode = 'money';
+
+    public const MODES = ['money', 'manifest', 'checkin'];
+
+    /**
+     * Filters belong to a mode.
+     *
+     * "Fully paid" is noise while you are checking people in, and "arrived" is meaningless while
+     * you are reconciling transfers. Offering only what the current job can use is what stops the
+     * chip row becoming another thing to read past.
+     */
+    public const FILTERS = [
+        'money' => ['all', 'proof', 'unpaid', 'paid', 'unconfirmed', 'refund', 'cancelled'],
+        'manifest' => ['all', 'incomplete', 'no-id'],
+        'checkin' => ['all', 'waiting', 'arrived'],
+    ];
+
+    /** Which booking the drawer is showing. Null is closed. */
+    public ?int $open = null;
+
+    public function setMode(string $mode): void
+    {
+        $this->mode = in_array($mode, self::MODES, true) ? $mode : 'money';
+
+        // A filter from the old mode means nothing in the new one, and leaving it set would hide
+        // rows for a reason the chip row no longer displays.
+        $this->filter = 'all';
+        $this->open = null;
+    }
+
+    /** The filters valid in whichever mode is showing. */
+    public function filtersForMode(): array
+    {
+        return self::FILTERS[$this->mode] ?? self::FILTERS['money'];
+    }
+
+    /**
+     * Open the drawer on one booking.
+     *
+     * Guarded against ids from another departure the same way every action here is — the method
+     * is reachable from the browser whatever the list renders.
+     */
+    public function openBooking(int $reservationId): void
+    {
+        $this->open = $this->departure->reservations()->whereKey($reservationId)->value('id');
+    }
+
+    public function closeBooking(): void
+    {
+        $this->open = null;
+    }
+
+    /** Check-in mode's one inline action: the toggle a host taps with a person in front of them. */
+    public function toggleArrival(int $participantId, CheckInService $checkIns): void
+    {
+        $participant = ReservationParticipant::whereKey($participantId)
+            ->whereHas('reservation', fn ($q) => $q->where('trip_departure_id', $this->departure->id))
+            ->first();
+
+        if (! $participant) {
+            return;
+        }
+
+        $participant->checked_in_at
+            ? $checkIns->undoCheckIn($participant, Auth::user())
+            : $participant->update(['checked_in_at' => now(), 'checked_in_by' => Auth::id()]);
+    }
 
     public function updatedSearch(): void
     {
@@ -38,7 +115,7 @@ class Roster extends Component
 
     public function setFilter(string $filter): void
     {
-        $this->filter = in_array($filter, self::FILTERS, true) ? $filter : 'all';
+        $this->filter = in_array($filter, $this->filtersForMode(), true) ? $filter : 'all';
     }
 
     // Add-offline-participant form
@@ -222,32 +299,66 @@ class Roster extends Component
          */
         $settled = fn (Reservation $r) => $r->money()['due'] <= 0;
 
-        // Counts come from the same unfiltered set, so a filter chip can show what it would find.
-        $counts = [
-            'all' => $reservations->count(),
-            'unpaid' => $live->reject($settled)->count(),
-            'paid' => $live->filter($settled)->count(),
-            'unconfirmed' => $live->filter(fn ($r) => $r->status !== 'confirmed')->count(),
-            'cancelled' => $reservations->filter(fn ($r) => $r->status === 'cancelled')->count(),
+        // A proof nobody has ruled on. Status cannot express it: sending money leaves a confirmed
+        // booking confirmed, so this is a fact about the submission, not about the reservation.
+        $unreviewed = fn (Reservation $r) => $r->latestPayment
+            && ! $r->latestPayment->confirmed_at
+            && ! $r->latestPayment->rejected_reason;
+
+        $incomplete = fn (Reservation $r) => $r->incompleteParticipants()->isNotEmpty();
+        $missingId = fn (Reservation $r) => $this->departure->trip->requires_id
+            && $r->participants->contains(fn ($p) => blank($p->id_image));
+        $arrived = fn (Reservation $r) => $r->participants->isNotEmpty()
+            && $r->participants->every(fn ($p) => $p->checked_in_at !== null);
+
+        /*
+         * Every predicate in one place, keyed the same way the chips are.
+         *
+         * Counts and filtering read the same closure, which is what stops a chip promising three
+         * rows and delivering one — they used to be two separate expressions that drifted the
+         * first time either definition was tuned.
+         */
+        $tests = [
+            'all' => fn (Reservation $r) => true,
+            'proof' => $unreviewed,
+            'unpaid' => fn (Reservation $r) => $r->status !== 'cancelled' && ! $settled($r),
+            'paid' => fn (Reservation $r) => $r->status !== 'cancelled' && $settled($r),
+            'unconfirmed' => fn (Reservation $r) => $r->status !== 'cancelled' && $r->status !== 'confirmed',
+            'refund' => fn (Reservation $r) => $r->owesRefund(),
+            'cancelled' => fn (Reservation $r) => $r->status === 'cancelled',
+            'incomplete' => $incomplete,
+            'no-id' => $missingId,
+            'waiting' => fn (Reservation $r) => $r->status !== 'cancelled' && ! $arrived($r),
+            'arrived' => $arrived,
         ];
 
-        $filter = in_array($this->filter, self::FILTERS, true) ? $this->filter : 'all';
+        $filter = in_array($this->filter, $this->filtersForMode(), true) ? $this->filter : 'all';
+
+        // Counts come from the same unfiltered set, so a chip can show what it would find.
+        $counts = collect($this->filtersForMode())
+            ->mapWithKeys(fn (string $key) => [$key => $reservations->filter($tests[$key])->count()])
+            ->all();
 
         $visible = $reservations
-            ->filter(fn ($r) => match ($filter) {
-                'unpaid' => $r->status !== 'cancelled' && ! $settled($r),
-                'paid' => $r->status !== 'cancelled' && $settled($r),
-                'unconfirmed' => $r->status !== 'cancelled' && $r->status !== 'confirmed',
-                'cancelled' => $r->status === 'cancelled',
-                default => true,
-            })
+            ->filter($tests[$filter])
             ->filter(fn ($r) => $this->matchesSearch($r))
             ->values();
+
+        // The drawer's booking, resolved from the full set rather than the visible one: filtering
+        // to "arrived" while a drawer is open should not blank the drawer.
+        $openBooking = $this->open ? $reservations->firstWhere('id', $this->open) : null;
 
         return view('livewire.host.roster', [
             'reservations' => $visible,
             'counts' => $counts,
             'activeFilter' => $filter,
+            'mode' => in_array($this->mode, self::MODES, true) ? $this->mode : 'money',
+            'filters' => $this->filtersForMode(),
+            'openBooking' => $openBooking,
+            'arrivedCount' => $reservations->reject(fn ($r) => $r->status === 'cancelled')
+                ->sum(fn ($r) => $r->participants->filter(fn ($p) => $p->checked_in_at)->count()),
+            'travellerCount' => $reservations->reject(fn ($r) => $r->status === 'cancelled')
+                ->sum(fn ($r) => $r->participants->count()),
             'totalCount' => $reservations->count(),
             'money' => $money,
             // Demand the departure is sitting on. A host with six people waiting may well add a

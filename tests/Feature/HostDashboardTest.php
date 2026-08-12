@@ -236,6 +236,7 @@ it('shows who booked and how to reach them', function () {
         'party_size' => 2, 'status' => 'confirmed']);
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $departure])
+        ->call('openBooking', $departure->reservations()->value('id'))
         ->assertSee('Ana Cruz')
         ->assertSee('ana@example.test')
         ->assertSee('09171234567');

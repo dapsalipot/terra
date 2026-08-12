@@ -414,7 +414,9 @@ class SystemAuditTest extends DuskTestCase
 
             // The seat was granted before the joiner paid, so what is left on this row is the
             // money decision — a separate act from accepting the person.
-            $browser->click('@verify-'.$reservation->id)
+            $browser->click('@open-'.$reservation->id)
+                ->waitFor('@verify-'.$reservation->id)
+                ->click('@verify-'.$reservation->id)
                 ->waitFor('@verify-'.$reservation->id.'-yes')
                 ->pause(self::BEAT)
                 ->click('@verify-'.$reservation->id.'-yes')

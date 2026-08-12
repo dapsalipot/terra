@@ -61,6 +61,7 @@ it('lets the host settle it and stops asking once they have', function () {
     app(ReservationService::class)->cancel($reservation, 'Cancelled by your host');
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $departure])
+        ->call('openBooking', $departure->reservations()->value('id'))
         ->assertSeeHtml('dusk="refund-'.$reservation->id.'"')
         ->assertSee('Refund owed')
         ->assertSeeHtml('dusk="mark-refunded-'.$reservation->id.'"')

@@ -49,6 +49,7 @@ it('flags the travellers who still owe one', function () {
         ->assertSeeHtml('dusk="id-missing-'.$participant->id.'"');
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $reservation->departure])
+        ->call('openBooking', $reservation->id)
         ->assertSeeHtml('dusk="roster-id-missing-'.$participant->id.'"');
 });
 
@@ -69,6 +70,7 @@ it('stores an uploaded ID on the private disk and links it for the host', functi
         ->and(Storage::disk('local')->exists($participant->id_image))->toBeTrue();
 
     Livewire::actingAs($host)->test(Roster::class, ['departure' => $reservation->departure])
+        ->call('openBooking', $reservation->id)
         ->assertSeeHtml('dusk="roster-id-'.$participant->id.'"');
 });
 
