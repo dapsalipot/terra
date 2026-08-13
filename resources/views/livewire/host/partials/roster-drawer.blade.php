@@ -111,16 +111,26 @@
                 </ul>
             </div>
 
-            {{-- ═══ ACTIONS ═══ --}}
-            <div class="p-4 space-y-2">
+            {{--
+                ═══ ACTIONS ═══
+
+                Grouped by consequence, not source order. The screenshot that prompted this said
+                it plainly: five same-weight buttons in a column read as one undifferentiated
+                list, and "Reject payment" sitting directly under "Mark fully paid" in the same
+                pale outline made the two look like a matched pair — one rejects the proof in
+                front of you, the other overrides the whole booking regardless of it. Nothing in
+                their old styling said so.
+
+                Three bands now, each with its own tint and a label where the grouping is not
+                obvious on its own: reviewing what was sent (moss — affirmative), overriding the
+                booking's tag by hand (amber — the host's own word, not a receipt), and
+                undoing the booking (terra — refund, cancel).
+            --}}
+            <div class="p-4 space-y-4">
                 @if($r->fully_paid_at)
                     <p class="text-xs text-moss font-semibold" dusk="paid-date-{{ $r->id }}">
                         Paid in full {{ $r->fully_paid_at->format('j M Y') }}
                     </p>
-                @endif
-
-                @if($r->paymentSubmissions->isEmpty())
-                    <p class="text-xs text-ink/70">No proof sent — this booking has no receipt attached.</p>
                 @endif
 
                 @if($r->paymentSubmissions->isNotEmpty())
@@ -147,115 +157,149 @@
 
                 @if($canRule)
                     {{--
-                        Accepting money is a form, not a yes/no.
-
-                        A confirmation dialog could only ever say "the whole thing arrived", which
-                        is wrong twice over: joiners send odd amounts, and a booking is often a
-                        group of friends where two have paid and two have not. The host types what
-                        actually landed and ticks whose share it covers.
+                        Band 1 — ruling on what was actually sent. Moss: this is the affirmative,
+                        evidence-backed path, and it is the button a host reaches for most.
                     --}}
-                    @if($payOpen)
-                        <div class="rounded-xl border border-moss/40 bg-moss/[.05] p-3 space-y-3" dusk="pay-form">
-                            <label class="block">
-                                <span class="field-label">How much arrived?</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm text-ink/70 shrink-0">{{ $currency }}</span>
-                                    <input wire:model="payAmount" type="text" inputmode="decimal" dusk="pay-amount"
-                                           class="field flex-1 min-w-0 @error('payAmount') !border-terra @enderror">
-                                </div>
-                                @error('payAmount')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
-                                <p class="text-xs text-ink/70 mt-1">{{ $fmt($owed['due']) }} still owed on this booking.</p>
-                            </label>
+                    <div>
+                        <p class="text-[10px] uppercase tracking-[0.09em] font-semibold text-ink/70 mb-1.5">This payment</p>
 
-                            @if($r->participants->isNotEmpty())
-                                <fieldset>
-                                    <legend class="field-label">Whose share does this cover?</legend>
-                                    <div class="space-y-1 mt-1">
-                                        @foreach($r->participants as $p)
-                                            @php($alreadyPaid = $r->participantIsPaid($p))
-                                            <label class="flex items-center gap-2.5 min-h-[44px] text-sm {{ $alreadyPaid ? 'text-ink/45' : '' }}">
-                                                <input type="checkbox" wire:model="payFor" value="{{ $p->id }}"
-                                                       dusk="pay-for-{{ $p->id }}" @disabled($alreadyPaid)
-                                                       class="rounded border-ink/30 text-moss focus:ring-moss w-5 h-5">
-                                                <span class="min-w-0 truncate">
-                                                    {{ $p->fullName() ?: 'Seat '.($loop->index + 1) }}
-                                                    @if($alreadyPaid)<span class="text-xs">· already settled</span>@endif
-                                                </span>
-                                            </label>
-                                        @endforeach
+                        {{--
+                            A form, not a yes/no. A confirmation dialog could only ever say "the
+                            whole thing arrived", which is wrong twice over: joiners send odd
+                            amounts, and a booking is often a group of friends where two have paid
+                            and two have not.
+                        --}}
+                        @if($payOpen)
+                            <div class="rounded-xl border border-moss/40 bg-moss/[.05] p-3 space-y-3" dusk="pay-form">
+                                <label class="block">
+                                    <span class="field-label">How much arrived?</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm text-ink/70 shrink-0">{{ $currency }}</span>
+                                        <input wire:model="payAmount" type="text" inputmode="decimal" dusk="pay-amount"
+                                               class="field flex-1 min-w-0 @error('payAmount') !border-terra @enderror">
                                     </div>
-                                    <p class="text-xs text-ink/70">Tick nobody to record it against the whole booking.</p>
-                                </fieldset>
-                            @endif
+                                    @error('payAmount')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
+                                    <p class="text-xs text-ink/70 mt-1">{{ $fmt($owed['due']) }} still owed on this booking.</p>
+                                </label>
 
-                            <div class="flex gap-2">
-                                <button wire:click="verifyPayment({{ $r->id }})" dusk="pay-confirm"
-                                        class="flex-1 rounded-xl bg-moss text-cream min-h-[44px] text-sm font-semibold hover:bg-moss/90 transition-colors">Record it</button>
-                                <button wire:click="closePayment" dusk="pay-cancel"
-                                        class="rounded-xl border border-ink/15 px-4 min-h-[44px] text-sm font-semibold hover:border-ink/35 transition-colors">Cancel</button>
+                                @if($r->participants->isNotEmpty())
+                                    <fieldset>
+                                        <legend class="field-label">Whose share does this cover?</legend>
+                                        <div class="space-y-1 mt-1">
+                                            @foreach($r->participants as $p)
+                                                @php($alreadyPaid = $r->participantIsPaid($p))
+                                                <label class="flex items-center gap-2.5 min-h-[44px] text-sm {{ $alreadyPaid ? 'text-ink/45' : '' }}">
+                                                    <input type="checkbox" wire:model="payFor" value="{{ $p->id }}"
+                                                           dusk="pay-for-{{ $p->id }}" @disabled($alreadyPaid)
+                                                           class="rounded border-ink/30 text-moss focus:ring-moss w-5 h-5">
+                                                    <span class="min-w-0 truncate">
+                                                        {{ $p->fullName() ?: 'Seat '.($loop->index + 1) }}
+                                                        @if($alreadyPaid)<span class="text-xs">· already settled</span>@endif
+                                                    </span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                        <p class="text-xs text-ink/70">Tick nobody to record it against the whole booking.</p>
+                                    </fieldset>
+                                @endif
+
+                                <div class="flex gap-2">
+                                    <button wire:click="verifyPayment({{ $r->id }})" dusk="pay-confirm"
+                                            class="flex-1 rounded-xl bg-moss text-cream min-h-[44px] text-sm font-semibold hover:bg-moss/90 transition-colors">Record it</button>
+                                    <button wire:click="closePayment" dusk="pay-cancel"
+                                            class="rounded-xl border border-ink/15 px-4 min-h-[44px] text-sm font-semibold hover:border-ink/35 transition-colors">Cancel</button>
+                                </div>
                             </div>
-                        </div>
-                    @else
-                        <button wire:click="openPayment({{ $r->id }})" dusk="verify-{{ $r->id }}"
-                                class="w-full rounded-xl bg-moss text-cream min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-moss/90 transition-colors">Accept payment</button>
-                    @endif
+                        @else
+                            <div class="space-y-2">
+                                <button wire:click="openPayment({{ $r->id }})" dusk="verify-{{ $r->id }}"
+                                        class="w-full rounded-xl bg-moss text-cream min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-moss/90 transition-colors">Accept payment</button>
 
-                    <input wire:model="rejectReason.{{ $r->id }}" type="text"
-                           placeholder="Why are you rejecting it? (optional)"
-                           aria-label="Reason for rejecting {{ $r->displayName() }}'s payment"
-                           class="w-full rounded-xl border-ink/15 px-3.5 min-h-[44px] text-sm focus:border-moss focus:ring-moss">
-                    <x-confirm-action
-                        action="reject({{ $r->id }})"
-                        title="Reject this payment?"
-                        body="{{ $r->displayName() }} is asked to send proof again. Their seat stays theirs — only the payment is refused."
-                        confirm-label="Yes, reject it"
-                        cancel-label="Keep reviewing"
-                        tone="terra" icon="warning"
-                        dusk="reject-{{ $r->id }}"
-                        class="w-full rounded-xl border border-ink/15 min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:border-terra hover:text-terra transition-colors">Reject payment</x-confirm-action>
+                                {{-- Rejecting is its own small unit — the reason field belongs to the
+                                     button beneath it, not floating loose above two unrelated
+                                     buttons the way it did before. A hairline border draws the two
+                                     together and off everything else. --}}
+                                <div class="rounded-xl border border-terra/25 bg-terra/[.03] p-2.5 space-y-2">
+                                    <input wire:model="rejectReason.{{ $r->id }}" type="text"
+                                           placeholder="Why are you rejecting it? (optional)"
+                                           aria-label="Reason for rejecting {{ $r->displayName() }}'s payment"
+                                           class="w-full rounded-lg border-ink/15 bg-surface px-3.5 min-h-[44px] text-sm focus:border-terra focus:ring-terra">
+                                    <x-confirm-action
+                                        action="reject({{ $r->id }})"
+                                        title="Reject this payment?"
+                                        body="{{ $r->displayName() }} is asked to send proof again. Their seat stays theirs — only the payment is refused."
+                                        confirm-label="Yes, reject it"
+                                        cancel-label="Keep reviewing"
+                                        tone="terra" icon="warning"
+                                        dusk="reject-{{ $r->id }}"
+                                        class="w-full rounded-lg min-h-[40px] inline-flex items-center justify-center text-sm font-semibold text-terra hover:bg-terra/10 transition-colors">Reject payment</x-confirm-action>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                 @endif
 
                 @if($canPay)
-                    @if($r->isFullyPaid())
-                        <button wire:click="unmarkFullyPaid({{ $r->id }})" dusk="unmark-paid-{{ $r->id }}"
-                                class="w-full rounded-xl border border-ink/15 min-h-[44px] text-sm font-semibold hover:border-ink/35 transition-colors">Undo paid in full</button>
-                    @else
-                        <x-confirm-action
-                            action="markFullyPaid({{ $r->id }})"
-                            title="Mark this booking paid in full?"
-                            body="This marks as received the whole {{ $fmt($owed['total']) }}, and issues a check-in pass for every traveller on the booking. {{ $r->latestPayment
-                                ? 'Their latest receipt: '.($r->latestPayment->method ?: 'payment').' '.($r->latestPayment->reference_no ?: '').'.'
-                                : 'No receipt was uploaded — this is your word for it.' }}"
-                            confirm-label="Yes, it's all in"
-                            cancel-label="Not yet"
-                            tone="moss" icon="money"
-                            dusk="mark-paid-{{ $r->id }}"
-                            class="w-full rounded-xl border border-moss/40 text-pine min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-moss/[.07] transition-colors">Mark fully paid</x-confirm-action>
-                    @endif
+                    {{--
+                        Band 2 — the host's own word, overriding whatever a receipt does or does
+                        not say. Amber, deliberately not moss: this is not "I looked at the proof
+                        and it checks out", it is "I am telling you this is settled" — cash at the
+                        jump-off, a transfer the host saw in their own banking app. A different
+                        colour for a different kind of claim.
+                    --}}
+                    <div>
+                        <p class="text-[10px] uppercase tracking-[0.09em] font-semibold text-ink/70 mb-1.5">Override</p>
+                        @if($r->isFullyPaid())
+                            <button wire:click="unmarkFullyPaid({{ $r->id }})" dusk="unmark-paid-{{ $r->id }}"
+                                    class="w-full rounded-xl border border-ink/15 min-h-[44px] text-sm font-semibold hover:border-ink/35 transition-colors">Undo paid in full</button>
+                        @else
+                            <x-confirm-action
+                                action="markFullyPaid({{ $r->id }})"
+                                title="Mark this booking paid in full?"
+                                body="This marks as received the whole {{ $fmt($owed['total']) }}, and issues a check-in pass for every traveller on the booking. {{ $r->latestPayment
+                                    ? 'Their latest receipt: '.($r->latestPayment->method ?: 'payment').' '.($r->latestPayment->reference_no ?: '').'.'
+                                    : 'No receipt was uploaded — this is your word for it.' }}"
+                                confirm-label="Yes, it's all in"
+                                cancel-label="Not yet"
+                                tone="moss" icon="money"
+                                dusk="mark-paid-{{ $r->id }}"
+                                class="w-full rounded-xl border border-amber/40 bg-amber/[.06] text-amber min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-amber/[.12] transition-colors">Mark fully paid</x-confirm-action>
+                        @endif
+                    </div>
                 @endif
 
-                @if($r->owesRefund())
-                    <x-confirm-action
-                        action="markRefunded({{ $r->id }})"
-                        title="Mark this refund sent?"
-                        body="Records {{ $fmt($r->refund_due) }} as returned to {{ $r->displayName() }}. Terra does not move the money — this is your record that you did."
-                        confirm-label="Yes, refunded"
-                        cancel-label="Not yet"
-                        tone="moss" icon="money"
-                        dusk="mark-refunded-{{ $r->id }}"
-                        class="w-full rounded-xl bg-moss text-cream min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-moss/90 transition-colors">Mark refunded</x-confirm-action>
+                @if($r->owesRefund() || $r->status !== 'cancelled')
+                    {{-- Band 3 — undoing the booking. Nothing here is reachable by accident: no
+                         fill, terra text only, and set apart by the rule above it. --}}
+                    <div class="pt-3 border-t border-ink/8 space-y-2">
+                        @if($r->owesRefund())
+                            <x-confirm-action
+                                action="markRefunded({{ $r->id }})"
+                                title="Mark this refund sent?"
+                                body="Records {{ $fmt($r->refund_due) }} as returned to {{ $r->displayName() }}. Terra does not move the money — this is your record that you did."
+                                confirm-label="Yes, refunded"
+                                cancel-label="Not yet"
+                                tone="moss" icon="money"
+                                dusk="mark-refunded-{{ $r->id }}"
+                                class="w-full rounded-xl bg-moss text-cream min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-moss/90 transition-colors">Mark refunded</x-confirm-action>
+                        @endif
+
+                        @if($r->status !== 'cancelled')
+                            <x-confirm-action
+                                action="cancelBooking({{ $r->id }})"
+                                title="Cancel this booking?"
+                                body="The seat is released and {{ $r->displayName() }} is emailed. Anything they paid is listed as owed back."
+                                confirm-label="Yes, cancel it"
+                                cancel-label="Keep it"
+                                tone="terra" icon="warning"
+                                dusk="cancel-booking-{{ $r->id }}"
+                                class="w-full rounded-xl min-h-[44px] inline-flex items-center justify-center text-sm font-semibold text-terra hover:bg-terra/5 transition-colors">Cancel booking</x-confirm-action>
+                        @endif
+                    </div>
                 @endif
 
-                @if($r->status !== 'cancelled')
-                    <x-confirm-action
-                        action="cancelBooking({{ $r->id }})"
-                        title="Cancel this booking?"
-                        body="The seat is released and {{ $r->displayName() }} is emailed. Anything they paid is listed as owed back."
-                        confirm-label="Yes, cancel it"
-                        cancel-label="Keep it"
-                        tone="terra" icon="warning"
-                        dusk="cancel-booking-{{ $r->id }}"
-                        class="w-full rounded-xl min-h-[44px] inline-flex items-center justify-center text-sm font-semibold text-terra hover:bg-terra/5 transition-colors">Cancel booking</x-confirm-action>
+                @if($r->paymentSubmissions->isEmpty())
+                    <p class="text-xs text-ink/70">No proof sent — this booking has no receipt attached.</p>
                 @endif
             </div>
         @endif
