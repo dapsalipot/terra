@@ -122,6 +122,11 @@
                 </div>
             </div>
 
+            {{--
+                Subscribe once, and every confirmed trip lands in whatever calendar they already
+                use. A feed rather than a Google integration: no account access to ask for, and
+                the same URL works in Apple Calendar and Outlook.
+            --}}
             {{-- Calendar first, and outside the emptiness guard: it must render even when the
                  current filter matches nothing, or a joiner with no upcoming trips would be shown
                  an empty state with no way to page back to the month their trip is in. --}}
@@ -447,6 +452,29 @@
                 <x-no-trips />
             @endif
         </section>
+
+            <div class="mt-4 mb-8 rounded-2xl border border-ink/10 bg-surface p-4" dusk="calendar-subscribe">
+                @if($calendarUrl)
+                    <p class="text-xs text-ink/70 mb-2">
+                        Paste this into your calendar app as a subscription — your trips appear there
+                        and stay up to date on their own. Keep it private: the link is the password.
+                    </p>
+                    <input readonly value="{{ $calendarUrl }}" dusk="calendar-url"
+                           aria-label="Your calendar subscription address"
+                           class="w-full rounded-lg border border-ink/15 px-3 min-h-[44px] text-xs font-mono bg-cream"
+                           onclick="this.select()">
+                    <p class="text-xs text-ink/70 mt-2">
+                        Google Calendar: Other calendars → From URL. It refreshes a few times a day,
+                        so last-minute changes still reach you by chat.
+                    </p>
+                @else
+                    <button wire:click="revealCalendar" dusk="reveal-calendar"
+                            class="flex items-center gap-2.5 min-h-[44px] text-sm font-semibold hover:text-pine transition-colors">
+                        <svg viewBox="0 0 24 24" class="w-4 h-4 text-moss shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        Sync to Google, Apple or Outlook
+                    </button>
+                @endif
+            </div>
 
         {{--
             ═══ WHERE YOU HAVE BEEN ═══

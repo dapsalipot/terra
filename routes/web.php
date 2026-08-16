@@ -65,6 +65,13 @@ Route::get('/ids/{participant}', \App\Http\Controllers\ParticipantIdController::
 Route::get('/passes/{participant}/qr', \App\Http\Controllers\PassQrController::class)->name('passes.qr');
 Route::get('/r/{token}/pass', \App\Livewire\Reservations\Pass::class)->name('reservations.pass');
 
+// Calendar. Subscribed by a calendar server with no session, so the token in the URL is the
+// whole credential — rotating it revokes every subscription.
+Route::get('/calendar/{token}.ics', [\App\Http\Controllers\CalendarFeedController::class, 'feed'])
+    ->name('calendar.feed');
+Route::get('/r/{token}/trip.ics', [\App\Http\Controllers\CalendarFeedController::class, 'booking'])
+    ->name('calendar.booking');
+
 /*
  * Legacy URL kept alive so links already sent out keep working.
  *

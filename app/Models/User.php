@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -94,6 +95,16 @@ class User extends Authenticatable
             'password' => 'hashed',
             'birthday' => 'date',
         ];
+    }
+
+    /** The secret in this user's calendar subscription URL, minted the first time it is asked for. */
+    public function calendarToken(): string
+    {
+        if (! $this->calendar_token) {
+            $this->forceFill(['calendar_token' => Str::random(48)])->save();
+        }
+
+        return $this->calendar_token;
     }
 
     public function isHost(): bool

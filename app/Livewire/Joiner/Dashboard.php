@@ -159,6 +159,21 @@ class Dashboard extends Component
         $this->dismissedAttention = session($this->dismissKey(), []);
     }
 
+    /** Filled in only once somebody asks for it. */
+    public ?string $calendarUrl = null;
+
+    /**
+     * Mint the subscription token on demand.
+     *
+     * Deliberately not in render(): minting writes a row, and most joiners never subscribe to
+     * anything — every one of them would have paid for a secret they never use, on every page
+     * load. A click is the honest trigger.
+     */
+    public function revealCalendar(): void
+    {
+        $this->calendarUrl = route('calendar.feed', ['token' => Auth::user()->calendarToken()]);
+    }
+
     public function setFilter(string $filter): void
     {
         // Two options only. A hidden four-way filter that persisted in the URL is how a joiner

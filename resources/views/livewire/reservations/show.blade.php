@@ -779,6 +779,18 @@
         @endif
 
         <div class="grid sm:grid-cols-2 gap-4">
+            {{-- Into whatever calendar they already live in. A file, not an integration: it works
+                 with Google, Apple and Outlook alike and asks nobody for account access. --}}
+            <a href="{{ route('calendar.booking', ['token' => $reservation->public_token]) }}"
+               dusk="add-to-calendar"
+               class="rounded-2xl border border-ink/15 p-5 flex items-center gap-3 hover:border-ink/35 transition-colors">
+                <svg viewBox="0 0 24 24" class="w-5 h-5 text-moss shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold">Add to your calendar</span>
+                    <span class="block text-xs text-ink/70">Downloads a file Google, Apple or Outlook can open.</span>
+                </span>
+            </a>
+
             {{-- The booking's own address. With no mail provider configured this is the only way back. --}}
             <div class="rounded-2xl bg-moss/10 border border-moss/20 p-5">
                 <p class="text-sm font-semibold mb-1.5">Save this link</p>
