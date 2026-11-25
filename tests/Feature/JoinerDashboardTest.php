@@ -16,6 +16,7 @@ use App\Support\TrailStats;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 function joiner(array $attrs = []): User
@@ -149,15 +150,30 @@ it('splits trips by whether they have happened', function () {
     bookingFor($user, [], ['starts_at' => now()->subWeeks(3), 'trip' => ['title' => 'Already Ran']]);
 
     $page = Livewire::actingAs($user)->test(Dashboard::class);
-
     $html = $page->html();
-    $upcomingAt = strpos($html, 'Still Coming');
-    $pastAt = strpos($html, 'Already Ran');
 
-    expect($upcomingAt)->not->toBeFalse()
-        ->and($pastAt)->not->toBeFalse()
-        // Upcoming is the section a joiner came for, so it renders first.
-        ->and($upcomingAt)->toBeLessThan($pastAt);
+    /*
+     * Asserted inside each section, not by where a title first appears on the page.
+     *
+     * The old version compared the first position of each title in the whole document. That
+     * depended on the calendar grid, which prints a title for every trip in the month on screen:
+     * when the past trip fell in the current month and the upcoming one fell in the next, the grid
+     * printed the past title first and the test failed without anything being wrong. It also
+     * claimed upcoming renders first in source order, which stopped being true on purpose when
+     * the calendar moved above the side panels so a phone opens on it.
+     *
+     * What actually matters is which bucket each trip lands in.
+     */
+    // betweenFirst, not between: between() runs to the LAST closing tag in the page, which would
+    // quietly stretch each "section" to the end of the document and make every not-contain
+    // assertion depend on which section happens to come later in the source.
+    $nextUp = Str::betweenFirst($html, 'dusk="next-up"', '</section>');
+    $past = Str::betweenFirst($html, 'dusk="past"', '</section>');
+
+    expect($nextUp)->toContain('Still Coming')
+        ->and($nextUp)->not->toContain('Already Ran')
+        ->and($past)->toContain('Already Ran')
+        ->and($past)->not->toContain('Still Coming');
 });
 
 it('leaves cancelled bookings off entirely', function () {
@@ -348,23 +364,35 @@ it('rejects a made-up view rather than rendering nothing', function () {
 });
 
 it('groups the card view by month', function () {
+    /*
+     * Relative to today, never hardcoded.
+     *
+     * This used to name September and October 2026 outright, and rotted the day those months
+     * became the past: a past booking is filtered out of the upcoming card view, so the headings
+     * the test looks for stopped existing and it failed with no change to the code under test.
+     * Starting from the first of next month also keeps both dates clear of "today" and of the
+     * year boundary, which addMonthsNoOverflow handles.
+     */
+    $first = now()->startOfMonth()->addMonthsNoOverflow(1);
+    $second = now()->startOfMonth()->addMonthsNoOverflow(2);
+
     $user = joiner();
-    bookingFor($user, [], ['starts_at' => Carbon::parse('2026-09-04'), 'trip' => ['title' => 'September Trip']]);
-    bookingFor($user, [], ['starts_at' => Carbon::parse('2026-10-12'), 'trip' => ['title' => 'October Trip']]);
+    bookingFor($user, [], ['starts_at' => $first->copy()->addDays(3), 'trip' => ['title' => 'First Month Trip']]);
+    bookingFor($user, [], ['starts_at' => $second->copy()->addDays(11), 'trip' => ['title' => 'Second Month Trip']]);
 
     $html = Livewire::actingAs($user)->test(Dashboard::class)
         ->set('view', 'grid')
         ->html();
 
-    // Measured from the September heading onwards. The right-hand column also names the next
-    // trip, so the page's *first* mention of "September Trip" is no longer the grid's copy of
-    // it — comparing raw first positions would be testing column order, not month grouping.
-    $sep = strpos($html, 'September 2026');
+    // Measured from the first heading onwards. The right-hand column also names the next trip,
+    // so the page's *first* mention of "First Month Trip" is no longer the grid's copy of it —
+    // comparing raw first positions would be testing column order, not month grouping.
+    $at = strpos($html, $first->format('F Y'));
 
-    expect($html)->toContain('September 2026')
-        ->and($html)->toContain('October 2026')
-        // September's booking falls under September's heading and before October's.
-        ->and(strpos($html, 'September Trip', $sep))->toBeLessThan(strpos($html, 'October 2026', $sep));
+    expect($html)->toContain($first->format('F Y'))
+        ->and($html)->toContain($second->format('F Y'))
+        // The first booking falls under the first heading and before the second one.
+        ->and(strpos($html, 'First Month Trip', $at))->toBeLessThan(strpos($html, $second->format('F Y'), $at));
 });
 
 // ──────────────────────────────────────────── clickable cells & planning
