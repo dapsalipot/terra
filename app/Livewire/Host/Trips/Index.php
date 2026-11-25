@@ -4,6 +4,7 @@ namespace App\Livewire\Host\Trips;
 
 use App\Models\Reservation;
 use App\Models\Trip;
+use App\Support\Visibility;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -12,6 +13,40 @@ class Index extends Component
 {
     #[Url]
     public string $filter = 'upcoming';
+
+    /**
+     * Who can find every schedule of one offering, chosen from the menu in its header.
+     *
+     * `$group` is the key the page already groups by (a trip group, or `solo-{id}` for a trip with no group) and
+     * `$choice` is `public`, `link`, or `followers:` plus a key of Visibility::WINDOWS. The trips are looked up
+     * among the signed-in host's own, so another host's key matches nothing, and a choice the menu does not
+     * offer changes nothing. One UPDATE writes one opening date, so the schedules cannot disagree on it.
+     */
+    public function setVisibility(string $group, string $choice): void
+    {
+        [$visibility, $window] = array_pad(explode(':', $choice, 2), 2, null);
+
+        $offered = match ($visibility) {
+            Visibility::PUBLIC, Visibility::LINK => $window === null,
+            Visibility::FOLLOWERS => array_key_exists((string) $window, Visibility::WINDOWS),
+            default => false,
+        };
+
+        if (! $offered) {
+            return;
+        }
+
+        Trip::where('host_id', Auth::id())
+            ->when(
+                str_starts_with($group, 'solo-'),
+                fn ($q) => $q->whereKey((int) substr($group, 5)),
+                fn ($q) => $q->where('trip_group_id', $group),
+            )
+            ->update([
+                'visibility' => $visibility,
+                'public_at' => $visibility === Visibility::FOLLOWERS ? Visibility::opensAt($window) : null,
+            ]);
+    }
 
     public function render()
     {

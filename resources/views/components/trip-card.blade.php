@@ -64,6 +64,9 @@
 
     {{-- ══ TRIP DETAILS — this is the emphasis, not the price ══ --}}
     <div class="p-5">
+        {{-- Said to the trip's host only, and here on the flat card because a tinted pill over the photo could not be read. --}}
+        <x-visibility-chip :trip="$trip" class="mb-3" />
+
         {{-- reviews, front and centre --}}
         @if($trip->reviews_count)
             <p class="flex items-center gap-1.5 text-sm">

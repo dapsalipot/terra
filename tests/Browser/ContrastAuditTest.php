@@ -78,6 +78,21 @@ class ContrastAuditTest extends DuskTestCase
         return compact('host', 'joiner', 'trip', 'open', 'soon', 'unpaid', 'paid', 'overdue', 'pending');
     }
 
+    /**
+     * A link-only trip and a followers-first one for `$host`: the states that wear a chip, in both of its tints.
+     * A host whose trips are all public never draws one, so without these the chip is on no page this audits.
+     */
+    private function unlistedTrips(User $host): void
+    {
+        $place = Place::factory()->create();
+        $hidden = Trip::factory()->published()->linkOnly()->create(['host_id' => $host->id, 'place_id' => $place->id, 'title' => 'Hidden Ridge Walk']);
+        $early = Trip::factory()->published()->followersFirst()->create(['host_id' => $host->id, 'place_id' => $place->id, 'title' => 'Early Access Climb']);
+
+        foreach ([$hidden, $early] as $trip) {
+            TripDeparture::factory()->for($trip)->create(['capacity' => 10, 'starts_at' => now()->addDays(20)]);
+        }
+    }
+
     /** The measurement. Runs in the page, returns whatever fails. */
     private const PROBE = <<<'JS'
 const parse = c => { const p = (c.match(/[\d.]+/g) || []).map(Number); return {r:p[0]||0, g:p[1]||0, b:p[2]||0, a:p.length>3 ? p[3] : 1}; };
@@ -202,6 +217,7 @@ JS;
     public function test_a_hosts_pages_read_clearly(): void
     {
         $w = $this->world();
+        $this->unlistedTrips($w['host']);
         $roster = '/host/departures/'.$w['open']->id.'/roster';
 
         $this->browse(function (Browser $browser) use ($w, $roster) {
@@ -210,6 +226,7 @@ JS;
             $this->assertClean($this->audit($browser, [
                 'host dashboard' => '/host',
                 'host trips' => '/host/trips',
+                'own page' => '/@'.$w['host']->handle,
                 'new trip' => '/host/trips/create',
                 'host profile' => '/host/profile',
                 'meetup points' => '/host/meetup-points',

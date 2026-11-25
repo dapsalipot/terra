@@ -23,16 +23,16 @@
         @endforeach
     </div>
 
-    @forelse($groups as $group)
+    @forelse($groups as $groupKey => $group)
         @php($first = $group->first())
         <section class="glass-card overflow-hidden mb-4">
             {{-- The photo carries the identity of the offering, so it gets a real size rather
                  than a 64px chip. A 16/10 tile at the header height reads as the trip; a square
                  thumbnail that small read as an icon. --}}
-            <header class="flex items-center gap-4 sm:gap-5 px-5 py-4 border-b border-ink/8 bg-cream/50">
+            <header class="flex flex-wrap items-center gap-x-4 gap-y-3 sm:gap-x-5 px-5 py-4 border-b border-ink/8 bg-cream/50">
                 <img src="{{ $first->cover_url }}" alt="" loading="lazy"
                      class="w-24 h-[3.75rem] sm:w-40 sm:h-24 rounded-2xl object-cover shrink-0 shadow-sm">
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-[7rem] sm:min-w-[12rem]">
                     <h2 class="tracking-tight font-semibold text-xl sm:text-2xl leading-tight truncate">{{ $first->title }}</h2>
                     <p class="flex items-center gap-1.5 text-sm text-ink/65 mt-1 min-w-0">
                         <x-icon.pin class="w-4 h-4 shrink-0 text-moss" />
@@ -46,9 +46,39 @@
                         </p>
                     @endif
                 </div>
-                <span class="shrink-0 rounded-full bg-ink/[.06] px-3 py-1.5 text-xs font-bold">
-                    {{ $group->count() }} {{ \Illuminate\Support\Str::plural('schedule', $group->count()) }}
-                </span>
+                {{-- The count and the menu travel together: beside the title where there is room, on a line of
+                     their own under it where there is not (a phone, or the console beside its sidebar). --}}
+                <div class="flex w-full items-center gap-3 sm:ml-auto sm:w-auto sm:shrink-0">
+                    <span class="shrink-0 rounded-full bg-ink/[.06] px-3 py-1.5 text-xs font-bold">
+                        {{ $group->count() }} {{ \Illuminate\Support\Str::plural('schedule', $group->count()) }}
+                    </span>
+
+                    {{--
+                        A menu of actions, not a state: each pick is written to every schedule here and the
+                        menu goes back to its prompt, so it never claims to be what the offering is now (the
+                        chips on the rows say that, and a window that has closed would make a stored choice
+                        wrong). Both happen in the one handler, so the value is read before it is reset.
+                        A native select, as on the host directory: reachable by keyboard and screen reader as is.
+                    --}}
+                    <div class="relative min-w-0 flex-1 sm:flex-none">
+                        <select wire:change="setVisibility('{{ $groupKey }}', $event.target.value); $event.target.selectedIndex = 0"
+                                dusk="visibility-{{ $groupKey }}"
+                                aria-label="Who can see it: {{ $first->title }}"
+                                class="appearance-none w-full rounded-full border border-ink/15 bg-surface pl-4 pr-10 min-h-[44px] text-sm font-semibold
+                                       focus:border-moss focus:ring-2 focus:ring-moss/25 transition-colors cursor-pointer">
+                            <option value="" selected disabled>Who can see it</option>
+                            <option value="{{ \App\Support\Visibility::PUBLIC }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::PUBLIC] }}</option>
+                            @foreach(\App\Support\Visibility::WINDOWS as $window => [, $windowLabel])
+                                <option value="{{ \App\Support\Visibility::FOLLOWERS }}:{{ $window }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::FOLLOWERS] }} for {{ $windowLabel }}</option>
+                            @endforeach
+                            <option value="{{ \App\Support\Visibility::LINK }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::LINK] }}</option>
+                        </select>
+                        <svg viewBox="0 0 24 24" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/65 pointer-events-none"
+                             fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </div>
+                </div>
             </header>
 
             <ul class="divide-y divide-ink/8">
@@ -77,6 +107,7 @@
                                     {{ $dep->starts_at->isPast() ? 'Ran' : $dep->starts_at->diffForHumans() }}
                                 </p>
                             @endif
+                            <x-visibility-chip :trip="$trip" dusk="chip-{{ $trip->id }}" class="mt-1.5" />
                         </div>
 
                         <div class="min-w-0">

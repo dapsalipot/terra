@@ -34,4 +34,6 @@
         <p class="text-sm text-ink/65 line-clamp-1">{{ $when }}, led by {{ $trip->host->name }}</p>
     @endif
     <p class="mt-1 text-sm"><span class="font-semibold">{{ $currency }} {{ number_format($trip->current_price) }}</span> <span class="text-ink/65">per person</span></p>
+    {{-- Said to the trip's host only; see the chip for why it is not on the photo. --}}
+    <x-visibility-chip :trip="$trip" class="mt-2" />
 </a>
