@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Support\StockPhotos;
+use App\Support\Visibility;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Sluggable\HasSlug;
@@ -28,6 +30,7 @@ class Trip extends Model
             'deposit_amount' => 'decimal:2',
             'downpayment_due_at' => 'datetime',
             'full_payment_due_at' => 'datetime',
+            'public_at' => 'datetime',
         ];
     }
 
@@ -289,5 +292,43 @@ class Trip extends Model
          */
         return $q->where('status', 'published')
             ->whereHas('host', fn ($h) => $h->whereNull('suspended_at'));
+    }
+
+    /** What anyone can find in a listing right now, a guest included. */
+    public function scopeListed($q)
+    {
+        return $this->scopeListedFor($q, null);
+    }
+
+    /**
+     * What `$viewer` can find in a listing: everything `listed()` shows, plus the followers-first trips of
+     * the hosts they follow while the window is still open.
+     *
+     * Listing control only. It decides who is shown a trip, never who may open one. Every column is
+     * qualified because Home joins `places`. `public_at` is compared with `<=`, so a window that opens at
+     * this very second is already open, and a followers-first trip with no `public_at` never reaches
+     * anyone but followers (a NULL comparison is not true).
+     */
+    public function scopeListedFor($q, ?User $viewer)
+    {
+        return $q->published()->where(fn ($v) => $v
+            ->where('trips.visibility', Visibility::PUBLIC)
+            ->orWhere(fn ($f) => $f->where('trips.visibility', Visibility::FOLLOWERS)->where(fn ($w) => $w
+                ->where('trips.public_at', '<=', now())
+                ->when($viewer, fn ($w) => $w->orWhereIn('trips.host_id',
+                    DB::table('follows')->select('host_id')->where('follower_id', $viewer->id))))));
+    }
+
+    /**
+     * What listings do with this trip right now. A followers-first window that has passed reads as public
+     * without the stored value being touched, so no scheduled job is needed to open it.
+     */
+    public function effectiveVisibility(): string
+    {
+        $stored = $this->visibility ?? Visibility::PUBLIC;
+
+        return $stored === Visibility::FOLLOWERS && $this->public_at && ! $this->public_at->isFuture()
+            ? Visibility::PUBLIC
+            : $stored;
     }
 }
