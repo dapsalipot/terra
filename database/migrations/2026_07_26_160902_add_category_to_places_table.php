@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('places', function (Blueprint $t) {
-            // Terra is mainly hiking, but joiners is group trips of every kind.
+            // Tarana is mainly hiking, but joiners is group trips of every kind.
             $t->string('category')->default('hike')->after('region');
         });
     }

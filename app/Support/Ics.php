@@ -24,7 +24,7 @@ class Ics
         $lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//Terra//Trips//EN',
+            'PRODID:-//Tarana//Trips//EN',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
             'X-WR-CALNAME:'.self::escape($name),
@@ -64,7 +64,7 @@ class Ics
         $lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//Terra//Trips//EN',
+            'PRODID:-//Tarana//Trips//EN',
             'CALSCALE:GREGORIAN',
             'METHOD:'.$method,
             ...self::event($reservation, $method, $reservation->recipientEmail()),
@@ -103,7 +103,9 @@ class Ics
 
         return array_filter([
             'BEGIN:VEVENT',
-            // Stable per booking, so a re-poll updates the event instead of duplicating it.
+            // Stable per booking, so a re-poll updates the event instead of duplicating it. The suffix is
+            // the product's old name and stays that way on purpose: it is an identifier, and changing it
+            // would orphan every invite already sitting in someone's calendar.
             'UID:booking-'.$reservation->public_token.'@terra',
             'DTSTAMP:'.now()->utc()->format('Ymd\THis\Z'),
             // Bumped whenever the booking changes, which is what tells a client to replace it.
@@ -142,7 +144,7 @@ class Ics
         $from = config('mail.from.address');
 
         return [
-            'ORGANIZER;CN='.self::param(config('mail.from.name') ?: 'Terra').':mailto:'.$from,
+            'ORGANIZER;CN='.self::param(config('mail.from.name') ?: 'Tarana').':mailto:'.$from,
             // RSVP=FALSE: the host already granted the seat, so asking the joiner to accept a place
             // they were just given would be a second confirmation step for no one's benefit.
             'ATTENDEE;CN='.self::param($attendee).';ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:'.$attendee,

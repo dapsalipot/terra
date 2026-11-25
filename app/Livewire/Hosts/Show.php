@@ -138,6 +138,6 @@ class Show extends Component
             ->get();
 
         return view('livewire.hosts.show', compact('trips', 'posts', 'reviews', 'upcoming'))
-            ->layout('components.layouts.site', ['title' => $this->user->name.' · Terra']);
+            ->layout('components.layouts.site', ['title' => $this->user->name.' · Tarana']);
     }
 }

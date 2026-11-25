@@ -276,7 +276,7 @@
                             <x-confirm-action
                                 action="markRefunded({{ $r->id }})"
                                 title="Mark this refund sent?"
-                                body="Records {{ $fmt($r->refund_due) }} as returned to {{ $r->displayName() }}. Terra does not move the money — this is your record that you did."
+                                body="Records {{ $fmt($r->refund_due) }} as returned to {{ $r->displayName() }}. Tarana does not move the money — this is your record that you did."
                                 confirm-label="Yes, refunded"
                                 cancel-label="Not yet"
                                 tone="moss" icon="money"

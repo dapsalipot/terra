@@ -351,7 +351,7 @@
                 @if($p?->payment_methods)
                     <section class="rounded-2xl border border-ink/10 bg-surface p-6">
                         <h2 class="font-semibold text-lg mb-1">How you pay</h2>
-                        <p class="text-sm text-ink/65 mb-4">You pay {{ $user->name }} directly — Terra never holds your money.</p>
+                        <p class="text-sm text-ink/65 mb-4">You pay {{ $user->name }} directly — Tarana never holds your money.</p>
                         <div class="grid sm:grid-cols-2 gap-3">
                             @foreach($p->payment_methods as $m)
                                 <div class="flex items-center gap-3 rounded-2xl border border-ink/12 p-3">

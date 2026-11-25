@@ -342,7 +342,7 @@
                     <h2 class="tracking-tight font-semibold text-xl mb-4">Price</h2>
                     <x-money-input wire:model.live="price" :currency="$currency" dusk="trip-price" />
                     @error('price')<p class="text-terra text-sm mt-2">{{ $message }}</p>@enderror
-                    <p class="text-sm text-ink/65 mt-3">Per person. Joiners pay you directly — Terra never holds the money.</p>
+                    <p class="text-sm text-ink/65 mt-3">Per person. Joiners pay you directly — Tarana never holds the money.</p>
 
                     {{-- ── Price windows ──────────────────────────────────────────────
                          An early-bird rate that expires on its own beats one the host has

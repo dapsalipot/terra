@@ -28,7 +28,7 @@
     <div class="bg-pine text-cream px-5 sm:px-6 pt-5 sm:pt-6 pb-5">
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-cream/70">Terra check-in pass</p>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-cream/70">Tarana check-in pass</p>
                 <p class="tracking-tight font-semibold text-2xl leading-tight mt-1 truncate">{{ $participant->fullName() }}</p>
             </div>
             @if($participant->checked_in_at)
@@ -74,7 +74,7 @@
         <p class="text-[11px] text-cream/70 mt-1 text-center">Show this to {{ $host->name }} at the meeting point</p>
 
         <div class="print:hidden mt-4 flex flex-wrap items-center justify-center gap-2">
-            <a href="{{ $qr }}" download="terra-pass-{{ $participant->pass_code }}.png"
+            <a href="{{ $qr }}" download="tarana-pass-{{ $participant->pass_code }}.png"
                dusk="download-pass-{{ $participant->id }}"
                class="inline-flex items-center justify-center gap-2 rounded-full bg-cream/15 hover:bg-cream/25 text-cream px-4 min-h-[44px] text-sm font-semibold transition-colors">
                 <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>

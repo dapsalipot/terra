@@ -9,7 +9,7 @@
 
     {{-- ═══ HEADER + SEARCH ═══ --}}
     <div class="max-w-2xl">
-        <h1 class="tracking-tight font-semibold text-3xl sm:text-4xl">Hosts on Terra</h1>
+        <h1 class="tracking-tight font-semibold text-3xl sm:text-4xl">Hosts on Tarana</h1>
         <p class="text-ink/65 mt-2">
             The people who plan the route, book the permits and get everyone to the trailhead.
             Follow the ones you want to travel with again.
@@ -124,7 +124,7 @@
             @else
                 <p class="tracking-tight font-semibold text-xl">No hosts yet</p>
                 <p class="text-ink/65 mt-1.5 max-w-sm mx-auto">
-                    Terra is new here. If you plan trips, this is a good moment to be the first.
+                    Tarana is new here. If you plan trips, this is a good moment to be the first.
                 </p>
                 <a href="{{ route('register') }}" wire:navigate
                    class="mt-5 inline-flex items-center rounded-full bg-pine text-cream px-6 min-h-[44px] font-semibold hover:bg-pine/90 transition-colors">

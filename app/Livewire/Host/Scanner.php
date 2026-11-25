@@ -76,6 +76,6 @@ class Scanner extends Component
         return view('livewire.host.scanner', [
             'participants' => $participants,
             'inCount' => $participants->whereNotNull('checked_in_at')->count(),
-        ])->layout('components.layouts.host', ['title' => 'Terra · Check-in']);
+        ])->layout('components.layouts.host', ['title' => 'Tarana · Check-in']);
     }
 }

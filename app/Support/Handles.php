@@ -5,7 +5,7 @@ namespace App\Support;
 use Illuminate\Validation\Rule;
 
 /**
- * Handles are public URLs: terra.test/trailco. That means they share a namespace with
+ * Handles are public URLs (/trailco). That means they share a namespace with
  * every top-level route, so a handle can never be a word the router already owns.
  */
 class Handles
@@ -15,7 +15,7 @@ class Handles
      *
      * `peeps` stays reserved even though it is no longer the name — that is precisely why it
      * has to stay. An unreserved former brand is a handle a stranger can claim and then use to
-     * look official at terra.test/peeps.
+     * look official at /peeps.
      */
     public const RESERVED = [
         'about', 'admin', 'api', 'assets', 'blog', 'broadcasting', 'build', 'contact',
@@ -24,7 +24,7 @@ class Handles
         'logout', 'me', 'new', 'password', 'peeps', 'photos', 'press', 'pricing',
         'privacy', 'profile', 'register', 'reset-password', 'reservations', 'root',
         'search', 'settings', 'signup', 'storage', 'support', 'system', 't', 'terms',
-        'terra', 'trip', 'trips', 'up', 'user', 'users', 'verify-email',
+        'terra', 'tarana', 'trip', 'trips', 'up', 'user', 'users', 'verify-email',
     ];
 
     /** Route constraint: what a root-level handle segment may look like. */

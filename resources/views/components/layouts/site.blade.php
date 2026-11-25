@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#FBF9F4">
     <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
-    <title>{{ $title ?? 'Terra' }}</title>
+    <title>{{ $title ?? 'Tarana' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -44,6 +44,7 @@
             <div>
                 <a href="{{ route('home') }}"><x-wordmark /></a>
                 <p class="mt-3 max-w-xs text-ink/65">Group trips led by local hosts. Hikes, islands and everywhere in between.</p>
+                <p class="mt-2 max-w-xs text-ink/65">Tarana comes from &ldquo;Tara na&rdquo;, Filipino for &ldquo;let&rsquo;s go&rdquo;.</p>
             </div>
 
             <nav aria-label="Explore">
@@ -88,7 +89,7 @@
         </div>
 
         <div class="border-t border-ink/10">
-            <p class="mx-auto max-w-7xl px-6 py-5 text-sm text-ink/65">&copy; {{ date('Y') }} Terra</p>
+            <p class="mx-auto max-w-7xl px-6 py-5 text-sm text-ink/65">&copy; {{ date('Y') }} Tarana</p>
         </div>
     </footer>
 

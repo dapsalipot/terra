@@ -14,6 +14,12 @@
 >
 > Deliberately left on the old name (local infrastructure, not user-facing): the repo directory
 > `~/Herd/terra`, the Herd domain `terra.test`, and the `terra` / `terra_dusk` databases.
+>
+> **Rebrand (2026-11-25): Terra → Tarana.** The name comes from "Tara na", Filipino for "let's go".
+> Every "Terra" in this spec, and the garbled rebrand note above, means Tarana. Left alone on purpose
+> because changing them would break something: the `terra` colour token, the repo directory and the
+> `terra.test` dev domain, the database names, and the `@terra` suffix on calendar event UIDs (invites
+> already sitting in people's calendars match on it).
 
 ## 1. Product Summary
 

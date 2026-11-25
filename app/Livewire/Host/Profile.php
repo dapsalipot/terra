@@ -243,6 +243,6 @@ class Profile extends Component
                 'links' => count(array_filter($this->links)),
                 'posts' => $user->posts()->count(),
             ]),
-        ])->layout('components.layouts.host', ['title' => 'Terra · Profile']);
+        ])->layout('components.layouts.host', ['title' => 'Tarana · Profile']);
     }
 }

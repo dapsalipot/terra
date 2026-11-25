@@ -4,7 +4,7 @@
             <h1 class="tracking-tight font-semibold text-3xl">Your page</h1>
             <p class="text-ink/65 mt-1 text-sm">Everything here is public at
                 {{-- &commat; not a literal @, which Blade would read as the start of a directive --}}
-                <a href="{{ $user->handle ? route('hosts.show', $user) : '#' }}" class="font-semibold underline decoration-ink/25">terra/&commat;{{ $handle ?: 'your-handle' }}</a>.
+                <a href="{{ $user->handle ? route('hosts.show', $user) : '#' }}" class="font-semibold underline decoration-ink/25">tarana/&commat;{{ $handle ?: 'your-handle' }}</a>.
             </p>
         </div>
         @if($saved)
@@ -180,7 +180,7 @@
         {{-- ══════════ GETTING PAID ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
             <h2 class="font-semibold text-lg">Getting paid</h2>
-            <p class="text-sm text-ink/65 mt-1 mb-5">Joiners pay you directly — Terra never holds your money.</p>
+            <p class="text-sm text-ink/65 mt-1 mb-5">Joiners pay you directly — Tarana never holds your money.</p>
 
             <label class="block max-w-[10rem] mb-5">
                 <span class="block text-sm font-semibold text-ink/70 mb-1.5">Currency</span>

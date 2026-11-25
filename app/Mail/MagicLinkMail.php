@@ -14,7 +14,7 @@ class MagicLinkMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject('Your Terra sign-in link')
+        return $this->subject('Your Tarana sign-in link')
             ->view('emails.magic-link');
     }
 }

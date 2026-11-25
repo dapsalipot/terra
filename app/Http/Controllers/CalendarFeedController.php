@@ -31,7 +31,7 @@ class CalendarFeedController extends Controller
             ->sortBy(fn (Reservation $r) => $r->departure->starts_at)
             ->values();
 
-        return $this->respond(Ics::feed($reservations, 'Terra trips'), 'terra-trips.ics');
+        return $this->respond(Ics::feed($reservations, 'Tarana trips'), 'tarana-trips.ics');
     }
 
     /**
@@ -50,7 +50,7 @@ class CalendarFeedController extends Controller
 
         return $this->respond(
             Ics::single($reservation, $reservation->departure->trip->title),
-            'terra-'.$reservation->departure->trip->slug.'.ics',
+            'tarana-'.$reservation->departure->trip->slug.'.ics',
         );
     }
 

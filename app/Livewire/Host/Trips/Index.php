@@ -46,6 +46,6 @@ class Index extends Component
                 'past' => Trip::where('host_id', Auth::id())->whereHas('departures', fn ($q) => $q->where('starts_at', '<=', now()))->count(),
                 'all' => Trip::where('host_id', Auth::id())->count(),
             ],
-        ])->layout('components.layouts.host', ['title' => 'Terra · My trips']);
+        ])->layout('components.layouts.host', ['title' => 'Tarana · My trips']);
     }
 }

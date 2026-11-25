@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#2C3826">
     <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
-    <title>{{ $title ?? 'Terra · Host' }}</title>
+    <title>{{ $title ?? 'Tarana · Host' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -34,7 +34,7 @@
                 <span class="grid place-items-center w-7 h-7 rounded-full bg-cream/15">
                     <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-cream" aria-hidden="true"><path d="M3 19.5l6.4-9.7 3.7 5.1 3.2-4.7 6.3 9.3z"/></svg>
                 </span>
-                <span class="font-semibold text-lg text-cream">Terra</span>
+                <span class="font-semibold text-lg text-cream">Tarana</span>
                 <span class="text-[10px] font-semibold uppercase tracking-widest text-cream/70 mt-1">Host</span>
             </a>
         </div>
@@ -77,7 +77,7 @@
                 <span class="grid place-items-center w-7 h-7 rounded-full bg-cream/15">
                     <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-cream" aria-hidden="true"><path d="M3 19.5l6.4-9.7 3.7 5.1 3.2-4.7 6.3 9.3z"/></svg>
                 </span>
-                <span class="font-semibold text-lg tracking-tight">Terra</span>
+                <span class="font-semibold text-lg tracking-tight">Tarana</span>
                 <span class="text-[10px] font-semibold uppercase tracking-widest text-cream/70 mt-0.5">Host</span>
             </a>
             <a href="{{ route('home') }}" class="ml-auto inline-flex items-center h-11 px-3 -mr-2 rounded-xl text-sm font-semibold text-cream/80 hover:text-cream hover:bg-cream/10">View site</a>

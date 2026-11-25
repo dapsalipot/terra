@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-// Public marketplace (Terra 01)
+// Public marketplace (Tarana 01)
 Route::get('/', \App\Livewire\Home::class)->name('home');
 Route::get('/trips', \App\Livewire\Trips\Index::class)->name('trips.index');
 Route::get('/t/{trip:slug}', \App\Livewire\Trips\Show::class)->name('trips.show');
@@ -132,7 +132,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 require __DIR__.'/auth.php';
 
 /*
- * Root-level host pages: terra.test/trailco
+ * Root-level host pages: /trailco
  *
  * Registered last so every named route above wins, and constrained to a handle shape so
  * it cannot swallow an unmatched URL and turn a 404 into a "host not found".

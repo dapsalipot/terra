@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* One family for everything. Geist is a variable font, so every weight Terra uses is this one file
+/* One family for everything. Geist is a variable font, so every weight Tarana uses is this one file
    (latin subset; names with n-tilde and the like are inside it, anything rarer falls back). */
 @font-face {
     font-family: 'Geist';

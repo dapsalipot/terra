@@ -761,7 +761,7 @@
             <input type="checkbox" wire:model="createAccount" dusk="create-account-mobile"
                    class="mt-0.5 rounded border-ink/25 text-moss focus:ring-moss">
             <span class="text-sm">
-                <b class="font-semibold">Create my Terra account</b>
+                <b class="font-semibold">Create my Tarana account</b>
                 <span class="block text-ink/70 mt-0.5">Track this trip, chat with your group, and rebook in one tap. No password needed.</span>
             </span>
         </label>
@@ -781,7 +781,7 @@
                 <input type="checkbox" wire:model="createAccount" dusk="create-account"
                        class="mt-0.5 rounded border-ink/25 text-moss focus:ring-moss">
                 <span class="text-sm">
-                    <b class="font-semibold">Create my Terra account</b>
+                    <b class="font-semibold">Create my Tarana account</b>
                     <span class="block text-ink/70 mt-0.5">Track this trip, chat with your group, and rebook in one tap. No password needed.</span>
                 </span>
             </label>

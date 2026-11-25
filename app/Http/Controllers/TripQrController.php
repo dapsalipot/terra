@@ -32,7 +32,7 @@ class TripQrController extends Controller
 
         return response($png->getString(), 200, [
             'Content-Type' => $png->getMimeType(),
-            'Content-Disposition' => 'inline; filename="terra-'.$trip->slug.'-qr.png"',
+            'Content-Disposition' => 'inline; filename="tarana-'.$trip->slug.'-qr.png"',
         ]);
     }
 }

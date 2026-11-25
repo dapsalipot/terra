@@ -90,8 +90,8 @@
         <section id="host" class="mx-auto mt-16 max-w-7xl px-6 md:mt-24">
             <div class="grid overflow-hidden rounded-3xl bg-sand md:grid-cols-2">
                 <div class="p-8 md:p-12 lg:p-14">
-                    <h2 class="text-3xl font-semibold tracking-tight md:text-4xl">Host your Trips on Terra</h2>
-                    <p class="mt-3 max-w-md text-ink/70">List your trips for free, fill your seats, and get paid directly by your guests. Terra takes no cut.</p>
+                    <h2 class="text-3xl font-semibold tracking-tight md:text-4xl">Host your Trips on Tarana</h2>
+                    <p class="mt-3 max-w-md text-ink/70">List your trips for free, fill your seats, and get paid directly by your guests. Tarana takes no cut.</p>
 
                     <ol class="mt-8 space-y-5">
                         @foreach([

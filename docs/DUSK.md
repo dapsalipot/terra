@@ -1,6 +1,6 @@
 # Browser testing (Laravel Dusk)
 
-TDD for Terra uses **Dusk** for user-facing flows (real headless Chrome) and Pest for
+TDD for Tarana uses **Dusk** for user-facing flows (real headless Chrome) and Pest for
 pure logic (the reservation state machine, policies).
 
 ## One-time

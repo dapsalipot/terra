@@ -23,7 +23,7 @@ class EnsureUserIsHost
         abort_if(
             $request->user()->isSuspended(),
             403,
-            'This account is suspended. '.($request->user()->suspended_reason ?: 'Contact Terra for details.'),
+            'This account is suspended. '.($request->user()->suspended_reason ?: 'Contact Tarana for details.'),
         );
 
         return $next($request);

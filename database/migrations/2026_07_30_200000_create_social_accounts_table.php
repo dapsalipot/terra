@@ -20,7 +20,7 @@ return new class extends Migration
             /*
              * The provider's id is the identity, not the email — an email can change hands or be
              * re-pointed, while the subject id is stable for the life of the account. Unique on
-             * the pair so one Google account cannot be attached to two Terra users.
+             * the pair so one Google account cannot be attached to two Tarana users.
              */
             $t->unique(['provider', 'provider_id']);
 

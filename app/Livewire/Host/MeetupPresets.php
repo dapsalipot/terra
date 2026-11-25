@@ -120,6 +120,6 @@ class MeetupPresets extends Component
     {
         return view('livewire.host.meetup-presets', [
             'presets' => Auth::user()->meetupPresets()->get(),
-        ])->layout('components.layouts.host', ['title' => 'Terra · Meetup points']);
+        ])->layout('components.layouts.host', ['title' => 'Tarana · Meetup points']);
     }
 }

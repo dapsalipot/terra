@@ -121,7 +121,7 @@ class FakeDataSeeder extends Seeder
     {
         return User::firstOrCreate(
             ['email' => 'admin@terra.test'],
-            ['name' => 'Terra Admin', 'role' => 'admin', 'email_verified_at' => now()]
+            ['name' => 'Tarana Admin', 'role' => 'admin', 'email_verified_at' => now()]
         );
     }
 

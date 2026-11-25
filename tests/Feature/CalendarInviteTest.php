@@ -61,7 +61,7 @@ it('attaches a calendar invitation to the confirmation, typed as an invitation',
 });
 
 it('addresses the invite to whoever the mail went to, from whoever sent it', function () {
-    config(['mail.from.address' => 'bookings@terra.test', 'mail.from.name' => 'Terra']);
+    config(['mail.from.address' => 'bookings@terra.test', 'mail.from.name' => 'Tarana']);
     $r = inviteBooking();
 
     Mail::to('ada@example.com')->send(new BookingMail($r->fresh(), 'confirmed'));
@@ -71,7 +71,7 @@ it('addresses the invite to whoever the mail went to, from whoever sent it', fun
     // An invite naming somebody other than its recipient is not filed, and an organizer that is not
     // the sender reads as spoofed.
     expect($ics)->toContain('mailto:ada@example.com')
-        ->and($ics)->toContain('ORGANIZER;CN="Terra":mailto:bookings@terra.test')
+        ->and($ics)->toContain('ORGANIZER;CN="Tarana":mailto:bookings@terra.test')
         ->and($ics)->toContain('ATTENDEE;')
         ->and($ics)->toContain('RSVP=FALSE');
 });
@@ -80,7 +80,7 @@ it('reuses the id the feed and the download use, so nothing is added twice', fun
     $r = inviteBooking();
 
     $invite = Ics::invite($r->fresh(), 'REQUEST');
-    $feed = Ics::single($r->fresh(), 'Terra');
+    $feed = Ics::single($r->fresh(), 'Tarana');
 
     expect($invite)->toContain('UID:booking-'.$r->public_token.'@terra')
         ->and($feed)->toContain('UID:booking-'.$r->public_token.'@terra');

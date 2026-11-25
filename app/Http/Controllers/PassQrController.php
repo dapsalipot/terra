@@ -51,7 +51,7 @@ class PassQrController extends Controller
 
         return response($png->getString(), 200, [
             'Content-Type' => $png->getMimeType(),
-            'Content-Disposition' => 'inline; filename="terra-pass-'.$participant->pass_code.'.png"',
+            'Content-Disposition' => 'inline; filename="tarana-pass-'.$participant->pass_code.'.png"',
             'Cache-Control' => 'private, max-age=3600',
         ]);
     }

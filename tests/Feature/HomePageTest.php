@@ -36,6 +36,14 @@ it('runs the trail pattern behind the whole page', function () {
     $this->get('/')->assertOk()->assertSee('class="trail-bg"', false);
 });
 
+it('is called Tarana and says where the name comes from', function () {
+    $this->get('/')->assertOk()
+        ->assertSee('<title>Tarana</title>', false)
+        ->assertSeeText('Tarana comes from')
+        ->assertSeeText('Tara na')
+        ->assertDontSeeText('Terra');
+});
+
 it('searches the catalogue rather than a page of its own', function () {
     $this->get('/')->assertOk()
         ->assertSee('action="'.route('trips.index').'"', false)
@@ -81,8 +89,8 @@ it('puts the hosts who have trips to join in front of the ones who do not', func
 
 it('tells organisers they can host for free, shows how, and sends them to host registration', function () {
     $this->get('/')->assertOk()
-        ->assertSeeText('Host your Trips on Terra')
-        ->assertSeeText('Terra takes no cut')
+        ->assertSeeText('Host your Trips on Tarana')
+        ->assertSeeText('Tarana takes no cut')
         ->assertSeeText('Create your host account')
         ->assertSeeText('Post your trip')
         ->assertSeeText('Welcome your guests')
@@ -93,7 +101,7 @@ it('keeps the hosting pitch away from people who already chose a side', function
     $this->actingAs(User::factory()->create(['role' => $role, 'handle' => $role === 'host' ? 'ridgeline' : null]))
         ->get('/')
         ->assertOk()
-        ->assertDontSeeText('Host your Trips on Terra')
+        ->assertDontSeeText('Host your Trips on Tarana')
         ->assertDontSee('id="host"', false);
 })->with(['joiner', 'host']);
 

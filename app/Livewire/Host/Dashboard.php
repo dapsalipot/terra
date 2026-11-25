@@ -138,6 +138,6 @@ class Dashboard extends Component
                 ->orderBy('starts_at')
                 ->take(3)
                 ->get(),
-        ])->layout('components.layouts.host', ['title' => 'Terra · Dashboard']);
+        ])->layout('components.layouts.host', ['title' => 'Tarana · Dashboard']);
     }
 }

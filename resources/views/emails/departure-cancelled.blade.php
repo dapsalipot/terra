@@ -8,7 +8,7 @@
     @endif
 
     @if($paid > 0)
-        <p><strong>You had paid {{ $paid }}.</strong> Terra never held that money — arrange the refund with {{ $hostName }} directly.</p>
+        <p><strong>You had paid {{ $paid }}.</strong> Tarana never held that money — arrange the refund with {{ $hostName }} directly.</p>
     @endif
 
     <p>Nothing is owed from here, and your seat has been released.</p>

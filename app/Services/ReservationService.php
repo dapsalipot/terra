@@ -365,7 +365,7 @@ class ReservationService
     /**
      * The host says they have sent the money back.
      *
-     * Terra never held it, so this records a fact about a transfer that happened elsewhere —
+     * Tarana never held it, so this records a fact about a transfer that happened elsewhere —
      * the same shape as marking a booking paid, and for the same reason.
      */
     public function markRefunded(Reservation $reservation, User $host, ?string $note = null): Reservation

@@ -148,6 +148,6 @@ class Index extends Component
             'categoriesByHost' => $categoriesByHost,
             'hostExtras' => $hostExtras,
             'total' => User::where('role', 'host')->whereNotNull('handle')->count(),
-        ])->layout('components.layouts.site', ['title' => 'Terra · Hosts']);
+        ])->layout('components.layouts.site', ['title' => 'Tarana · Hosts']);
     }
 }

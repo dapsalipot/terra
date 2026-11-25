@@ -13,7 +13,7 @@ use RuntimeException;
 class SocialAuthService
 {
     /**
-     * Resolve a provider callback to a Terra user, creating or linking as needed.
+     * Resolve a provider callback to a Tarana user, creating or linking as needed.
      *
      * Identity is the provider's subject id, never the email. An email can change hands or be
      * re-pointed at a different mailbox; the subject id is stable for the life of the provider
@@ -44,7 +44,7 @@ class SocialAuthService
             if ($existingLink) {
                 if ($actor && $existingLink->user_id !== $actor->id) {
                     throw new RuntimeException(
-                        'That '.SocialProviders::label($provider).' account is already linked to another Terra account.'
+                        'That '.SocialProviders::label($provider).' account is already linked to another Tarana account.'
                     );
                 }
 
@@ -69,7 +69,7 @@ class SocialAuthService
              */
             if ($email === null) {
                 throw new RuntimeException(
-                    SocialProviders::label($provider).' did not share an email address, which Terra needs to hold a booking. '
+                    SocialProviders::label($provider).' did not share an email address, which Tarana needs to hold a booking. '
                     .'Add an email to that account, or sign up with your email instead.'
                 );
             }

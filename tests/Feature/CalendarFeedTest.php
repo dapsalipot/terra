@@ -29,7 +29,7 @@ function calBooking(array $attrs = [], array $tripAttrs = []): Reservation
 it('builds a calendar a client can actually parse', function () {
     $r = calBooking();
 
-    $ics = Ics::single($r->fresh(), 'Terra');
+    $ics = Ics::single($r->fresh(), 'Tarana');
 
     expect($ics)->toContain('BEGIN:VCALENDAR')
         ->and($ics)->toContain('VERSION:2.0')
@@ -44,14 +44,14 @@ it('builds a calendar a client can actually parse', function () {
 it('keeps one stable id per booking so a re-poll updates instead of duplicating', function () {
     $r = calBooking();
 
-    expect(Ics::single($r->fresh(), 'Terra'))->toContain('UID:booking-'.$r->public_token.'@terra');
+    expect(Ics::single($r->fresh(), 'Tarana'))->toContain('UID:booking-'.$r->public_token.'@terra');
 });
 
 it('leaves a cancelled booking in the feed, marked cancelled', function () {
     // Dropping it just leaves the old event sitting in somebody's calendar forever.
     $r = calBooking(['status' => 'cancelled', 'cancelled_at' => now()]);
 
-    $ics = Ics::single($r->fresh(), 'Terra');
+    $ics = Ics::single($r->fresh(), 'Tarana');
 
     expect($ics)->toContain('STATUS:CANCELLED')
         ->and($ics)->toContain('UID:booking-'.$r->public_token.'@terra');
@@ -60,7 +60,7 @@ it('leaves a cancelled booking in the feed, marked cancelled', function () {
 it('escapes the characters that would otherwise break a line', function () {
     $r = calBooking([], ['title' => 'Pulag; Ambangeg, Day-hike \ Traverse']);
 
-    $ics = Ics::single($r->fresh(), 'Terra');
+    $ics = Ics::single($r->fresh(), 'Tarana');
 
     // Unescaped, the semicolon and comma would end the property value early and the rest of the
     // title would be read as parameters.
@@ -70,7 +70,7 @@ it('escapes the characters that would otherwise break a line', function () {
 it('folds a long line rather than emitting it whole', function () {
     $r = calBooking([], ['title' => str_repeat('Mount Pulag Sunrise Traverse ', 8)]);
 
-    $ics = Ics::single($r->fresh(), 'Terra');
+    $ics = Ics::single($r->fresh(), 'Tarana');
 
     foreach (explode("\r\n", $ics) as $line) {
         // RFC 5545 counts octets, and a client is entitled to reject anything longer.

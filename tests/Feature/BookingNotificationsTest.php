@@ -171,18 +171,18 @@ it('lets a host remove a booking and tells the joiner', function () {
     Mail::assertSent(BookingMail::class, fn ($m) => $m->kind === 'cancelled');
 });
 
-it('renders every booking email through the Terra shell', function () {
+it('renders every booking email through the Tarana shell', function () {
     /*
      * `<x-mail::layout>` is Laravel's own markdown-mail component, not ours — so every one of
      * these templates was silently rendering the framework's default wrapper instead of the
-     * Terra one, and nothing said so until a test called render().
+     * Tarana one, and nothing said so until a test called render().
      */
     $r = notifiableBooking();
 
     foreach (['confirmed', 'rejected', 'expiring', 'departure_cancelled', 'cancelled'] as $kind) {
         $html = (new BookingMail($r, $kind, 'A reason'))->render();
 
-        expect($html)->toContain('Terra')
+        expect($html)->toContain('Tarana')
             ->and($html)->toContain('you pay your host directly');
     }
 });

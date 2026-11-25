@@ -301,7 +301,7 @@ class Roster extends Component
         $this->dispatch('notify', 'Booking cancelled and the seat released.');
     }
 
-    /** Record that the money has gone back. Terra never held it, so this is a note, not a transfer. */
+    /** Record that the money has gone back. Tarana never held it, so this is a note, not a transfer. */
     public function markRefunded(int $reservationId, ReservationService $service): void
     {
         $service->markRefunded($this->guardedReservation($reservationId), Auth::user());
@@ -421,6 +421,6 @@ class Roster extends Component
             'waiting' => $this->departure->waitlistEntries()->waiting()->count(),
             'currency' => Auth::user()->hostProfile?->currency ?? 'PHP',
             'trip' => $this->departure->trip,
-        ])->layout('components.layouts.host', ['title' => 'Terra · '.$this->departure->trip->title]);
+        ])->layout('components.layouts.host', ['title' => 'Tarana · '.$this->departure->trip->title]);
     }
 }

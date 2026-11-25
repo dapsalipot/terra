@@ -11,7 +11,7 @@ class PlaceSeeder extends Seeder
     {
         // [name, country, region, elevation_m|null, difficulty, category]
         $rows = [
-            // Mostly hikes — the heart of Terra
+            // Mostly hikes — the heart of Tarana
             ['Mount Rinjani', 'Indonesia', 'Lombok', 3726, 'hard', 'hike'],
             ['Mount Batur', 'Indonesia', 'Bali', 1717, 'easy', 'hike'],
             ['Mount Fuji', 'Japan', 'Shizuoka', 3776, 'challenging', 'hike'],

@@ -46,7 +46,7 @@
      x-data="{
         n: {{ count($tabs) }}, at: {{ $activeAt }}, ready: false, typing: false,
         init() {
-            const key = 'terra.tab.{{ $name }}', to = this.at;
+            const key = 'tarana.tab.{{ $name }}', to = this.at;
             let from = -1;
             try { from = Number(sessionStorage.getItem(key) ?? -1); } catch (e) {}
             const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -1125,7 +1125,7 @@ class Create extends Component
             'pastTrips' => Trip::collapseSchedules(
                 Trip::where('host_id', Auth::id())->with('departures')->latest()->take(24)->get()
             )->take(4),
-        ])->layout('components.layouts.host', ['title' => 'Terra · New trip']);
+        ])->layout('components.layouts.host', ['title' => 'Tarana · New trip']);
     }
 
     /**

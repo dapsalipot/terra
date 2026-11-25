@@ -184,7 +184,7 @@
                     @if($reservation->refunded_at)
                         Marked sent on {{ $reservation->refunded_at->format('j M Y') }}. It should be with you already.
                     @else
-                        Terra never held your money, so {{ $host->name }} sends this back directly. Contact them if it has not arrived.
+                        Tarana never held your money, so {{ $host->name }} sends this back directly. Contact them if it has not arrived.
                     @endif
                 </p>
             </div>
