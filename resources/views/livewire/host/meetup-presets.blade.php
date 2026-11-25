@@ -47,7 +47,7 @@
                 @error('lng')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
             </label>
         </div>
-        <p class="text-[11px] text-ink/60 mt-2">In Google Maps, right-click the spot → click the coordinates to copy, then paste them here.</p>
+        <p class="text-[11px] text-ink/65 mt-2">In Google Maps, right-click the spot → click the coordinates to copy, then paste them here.</p>
 
         <div class="mt-4">
             <x-upload wire:model="image" label="Photo of the spot" :multiple="false" :max="1" />
@@ -75,7 +75,7 @@
                     @if($preset->address)<p class="text-sm text-ink/65 mt-0.5">{{ $preset->address }}</p>@endif
                     @if($preset->note)<p class="text-sm text-ink/70 mt-1 italic">{{ $preset->note }}</p>@endif
                     @if($preset->lat && $preset->lng)
-                        <p class="text-xs text-ink/60 mt-1.5">Pinned · {{ $preset->lat }}, {{ $preset->lng }}</p>
+                        <p class="text-xs text-ink/65 mt-1.5">Pinned · {{ $preset->lat }}, {{ $preset->lng }}</p>
                     @endif
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
@@ -94,7 +94,7 @@
         @empty
             <div class="text-center py-12 rounded-2xl border border-dashed border-ink/15">
                 <p class="font-serif text-lg text-ink/70">No saved spots yet.</p>
-                <p class="text-ink/60 text-sm mt-1">Add the terminal or trailhead you use most.</p>
+                <p class="text-ink/65 text-sm mt-1">Add the terminal or trailhead you use most.</p>
             </div>
         @endforelse
     </div>

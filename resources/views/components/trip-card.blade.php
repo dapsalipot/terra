@@ -57,7 +57,7 @@
             <h3 class="font-serif font-semibold text-xl leading-tight text-cream">{{ $trip->title }}</h3>
             <p class="flex items-center gap-1.5 text-sm text-cream/80 mt-1">
                 <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 21s7-6.4 7-11a7 7 0 1 0-14 0c0 4.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
-                {{ $trip->place?->name }}<span class="text-cream/40">·</span>{{ $trip->place?->country }}
+                {{ $trip->place?->name }}<span class="text-cream/70" aria-hidden="true">·</span>{{ $trip->place?->country }}
             </p>
         </div>
     </div>
@@ -69,10 +69,10 @@
             <p class="flex items-center gap-1.5 text-sm">
                 <span class="text-amber">★</span>
                 <span class="font-semibold">{{ $trip->aggregate_rating }}</span>
-                <span class="text-ink/55">· {{ $trip->reviews_count }} {{ Str::plural('review', $trip->reviews_count) }}</span>
+                <span class="text-ink/65">· {{ $trip->reviews_count }} {{ Str::plural('review', $trip->reviews_count) }}</span>
             </p>
         @else
-            <p class="text-sm text-ink/50">No reviews yet</p>
+            <p class="text-sm text-ink/65">No reviews yet</p>
         @endif
 
         @if($trip->description)
@@ -97,7 +97,7 @@
         <div class="flex items-center justify-between gap-3 mt-4 pt-3.5 border-t border-ink/6">
             <x-host-link :host="$trip->host" size="xs" class="text-xs text-ink/65" />
 
-            <span class="text-sm font-medium text-ink/60 shrink-0">{{ $currency }} {{ number_format($trip->current_price) }} <span class="text-ink/40">/ person</span></span>
+            <span class="text-sm font-medium text-ink/65 shrink-0">{{ $currency }} {{ number_format($trip->current_price) }} <span class="text-ink/65">/ person</span></span>
         </div>
     </div>
 </div>

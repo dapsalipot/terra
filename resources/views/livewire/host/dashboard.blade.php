@@ -103,7 +103,7 @@
                                     class="sm:hidden w-full min-h-[3.25rem] flex flex-col items-center justify-center gap-1 transition-colors
                                            {{ $isSelected ? 'bg-moss/20' : '' }}">
                                 <span class="grid place-items-center w-7 h-7 rounded-full text-xs font-semibold tabular-nums
-                                             {{ $day['isToday'] ? 'bg-terra text-cream' : ($day['inMonth'] ? 'text-ink/70' : 'text-ink/40') }}">
+                                             {{ $day['isToday'] ? 'bg-terra text-cream' : ($day['inMonth'] ? 'text-ink/70' : 'text-ink/65') }}">
                                     {{ $day['date']->format('j') }}
                                 </span>
                                 <span class="flex items-center justify-center gap-0.5 h-1.5">
@@ -111,7 +111,7 @@
                                         <span class="w-1.5 h-1.5 rounded-full {{ $dep->spotsLeft() === 0 ? 'bg-terra' : 'bg-moss' }}"></span>
                                     @endforeach
                                     @if($day['departures']->count() > 3)
-                                        <span class="text-[8px] font-bold text-ink/55 leading-none">+{{ $day['departures']->count() - 3 }}</span>
+                                        <span class="text-[8px] font-bold text-ink/65 leading-none">+{{ $day['departures']->count() - 3 }}</span>
                                     @endif
                                 </span>
                             </button>
@@ -119,7 +119,7 @@
                             {{-- TABLET AND UP: the cell has room for the cards themselves. --}}
                             <div class="hidden sm:flex sm:flex-col sm:min-h-0 sm:flex-1">
                             <div class="flex items-center justify-between px-1 mb-1">
-                                <span class="text-xs font-semibold tabular-nums {{ $day['inMonth'] ? 'text-ink/70' : 'text-ink/40' }}">
+                                <span class="text-xs font-semibold tabular-nums {{ $day['inMonth'] ? 'text-ink/70' : 'text-ink/65' }}">
                                     {{ $day['date']->format('j') }}
                                 </span>
                                 @if($day['isToday'])
@@ -205,8 +205,8 @@
                         <div class="font-semibold truncate">{{ $dep->trip->title }}</div>
                         <div class="text-sm text-ink/65 truncate">
                             {{ $dep->starts_at->format('l') }}
-                            @if($dep->trip->place)<span class="text-ink/45">·</span> {{ $dep->trip->place->name }}@endif
-                            <span class="text-ink/45">·</span> {{ $dep->starts_at->diffForHumans() }}
+                            @if($dep->trip->place)<span class="text-ink/65">·</span> {{ $dep->trip->place->name }}@endif
+                            <span class="text-ink/65">·</span> {{ $dep->starts_at->diffForHumans() }}
                         </div>
                     </div>
 

@@ -45,14 +45,14 @@
                     </p>
                 </div>
                 <button type="button" wire:click="closeBooking" dusk="close-drawer" aria-label="Close"
-                        class="grid place-items-center w-11 h-11 -mr-2 -mt-2 rounded-lg text-ink/45 hover:text-ink hover:bg-ink/5 shrink-0">
+                        class="grid place-items-center w-11 h-11 -mr-2 -mt-2 rounded-lg text-ink/65 hover:text-ink hover:bg-ink/5 shrink-0">
                     <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
 
             {{-- Money, spelled out once rather than split across two columns of a table row. --}}
             <dl class="grid grid-cols-3 gap-2 p-4 border-b border-ink/8 text-center">
-                @foreach([['Total', $owed['total'], ''], ['Paid', $owed['paid'], 'text-moss'], ['Due', $owed['due'], $owed['due'] > 0 ? 'text-terra' : 'text-ink/70']] as [$label, $value, $tone])
+                @foreach([['Total', $owed['total'], ''], ['Paid', $owed['paid'], 'text-moss'], ['Due', $owed['due'], $owed['due'] > 0 ? 'text-terra-deep' : 'text-ink/70']] as [$label, $value, $tone])
                     <div>
                         <dt class="text-[10px] uppercase tracking-[0.09em] font-semibold text-ink/70">{{ $label }}</dt>
                         <dd class="text-sm font-semibold tabular-nums {{ $tone }}">{{ $fmt($value) }}</dd>
@@ -61,7 +61,7 @@
             </dl>
 
             @if($r->paymentOverdue() || $r->nextPaymentDue())
-                <p class="px-4 py-2.5 text-xs border-b border-ink/8 {{ $r->paymentOverdue() ? 'text-terra font-semibold' : 'text-ink/70' }}">
+                <p class="px-4 py-2.5 text-xs border-b border-ink/8 {{ $r->paymentOverdue() ? 'text-terra-deep font-semibold' : 'text-ink/70' }}">
                     {{ $r->paymentOverdue() ? $r->overdueLabel().' — due '.$r->nextPaymentDue()->diffForHumans() : 'Due '.$r->nextPaymentDue()->format('j M') }}
                 </p>
             @endif
@@ -188,7 +188,7 @@
                                         <div class="space-y-1 mt-1">
                                             @foreach($r->participants as $p)
                                                 @php($alreadyPaid = $r->participantIsPaid($p))
-                                                <label class="flex items-center gap-2.5 min-h-[44px] text-sm {{ $alreadyPaid ? 'text-ink/45' : '' }}">
+                                                <label class="flex items-center gap-2.5 min-h-[44px] text-sm {{ $alreadyPaid ? 'text-ink/65' : '' }}">
                                                     <input type="checkbox" wire:model="payFor" value="{{ $p->id }}"
                                                            dusk="pay-for-{{ $p->id }}" @disabled($alreadyPaid)
                                                            class="rounded border-ink/30 text-moss focus:ring-moss w-5 h-5">
@@ -263,7 +263,7 @@
                                 cancel-label="Not yet"
                                 tone="moss" icon="money"
                                 dusk="mark-paid-{{ $r->id }}"
-                                class="w-full rounded-xl border border-amber/40 bg-amber/[.06] text-amber min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-amber/[.12] transition-colors">Mark fully paid</x-confirm-action>
+                                class="w-full rounded-xl border border-amber/40 bg-amber/[.06] text-amber-deep min-h-[44px] inline-flex items-center justify-center text-sm font-semibold hover:bg-amber/[.12] transition-colors">Mark fully paid</x-confirm-action>
                         @endif
                     </div>
                 @endif

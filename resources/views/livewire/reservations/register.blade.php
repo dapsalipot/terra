@@ -68,7 +68,7 @@
                 </label>
 
                 <label class="block">
-                    <span class="field-label">Mobile <span class="font-normal text-ink/45">optional</span></span>
+                    <span class="field-label">Mobile <span class="font-normal text-ink/65">optional</span></span>
                     <input type="tel" wire:model="waitlistPhone" dusk="waitlist-phone" class="field">
                     @error('waitlistPhone')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                 </label>
@@ -77,7 +77,7 @@
                         class="w-full rounded-full bg-pine text-cream min-h-[52px] font-semibold hover:bg-pine/90 transition-colors">
                     Tell me when a seat opens
                 </button>
-                <p class="text-xs text-ink/50 text-center">One email, only if a seat actually frees up.</p>
+                <p class="text-xs text-ink/65 text-center">One email, only if a seat actually frees up.</p>
             </form>
         @endif
     </div>
@@ -181,7 +181,7 @@
                         <div class="flex items-start gap-2.5">
                             <dt class="sr-only">Where</dt>
                             <x-icon.pin class="w-4 h-4 mt-0.5 text-moss shrink-0" />
-                            <dd class="text-ink/75">{{ $trip->place->name }}<span class="text-ink/50"> · {{ $trip->place->country }}</span></dd>
+                            <dd class="text-ink/75">{{ $trip->place->name }}<span class="text-ink/65"> · {{ $trip->place->country }}</span></dd>
                         </div>
                     @endif
 
@@ -191,7 +191,7 @@
                         <dd class="text-ink/75">
                             <span class="font-semibold text-ink">{{ $departure->starts_at->format('D, j M Y') }}</span>
                             @if($departure->ends_at && ! $departure->ends_at->isSameDay($departure->starts_at))
-                                <span class="block text-ink/60">to {{ $departure->ends_at->format('D, j M Y') }}</span>
+                                <span class="block text-ink/65">to {{ $departure->ends_at->format('D, j M Y') }}</span>
                             @endif
                         </dd>
                     </div>
@@ -227,12 +227,12 @@
                             <span class="text-ink/65">To reserve now</span>
                             <span class="font-semibold">{{ $money($payableNow) }}</span>
                         </div>
-                        <p class="text-xs text-ink/55 mt-1">Balance paid to the host on the day.</p>
+                        <p class="text-xs text-ink/65 mt-1">Balance paid to the host on the day.</p>
                     @endif
 
                     <div class="flex items-center gap-2 mt-3">
                         <span class="w-1.5 h-1.5 rounded-full {{ $spotsLeft <= 3 ? 'bg-terra' : 'bg-moss' }}"></span>
-                        <span class="text-sm {{ $spotsLeft <= 3 ? 'text-terra font-semibold' : 'text-ink/65' }}">
+                        <span class="text-sm {{ $spotsLeft <= 3 ? 'text-terra-deep font-semibold' : 'text-ink/65' }}">
                             {{ $spotsLeft }} {{ \Illuminate\Support\Str::plural('seat', $spotsLeft) }} left
                         </span>
                     </div>
@@ -244,7 +244,7 @@
     <div class="px-4 sm:px-8 2xl:px-12 pt-5 pb-8 xl:w-2/3">
 
     @if($error)
-        <div class="rounded-xl bg-terra/10 text-terra px-4 py-3 mb-5 text-sm font-semibold" dusk="reg-error">{{ $error }}</div>
+        <div class="rounded-xl bg-terra/10 text-terra-deep px-4 py-3 mb-5 text-sm font-semibold" dusk="reg-error">{{ $error }}</div>
     @endif
 
     {{--
@@ -374,7 +374,7 @@
                        class="field @error('contact.first_name') !border-terra @enderror">
                 @error('contact.first_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
             </label>
-            <label class="block"><span class="field-label">Middle name <span class="font-normal text-ink/45">optional</span></span>
+            <label class="block"><span class="field-label">Middle name <span class="font-normal text-ink/65">optional</span></span>
                 <input wire:model.blur="contact.middle_name" autocomplete="additional-name" class="field">
             </label>
             <label class="block"><span class="field-label">Last name</span>
@@ -411,7 +411,7 @@
         --}}
         @if($seats === 1 && $bookerIsTraveling)
             <div class="mt-3 sm:flex sm:items-start sm:gap-5">
-                <label class="block sm:w-40 sm:shrink-0"><span class="field-label">Birthday <span class="font-normal text-ink/45">optional</span></span>
+                <label class="block sm:w-40 sm:shrink-0"><span class="field-label">Birthday <span class="font-normal text-ink/65">optional</span></span>
                     <input type="date" max="{{ now()->toDateString() }}"
                            wire:model.blur="participants.0.birthday" dusk="seat-0-birthday"
                            id="{{ $fieldId('participants.0.birthday') }}"
@@ -420,7 +420,7 @@
                 </label>
 
                 <div class="mt-3 sm:mt-0 sm:flex-1 sm:min-w-0">
-                    <span class="field-label">Gender <span class="font-normal text-ink/45">optional</span></span>
+                    <span class="field-label">Gender <span class="font-normal text-ink/65">optional</span></span>
                     <div class="flex flex-wrap gap-2">
                         @php($current = $participants[0]['gender'] ?? '')
                         @foreach(['male' => 'Male', 'female' => 'Female', 'other' => 'Other', 'undisclosed' => 'Rather not say'] as $value => $label)
@@ -531,7 +531,7 @@
                                       {{ $locked ? 'disabled:bg-canvas disabled:text-ink/70 disabled:cursor-not-allowed' : '' }}">
                         @error($nameError('first_name'))<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                     </label>
-                    <label class="block"><span class="field-label">Middle <span class="font-normal text-ink/45">optional</span></span>
+                    <label class="block"><span class="field-label">Middle <span class="font-normal text-ink/65">optional</span></span>
                         <input wire:model.blur="{{ $nameModel('middle_name') }}"
                                @disabled($locked)
                                class="field {{ $locked ? 'disabled:bg-canvas disabled:text-ink/70 disabled:cursor-not-allowed' : '' }}">
@@ -570,7 +570,7 @@
                 @elseif($isBooker && filled($contact['email'] ?? '') && blank($p['email'] ?? ''))
                     {{-- Their address is filled in further down only if they choose to override it;
                          until then, this is the one that will be used. --}}
-                    <p class="text-xs text-ink/50 mt-1.5">{{ $contact['email'] }} · from your details above</p>
+                    <p class="text-xs text-ink/65 mt-1.5">{{ $contact['email'] }} · from your details above</p>
                 @endif
 
                 {{--
@@ -588,7 +588,7 @@
                         padding rather than the chip set giving up a line. Below w-40 the native
                         control starts clipping its own "mm/dd/yyyy" placeholder.
                     --}}
-                    <label class="block sm:w-40 sm:shrink-0"><span class="field-label">Birthday <span class="font-normal text-ink/45">optional</span></span>
+                    <label class="block sm:w-40 sm:shrink-0"><span class="field-label">Birthday <span class="font-normal text-ink/65">optional</span></span>
                         <input type="date" max="{{ now()->toDateString() }}"
                                wire:model.blur="participants.{{ $i }}.birthday" dusk="seat-{{ $i }}-birthday"
                                id="{{ $fieldId('participants.'.$i.'.birthday') }}"
@@ -597,7 +597,7 @@
                     </label>
 
                     <div class="mt-3 sm:mt-0 sm:flex-1 sm:min-w-0">
-                        <span class="field-label">Gender <span class="font-normal text-ink/45">optional</span></span>
+                        <span class="field-label">Gender <span class="font-normal text-ink/65">optional</span></span>
                         {{--
                             All four options in one wrapping row. The old control hid two of them
                             behind a bare "…", which read as a truncation rather than a button, so
@@ -671,14 +671,14 @@
                     {{-- Their address is already on file from step 2; this is only for overriding it. --}}
                     @if($p['show_contact'] ?? false)
                         <div class="grid sm:grid-cols-2 gap-3 mt-3">
-                            <label class="block"><span class="field-label">A different email <span class="font-normal text-ink/45">optional</span></span>
+                            <label class="block"><span class="field-label">A different email <span class="font-normal text-ink/65">optional</span></span>
                                 <input type="email" inputmode="email" wire:model.blur="participants.{{ $i }}.email"
                                        dusk="seat-{{ $i }}-email" id="{{ $fieldId('participants.'.$i.'.email') }}"
                                        placeholder="{{ $contact['email'] ?? 'name@example.com' }}"
                                        class="field @error('participants.'.$i.'.email') !border-terra @enderror">
                                 @error('participants.'.$i.'.email')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                             </label>
-                            <label class="block"><span class="field-label">Mobile <span class="font-normal text-ink/45">optional</span></span>
+                            <label class="block"><span class="field-label">Mobile <span class="font-normal text-ink/65">optional</span></span>
                                 <input type="tel" inputmode="tel" wire:model.blur="participants.{{ $i }}.phone" class="field">
                             </label>
                         </div>
@@ -728,7 +728,7 @@
                         </div>
                         <label class="block">
                             {{-- min-h matches the email label row so the two inputs align --}}
-                            <span class="field-label flex items-center min-h-[1.75rem] !mb-2">Their mobile <span class="font-normal text-ink/45 ml-1">optional</span></span>
+                            <span class="field-label flex items-center min-h-[1.75rem] !mb-2">Their mobile <span class="font-normal text-ink/65 ml-1">optional</span></span>
                             <input type="tel" inputmode="tel" wire:model.blur="participants.{{ $i }}.phone" class="field">
                         </label>
                     </div>
@@ -737,7 +737,7 @@
         @endforeach
         </div>
 
-        <p class="text-sm text-ink/60">
+        <p class="text-sm text-ink/65">
             Booking for friends? Add seats above. If you don't have their email, tap
             <b class="font-semibold text-ink/75">Use account email</b> and the host will reach them through you.
         </p>
@@ -805,7 +805,7 @@
             <span wire:loading wire:target="review">Checking your {{ \Illuminate\Support\Str::plural('seat', $seats) }}…</span>
         </button>
 
-            <p class="hidden lg:block text-xs text-ink/55 text-center mt-3 {{ $this->isSignedIn ? 'lg:hidden' : '' }}">
+            <p class="hidden lg:block text-xs text-ink/65 text-center mt-3 {{ $this->isSignedIn ? 'lg:hidden' : '' }}">
                 No payment now. You'll get the host's payment details on the next screen.
                 @unless($this->isSignedIn) Booking as a guest? Untick the box. @endunless
             </p>
@@ -841,7 +841,7 @@
                         </p>
                     </div>
                     <button type="button" wire:click="closeReview" aria-label="Close"
-                            class="shrink-0 grid place-items-center w-9 h-9 rounded-full text-ink/50 hover:bg-ink/5 hover:text-ink transition-colors">
+                            class="shrink-0 grid place-items-center w-9 h-9 rounded-full text-ink/65 hover:bg-ink/5 hover:text-ink transition-colors">
                         <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                     </button>
                 </div>
@@ -855,7 +855,7 @@
                                              {{ $bookerIsTraveling && $i === 0 ? 'bg-moss text-cream' : 'bg-ink/8 text-ink/70' }}">{{ $i + 1 }}</span>
                                 <div class="min-w-0 flex-1">
                                     <p class="font-semibold text-sm truncate">{{ $who ?: 'Seat '.($i + 1) }}</p>
-                                    <p class="text-xs text-ink/60 truncate">
+                                    <p class="text-xs text-ink/65 truncate">
                                         {{ ($bookerIsTraveling && $i === 0 ? ($p['email'] ?: ($contact['email'] ?? '')) : $p['email']) ?: 'no email' }}
                                     </p>
                                 </div>
@@ -880,11 +880,11 @@
                                 <span class="text-ink/70">To reserve now</span>
                                 <span class="font-semibold tabular-nums">{{ $money($payableNow) }}</span>
                             </div>
-                            <p class="text-xs text-ink/55 mt-1">Balance of {{ $money($total - $payableNow) }} paid to {{ $trip->host->name }} on the day.</p>
+                            <p class="text-xs text-ink/65 mt-1">Balance of {{ $money($total - $payableNow) }} paid to {{ $trip->host->name }} on the day.</p>
                         @endif
                     </div>
 
-                    <p class="text-xs text-ink/55 mt-3">
+                    <p class="text-xs text-ink/65 mt-3">
                         Nothing is charged here. You'll get {{ $trip->host->name }}'s payment details on the next screen.
                     </p>
 

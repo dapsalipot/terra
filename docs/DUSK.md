@@ -14,3 +14,10 @@ pure logic (the reservation state machine, policies).
 
 Dusk tests use `DatabaseTruncation` and create their own fixtures via factories.
 Browser tests live in `tests/Browser/`; add `dusk="..."` attributes to elements the tests target.
+
+## Contrast audit
+`ContrastAuditTest` measures every piece of rendered text against the colour actually behind it, on the
+public, joiner, host and admin pages at 1440 and 390px. When it fails it names the text, the ratio and its
+classes. Fix the class rather than the test: muted text stays at `text-ink/65` or above, and words on an amber
+or terra tint use `text-amber-deep` / `text-terra-deep`. Text over a photo or gradient is skipped, since there
+is no flat colour to measure.

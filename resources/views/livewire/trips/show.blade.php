@@ -44,7 +44,7 @@
         <div class="min-w-0">
             {{-- host row --}}
             <div class="pb-6 border-b border-ink/8">
-                <p class="text-xs font-semibold uppercase tracking-wide text-ink/50 mb-2">Hosted by</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-ink/65 mb-2">Hosted by</p>
                 {{-- Avatar and name are one target now. The photo used to be inert while only the
                      name was a link, which is the half of the pair people actually aim at. --}}
                 <x-host-link :host="$trip->host" size="lg" class="gap-3 font-semibold"
@@ -77,7 +77,7 @@
                         @foreach($stats as [$label, $value])
                             <div class="rounded-2xl border border-ink/8 bg-surface px-4 py-3">
                                 <dd class="font-serif font-bold text-xl leading-none">{{ $value }}</dd>
-                                <dt class="marker text-[10px] font-semibold text-ink/55 mt-1.5">{{ $label }}</dt>
+                                <dt class="marker text-[10px] font-semibold text-ink/65 mt-1.5">{{ $label }}</dt>
                             </div>
                         @endforeach
                     </dl>
@@ -321,7 +321,7 @@
                                             <button type="button" wire:click="$set('{{ $key }}Rating', {{ $n }})" dusk="{{ $key }}-star-{{ $n }}"
                                                     aria-label="Rate {{ $n }} out of 5 for {{ $label }}"
                                                     aria-pressed="{{ $this->{$key.'Rating'} >= $n ? 'true' : 'false' }}"
-                                                    class="text-xl {{ $this->{$key.'Rating'} >= $n ? 'text-amber' : 'text-ink/25' }}">★</button>
+                                                    class="text-xl {{ $this->{$key.'Rating'} >= $n ? 'text-amber' : 'text-ink/65' }}">★</button>
                                         @endfor
                                     </div>
                                 </div>
@@ -350,7 +350,7 @@
                                 <div class="mt-3 ml-4 pl-4 border-l-2 border-moss/30" dusk="reply-{{ $review->id }}">
                                     <p class="text-xs font-semibold text-moss">
                                         {{ $trip->host->name }} replied
-                                        <span class="font-normal text-ink/45">· {{ $review->replied_at->format('j M Y') }}</span>
+                                        <span class="font-normal text-ink/65">· {{ $review->replied_at->format('j M Y') }}</span>
                                     </p>
                                     <p class="text-ink/70 text-sm mt-1">{{ $review->reply_body }}</p>
                                 </div>
@@ -429,7 +429,7 @@
                             See dates
                         </button>
                         <button type="button" @click="open = false" x-show="open" x-cloak aria-label="Collapse"
-                                class="md:hidden shrink-0 grid place-items-center w-11 h-11 rounded-full text-ink/50 hover:bg-ink/5">
+                                class="md:hidden shrink-0 grid place-items-center w-11 h-11 rounded-full text-ink/65 hover:bg-ink/5">
                             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10l6 6 6-6"/></svg>
                         </button>
                     @endif
@@ -437,7 +437,7 @@
 
                 {{-- details: always shown from md up, collapsible below it --}}
                 <div :class="open ? '' : 'max-md:hidden'">
-                    @if($error)<p class="mt-4 rounded-xl bg-terra/10 text-terra text-sm px-4 py-3">{{ $error }}</p>@endif
+                    @if($error)<p class="mt-4 rounded-xl bg-terra/10 text-terra-deep text-sm px-4 py-3">{{ $error }}</p>@endif
 
                     <div class="mt-4 space-y-2">
                         @forelse($trip->openDepartures as $d)

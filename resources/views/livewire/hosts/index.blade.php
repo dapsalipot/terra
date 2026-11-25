@@ -27,7 +27,7 @@
             <input type="search" wire:model.live.debounce.300ms="search" dusk="host-search"
                    placeholder="Search by name, place or what they run"
                    class="w-full rounded-full border border-ink/15 bg-surface pl-11 pr-4 min-h-[48px]
-                          placeholder:text-ink/40 focus:border-moss focus:ring-2 focus:ring-moss/25 transition-colors">
+                          placeholder:text-ink/65 focus:border-moss focus:ring-2 focus:ring-moss/25 transition-colors">
         </label>
 
         {{-- A native select, deliberately: five options do not earn a custom menu, and this one
@@ -76,7 +76,7 @@
 
     {{-- ═══ RESULT COUNT ═══ --}}
     <div class="flex flex-wrap items-center justify-between gap-3 mt-6 pb-4 border-b border-ink/8">
-        <p class="text-sm text-ink/60" aria-live="polite" dusk="host-count">
+        <p class="text-sm text-ink/65" aria-live="polite" dusk="host-count">
             {{-- total(), not count(): count() is how many are on this page, which would read
                  "24 hosts" on a directory of two hundred. --}}
             <span class="font-semibold text-ink">{{ $hosts->total() }}</span>
@@ -155,7 +155,7 @@
                         @endif
 
                         @if($profile?->location)
-                            <p class="flex items-center gap-1.5 text-xs text-ink/55 mt-2">
+                            <p class="flex items-center gap-1.5 text-xs text-ink/65 mt-2">
                                 <x-icon.pin class="w-3.5 h-3.5 shrink-0 text-moss" />
                                 <span class="truncate">{{ $profile->location }}</span>
                             </p>
@@ -178,20 +178,20 @@
                              the photo have done their work, not the headline. --}}
                         <dl class="grid grid-cols-3 gap-2 mt-auto pt-4 border-t border-ink/8">
                             <div>
-                                <dt class="text-[11px] uppercase tracking-wide text-ink/45 font-semibold">Trips</dt>
+                                <dt class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold">Trips</dt>
                                 <dd class="font-serif font-semibold tabular-nums">{{ $host->published_trips }}</dd>
                             </div>
                             <div>
-                                <dt class="text-[11px] uppercase tracking-wide text-ink/45 font-semibold">Joiners</dt>
+                                <dt class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold">Joiners</dt>
                                 <dd class="font-serif font-semibold tabular-nums">{{ number_format($profile?->guests_count ?? 0) }}</dd>
                             </div>
                             <div>
-                                <dt class="text-[11px] uppercase tracking-wide text-ink/45 font-semibold">Rating</dt>
+                                <dt class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold">Rating</dt>
                                 <dd class="font-serif font-semibold tabular-nums">
                                     @if($profile?->rating)
                                         <span class="text-amber" aria-hidden="true">★</span> {{ $profile->rating }}
                                     @else
-                                        <span class="text-ink/35">—</span>
+                                        <span class="text-ink/65">—</span>
                                     @endif
                                 </dd>
                             </div>

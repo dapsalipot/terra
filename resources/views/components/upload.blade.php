@@ -24,12 +24,12 @@
         {{-- Overridable wording: a payment receipt and a trip gallery are not the same ask,
              and "Drag a photo here" on a proof-of-payment field reads as the wrong thing. --}}
         <span class="text-sm font-semibold">{{ $prompt ?? 'Drag '.($multiple ? 'photos' : 'a photo').' here' }}</span>
-        <span class="text-xs text-ink/60">{{ $sub ?? 'or click to browse'.($multiple ? ' · up to '.$max : '') }}</span>
+        <span class="text-xs text-ink/65">{{ $sub ?? 'or click to browse'.($multiple ? ' · up to '.$max : '') }}</span>
         <input x-ref="input" type="file" accept="image/*" {{ $multiple ? 'multiple' : '' }}
                {{ $attributes->only(['wire:model', 'dusk']) }} class="sr-only">
     </label>
 
-    @if($hint)<p class="text-[11px] text-ink/60 mt-1.5">{{ $hint }}</p>@endif
+    @if($hint)<p class="text-[11px] text-ink/65 mt-1.5">{{ $hint }}</p>@endif
 
     <p wire:loading wire:target="{{ $model }}" class="text-xs text-ink/65 mt-2">Uploading…</p>
 

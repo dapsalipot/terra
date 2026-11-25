@@ -54,7 +54,7 @@
                             {{ $p->fullName() ?: 'Seat '.($loop->index + 1) }}
                             @if($p->birthday)<span class="font-normal text-ink/70">· {{ (int) $p->birthday->diffInYears($departure->starts_at) }}y</span>@endif
                             @if($p->gender)<span class="font-normal text-ink/70">· {{ ucfirst($p->gender) }}</span>@endif
-                            @unless($p->isComplete())<span class="font-normal text-amber">· Details still needed</span>@endunless
+                            @unless($p->isComplete())<span class="font-normal text-amber-deep">· Details still needed</span>@endunless
                         </span>
                         @include('livewire.host.partials.roster-emergency', ['p' => $p])
                     @endforeach
@@ -64,7 +64,7 @@
                     {{ $lead?->fullName() ?: $r->displayName() }}
                     @if($mode === 'manifest' && $lead?->birthday)<span class="font-normal text-ink/70">· {{ (int) $lead->birthday->diffInYears($departure->starts_at) }}y</span>@endif
                     @if($mode === 'manifest' && $lead?->gender)<span class="font-normal text-ink/70">· {{ ucfirst($lead->gender) }}</span>@endif
-                    @if($mode === 'manifest' && $lead && ! $lead->isComplete())<span class="font-normal text-amber">· Details still needed</span>@endif
+                    @if($mode === 'manifest' && $lead && ! $lead->isComplete())<span class="font-normal text-amber-deep">· Details still needed</span>@endif
                 </span>
                 <span class="block text-xs text-ink/70 truncate">
                     @if($r->party_size > 1)
@@ -98,7 +98,7 @@
                 @endif
             </div>
             <div class="mt-1 sm:mt-0 sm:text-right tabular-nums text-sm whitespace-nowrap
-                        {{ $r->owesRefund() ? 'text-terra font-semibold' : ($owed['due'] > 0 ? 'text-terra' : 'text-ink/70') }}">
+                        {{ $r->owesRefund() ? 'text-terra-deep font-semibold' : ($owed['due'] > 0 ? 'text-terra-deep' : 'text-ink/70') }}">
                 {{ $r->owesRefund()
                     ? $fmt($r->refund_due).' to refund'
                     : ($owed['due'] > 0 ? $fmt($owed['due']).' due' : '—') }}
@@ -137,7 +137,7 @@
             <div class="hidden sm:block text-right">
                 <button type="button" wire:click="openBooking({{ $r->id }})" dusk="open-{{ $r->id }}"
                         aria-label="Open {{ $lead?->fullName() ?: $r->displayName() }}"
-                        class="grid place-items-center w-11 h-11 -mr-2 rounded-lg text-ink/45 hover:text-ink hover:bg-ink/5 transition-colors">
+                        class="grid place-items-center w-11 h-11 -mr-2 rounded-lg text-ink/65 hover:text-ink hover:bg-ink/5 transition-colors">
                     <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6l6 6-6 6"/></svg>
                 </button>
             </div>

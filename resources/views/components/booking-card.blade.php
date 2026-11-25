@@ -35,8 +35,8 @@
             </a>
             <p class="text-sm text-ink/65">
                 {{ $reservation->departure->starts_at->format('D j M Y') }}
-                <span class="text-ink/40">·</span> {{ $reservation->party_size }} {{ \Illuminate\Support\Str::plural('seat', $reservation->party_size) }}
-                <span class="text-ink/40">·</span>
+                <span class="text-ink/65">·</span> {{ $reservation->party_size }} {{ \Illuminate\Support\Str::plural('seat', $reservation->party_size) }}
+                <span class="text-ink/65">·</span>
                 {{-- Not inside either of this card's anchors, so it can be a link in its own right. --}}
                 <x-host-link :host="$trip->host" :avatar="false" class="align-bottom" />
             </p>
@@ -56,7 +56,7 @@
             <span class="block font-semibold truncate">{{ $trip->title }}</span>
             <span class="block text-sm text-ink/65">
                 {{ $reservation->departure->starts_at->format('D j M Y') }}
-                <span class="text-ink/40">·</span> {{ $reservation->party_size }} {{ \Illuminate\Support\Str::plural('seat', $reservation->party_size) }}
+                <span class="text-ink/65">·</span> {{ $reservation->party_size }} {{ \Illuminate\Support\Str::plural('seat', $reservation->party_size) }}
             </span>
         </span>
         <span class="shrink-0 rounded-full px-3 py-1 text-xs font-bold {{ $pill }}">{{ $status[0] }}</span>

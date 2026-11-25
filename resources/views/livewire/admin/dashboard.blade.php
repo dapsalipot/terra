@@ -15,7 +15,7 @@
             ['Hidden reviews', $counts['hidden'], $counts['hidden'] ? 'amber' : 'ink'],
         ] as [$label, $value, $tone])
             <div class="rounded-2xl border border-ink/10 bg-surface p-4">
-                <p class="text-[10px] uppercase tracking-[0.09em] text-ink/45 font-semibold">{{ $label }}</p>
+                <p class="text-[10px] uppercase tracking-[0.09em] text-ink/65 font-semibold">{{ $label }}</p>
                 <p class="font-serif font-bold text-2xl tabular-nums mt-1 {{ $tone === 'terra' ? 'text-terra' : ($tone === 'amber' ? 'text-amber' : '') }}">{{ number_format($value) }}</p>
             </div>
         @endforeach
@@ -51,7 +51,7 @@
                             <tr class="border-t border-ink/8 first:border-t-0" dusk="admin-trip-{{ $t->id }}">
                                 <th scope="row" class="px-4 py-3.5 text-left font-normal">
                                     <a href="{{ route('trips.show', $t) }}" class="font-semibold hover:underline">{{ $t->title }}</a>
-                                    <span class="block text-xs text-ink/55 mt-0.5">{{ $t->host?->name }}</span>
+                                    <span class="block text-xs text-ink/65 mt-0.5">{{ $t->host?->name }}</span>
                                 </th>
                                 <td class="px-4 py-3.5">
                                     <x-badge :tone="$t->status === 'published' ? 'moss' : ($t->status === 'archived' ? 'terra' : 'ink')">
@@ -68,7 +68,7 @@
                                             cancel-label="Leave it"
                                             tone="terra" icon="warning"
                                             dusk="unpublish-{{ $t->id }}"
-                                            class="rounded-lg border border-ink/15 px-3 min-h-[36px] inline-flex items-center text-[13px] font-semibold text-terra/80 hover:text-terra hover:border-terra/30 transition-colors">Unpublish</x-confirm-action>
+                                            class="rounded-lg border border-ink/15 px-3 min-h-[36px] inline-flex items-center text-[13px] font-semibold text-terra hover:text-terra-deep hover:border-terra/30 transition-colors">Unpublish</x-confirm-action>
                                     @elseif($t->status === 'archived')
                                         <button wire:click="republish({{ $t->id }})" dusk="republish-{{ $t->id }}"
                                                 class="rounded-lg border border-ink/15 px-3 min-h-[36px] text-[13px] font-semibold hover:border-moss transition-colors">Republish</button>
@@ -76,7 +76,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td class="px-4 py-10 text-center text-ink/60">No trips match that.</td></tr>
+                            <tr><td class="px-4 py-10 text-center text-ink/65">No trips match that.</td></tr>
                         @endforelse
 
                     @elseif($tab === 'hosts')
@@ -84,7 +84,7 @@
                             <tr class="border-t border-ink/8 first:border-t-0" dusk="admin-host-{{ $h->id }}">
                                 <th scope="row" class="px-4 py-3.5 text-left font-normal">
                                     <span class="font-semibold">{{ $h->name }}</span>
-                                    <span class="block text-xs text-ink/55 mt-0.5">{{ $h->email }} · {{ $h->trips_count }} {{ \Illuminate\Support\Str::plural('trip', $h->trips_count) }}</span>
+                                    <span class="block text-xs text-ink/65 mt-0.5">{{ $h->email }} · {{ $h->trips_count }} {{ \Illuminate\Support\Str::plural('trip', $h->trips_count) }}</span>
                                 </th>
                                 <td class="px-4 py-3.5">
                                     @if($h->isSuspended())
@@ -106,12 +106,12 @@
                                             cancel-label="Not yet"
                                             tone="terra" icon="warning"
                                             dusk="suspend-{{ $h->id }}"
-                                            class="rounded-lg border border-ink/15 px-3 min-h-[36px] inline-flex items-center text-[13px] font-semibold text-terra/80 hover:text-terra hover:border-terra/30 transition-colors">Suspend</x-confirm-action>
+                                            class="rounded-lg border border-ink/15 px-3 min-h-[36px] inline-flex items-center text-[13px] font-semibold text-terra hover:text-terra-deep hover:border-terra/30 transition-colors">Suspend</x-confirm-action>
                                     @endif
                                 </td>
                             </tr>
                         @empty
-                            <tr><td class="px-4 py-10 text-center text-ink/60">No hosts match that.</td></tr>
+                            <tr><td class="px-4 py-10 text-center text-ink/65">No hosts match that.</td></tr>
                         @endforelse
 
                     @else
@@ -119,7 +119,7 @@
                             <tr class="border-t border-ink/8 first:border-t-0" dusk="admin-review-{{ $rev->id }}">
                                 <th scope="row" class="px-4 py-3.5 text-left font-normal max-w-md">
                                     <span class="block text-ink/80">{{ \Illuminate\Support\Str::limit($rev->body ?: '(no words, rating only)', 140) }}</span>
-                                    <span class="block text-xs text-ink/55 mt-1">{{ $rev->joiner?->name ?? 'Unknown' }} · {{ $rev->rating }}★ · {{ $rev->created_at?->format('j M Y') }}</span>
+                                    <span class="block text-xs text-ink/65 mt-1">{{ $rev->joiner?->name ?? 'Unknown' }} · {{ $rev->rating }}★ · {{ $rev->created_at?->format('j M Y') }}</span>
                                 </th>
                                 <td class="px-4 py-3.5">
                                     @if($rev->hidden_at)
@@ -141,12 +141,12 @@
                                             cancel-label="Leave it"
                                             tone="terra" icon="warning"
                                             dusk="hide-{{ $rev->id }}"
-                                            class="rounded-lg border border-ink/15 px-3 min-h-[36px] inline-flex items-center text-[13px] font-semibold text-terra/80 hover:text-terra hover:border-terra/30 transition-colors">Hide</x-confirm-action>
+                                            class="rounded-lg border border-ink/15 px-3 min-h-[36px] inline-flex items-center text-[13px] font-semibold text-terra hover:text-terra-deep hover:border-terra/30 transition-colors">Hide</x-confirm-action>
                                     @endif
                                 </td>
                             </tr>
                         @empty
-                            <tr><td class="px-4 py-10 text-center text-ink/60">No reviews match that.</td></tr>
+                            <tr><td class="px-4 py-10 text-center text-ink/65">No reviews match that.</td></tr>
                         @endforelse
                     @endif
                 </tbody>

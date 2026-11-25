@@ -63,7 +63,7 @@
                 {{-- The one line that matters on a granted seat: what happens next, and by when. --}}
                 Your seat on {{ $departure->starts_at->format('j M') }} is held.
                 {{ $overdue ? 'Payment was due' : 'Pay by' }}
-                <strong class="{{ $overdue ? 'text-terra' : 'text-ink' }}">{{ $nextDue->format('j M') }}, {{ $nextDue->format('g:ia') }}</strong>.
+                <strong class="{{ $overdue ? 'text-terra-deep' : 'text-ink' }}">{{ $nextDue->format('j M') }}, {{ $nextDue->format('g:ia') }}</strong>.
             @elseif($state === 'confirmed')
                 Your seat on {{ $departure->starts_at->format('j M') }} is locked in.
             @elseif($state === 'payment_submitted')
@@ -108,7 +108,7 @@
                         <div class="flex items-start gap-2.5">
                             <dt class="sr-only">Where</dt>
                             <x-icon.pin class="w-4 h-4 mt-0.5 text-moss shrink-0" />
-                            <dd class="text-ink/75">{{ $trip->place->name }}<span class="text-ink/50"> · {{ $trip->place->country }}</span></dd>
+                            <dd class="text-ink/75">{{ $trip->place->name }}<span class="text-ink/65"> · {{ $trip->place->country }}</span></dd>
                         </div>
                     @endif
 
@@ -118,7 +118,7 @@
                         <dd class="text-ink/75">
                             <span class="font-semibold text-ink">{{ $departure->starts_at->format('D, j M Y') }}</span>
                             @if($departure->ends_at && ! $departure->ends_at->isSameDay($departure->starts_at))
-                                <span class="block text-ink/60">to {{ $departure->ends_at->format('D, j M Y') }}</span>
+                                <span class="block text-ink/65">to {{ $departure->ends_at->format('D, j M Y') }}</span>
                             @endif
                         </dd>
                     </div>
@@ -153,10 +153,10 @@
                     </div>
                     <div class="flex items-baseline justify-between gap-3 text-sm mt-1">
                         <span class="text-ink/65">Still to pay</span>
-                        <span class="font-semibold {{ $due > 0 ? 'text-terra' : 'text-moss' }}">{{ $money($due) }}</span>
+                        <span class="font-semibold {{ $due > 0 ? 'text-terra-deep' : 'text-moss' }}">{{ $money($due) }}</span>
                     </div>
                     @if($reservation->latestPayment?->reference_no)
-                        <p class="text-xs text-ink/50 mt-3">Payment ref <span class="font-mono break-all">{{ $reservation->latestPayment->reference_no }}</span></p>
+                        <p class="text-xs text-ink/65 mt-3">Payment ref <span class="font-mono break-all">{{ $reservation->latestPayment->reference_no }}</span></p>
                     @endif
                 </div>
             </div>
@@ -213,12 +213,12 @@
                         class="lg:hidden fixed inset-x-0 bottom-0 z-30 px-4 py-3
                                bg-amber/15 backdrop-blur border-t border-amber/30 text-left
                                flex items-center gap-3">
-                    <span class="grid place-items-center w-9 h-9 rounded-full bg-amber/20 text-amber shrink-0">
+                    <span class="grid place-items-center w-9 h-9 rounded-full bg-amber/20 text-amber-deep shrink-0">
                         <x-icon.check class="w-5 h-5" />
                     </span>
                     <span class="min-w-0 flex-1">
                         <span class="block font-semibold leading-tight">Proof sent</span>
-                        <span class="block text-xs text-ink/60">Waiting on {{ $host->name }} · tap to view</span>
+                        <span class="block text-xs text-ink/65">Waiting on {{ $host->name }} · tap to view</span>
                     </span>
                     <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink/40 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6l6 6-6 6"/></svg>
                 </button>
@@ -239,7 +239,7 @@
                         <div class="flex items-center justify-between gap-3">
                             <p class="font-serif font-semibold text-lg leading-tight">What you sent</p>
                             <button type="button" x-on:click="proof = false" dusk="close-proof" aria-label="Close"
-                                    class="grid place-items-center w-10 h-10 rounded-full text-ink/50 hover:bg-ink/5 hover:text-ink transition-colors">
+                                    class="grid place-items-center w-10 h-10 rounded-full text-ink/65 hover:bg-ink/5 hover:text-ink transition-colors">
                                 <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                             </button>
                         </div>
@@ -249,22 +249,22 @@
 
                     <dl class="divide-y divide-ink/8 lg:mt-2">
                         <div class="pb-3">
-                            <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/45">Reference</dt>
+                            <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/65">Reference</dt>
                             <dd class="font-mono text-[17px] font-semibold tabular-nums tracking-tight mt-1 break-words">{{ $lastPayment?->reference_no ?: '—' }}</dd>
                         </div>
                         <div class="py-3">
-                            <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/45">Sent</dt>
+                            <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/65">Sent</dt>
                             <dd class="text-[15px] mt-1">{{ $lastPayment?->submitted_at?->format('j M Y, g:ia') ?: '—' }}</dd>
                         </div>
                         @if($lastPayment?->method)
                             <div class="py-3">
-                                <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/45">Method</dt>
+                                <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/65">Method</dt>
                                 <dd class="text-[15px] mt-1">{{ $lastPayment->method }}</dd>
                             </div>
                         @endif
                         @if($lastPayment?->proof_image)
                             <div class="py-3">
-                                <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/45">Receipt</dt>
+                                <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/65">Receipt</dt>
                                 <dd class="mt-2">
                                     <a href="{{ route('reservations.proof', ['token' => $reservation->public_token]) }}"
                                        target="_blank" rel="noopener noreferrer" dusk="view-proof"
@@ -277,7 +277,7 @@
                         @endif
                     </dl>
 
-                    <p class="text-sm text-ink/60 pt-3">{{ $host->name }} will confirm this. Nothing more to do.</p>
+                    <p class="text-sm text-ink/65 pt-3">{{ $host->name }} will confirm this. Nothing more to do.</p>
                 </div>
             </div>
         @endif
@@ -306,7 +306,7 @@
         <div class="rounded-2xl border border-ink/10 bg-surface p-4 sm:p-6">
             <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-4">
                 <h2 class="font-serif font-semibold text-lg">Who's going</h2>
-                <p class="text-sm text-ink/60">
+                <p class="text-sm text-ink/65">
                     {{ $reservation->party_size }} {{ Str::plural('seat', $reservation->party_size) }}
                     @unless($reservation->bookerIsTraveling()) · you are booking for others @endunless
                 </p>
@@ -315,14 +315,14 @@
             {{-- The booker is who the host calls when something changes, so they are named even
                  when they are not on the trip. --}}
             <div class="rounded-xl bg-cream/70 border border-ink/8 p-4 mb-3">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-ink/50 mb-1.5">Booking contact</p>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-ink/65 mb-1.5">Booking contact</p>
                 <p class="font-semibold">{{ $reservation->contactName() ?: $reservation->displayName() }}</p>
                 <dl class="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                     @if($reservation->contact_email)
-                        <div class="flex gap-2 min-w-0"><dt class="text-ink/50 shrink-0">Email</dt><dd class="text-ink/80 truncate">{{ $reservation->contact_email }}</dd></div>
+                        <div class="flex gap-2 min-w-0"><dt class="text-ink/65 shrink-0">Email</dt><dd class="text-ink/80 truncate">{{ $reservation->contact_email }}</dd></div>
                     @endif
                     @if($reservation->contact_phone)
-                        <div class="flex gap-2 min-w-0"><dt class="text-ink/50 shrink-0">Mobile</dt><dd class="text-ink/80">{{ $reservation->contact_phone }}</dd></div>
+                        <div class="flex gap-2 min-w-0"><dt class="text-ink/65 shrink-0">Mobile</dt><dd class="text-ink/80">{{ $reservation->contact_phone }}</dd></div>
                     @endif
                 </dl>
             </div>
@@ -343,22 +343,22 @@
                                             @if($p->is_booker)<span class="ml-1.5 align-middle rounded-full bg-moss/12 text-moss text-[11px] font-semibold px-2 py-0.5">you</span>@endif
                                         </p>
                                     @else
-                                        <p class="font-semibold leading-tight text-ink/45 italic">Details still needed</p>
+                                        <p class="font-semibold leading-tight text-ink/65 italic">Details still needed</p>
                                     @endif
 
                                     <dl class="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                                         @if($p->birthday)
                                             <div class="flex gap-2 min-w-0">
-                                                <dt class="text-ink/50 shrink-0">Born</dt>
-                                                <dd class="text-ink/80">{{ $p->birthday->format('j M Y') }}@if($age !== null)<span class="text-ink/50"> · {{ $age }}y</span>@endif</dd>
+                                                <dt class="text-ink/65 shrink-0">Born</dt>
+                                                <dd class="text-ink/80">{{ $p->birthday->format('j M Y') }}@if($age !== null)<span class="text-ink/65"> · {{ $age }}y</span>@endif</dd>
                                             </div>
                                         @endif
                                         @if($p->gender)
-                                            <div class="flex gap-2 min-w-0"><dt class="text-ink/50 shrink-0">Gender</dt><dd class="text-ink/80 capitalize">{{ $p->gender === 'undisclosed' ? 'Prefer not to say' : $p->gender }}</dd></div>
+                                            <div class="flex gap-2 min-w-0"><dt class="text-ink/65 shrink-0">Gender</dt><dd class="text-ink/80 capitalize">{{ $p->gender === 'undisclosed' ? 'Prefer not to say' : $p->gender }}</dd></div>
                                         @endif
                                             @if($trip->requires_id)
                                                 <div class="flex gap-2 min-w-0">
-                                                    <dt class="text-ink/50 shrink-0">Photo ID</dt>
+                                                    <dt class="text-ink/65 shrink-0">Photo ID</dt>
                                                     <dd>
                                                         @if($p->id_image)
                                                             <span class="text-moss font-semibold">On file</span>
@@ -369,10 +369,10 @@
                                                 </div>
                                             @endif
                                         @if($p->email)
-                                            <div class="flex gap-2 min-w-0"><dt class="text-ink/50 shrink-0">Email</dt><dd class="text-ink/80 truncate">{{ $p->email }}</dd></div>
+                                            <div class="flex gap-2 min-w-0"><dt class="text-ink/65 shrink-0">Email</dt><dd class="text-ink/80 truncate">{{ $p->email }}</dd></div>
                                         @endif
                                         @if($p->phone)
-                                            <div class="flex gap-2 min-w-0"><dt class="text-ink/50 shrink-0">Mobile</dt><dd class="text-ink/80">{{ $p->phone }}</dd></div>
+                                            <div class="flex gap-2 min-w-0"><dt class="text-ink/65 shrink-0">Mobile</dt><dd class="text-ink/80">{{ $p->phone }}</dd></div>
                                         @endif
                                     </dl>
                                 </div>
@@ -385,7 +385,7 @@
                                             Edit
                                         </button>
                                         <button type="button" wire:click="confirmRemove({{ $p->id }})" dusk="remove-participant-{{ $p->id }}"
-                                                class="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-terra/80 hover:text-terra hover:border-terra/30 transition-colors">
+                                                class="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-terra hover:text-terra-deep hover:border-terra/30 transition-colors">
                                             <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                                             Remove
                                         </button>
@@ -456,17 +456,17 @@
                         <span class="block w-10 h-1 rounded-full bg-ink/15 mx-auto mb-3" aria-hidden="true"></span>
                         <div class="flex items-center justify-between gap-3">
                             <div class="min-w-0">
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/45">Paying</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/65">Paying</p>
                                 <p class="font-serif font-semibold text-lg leading-tight">{{ $money(min($amount, $due)) }}</p>
                             </div>
                             <button type="button" x-on:click="pay = false" dusk="close-pay" aria-label="Close"
-                                    class="grid place-items-center w-10 h-10 rounded-full text-ink/50 hover:bg-ink/5 hover:text-ink transition-colors">
+                                    class="grid place-items-center w-10 h-10 rounded-full text-ink/65 hover:bg-ink/5 hover:text-ink transition-colors">
                                 <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                             </button>
                         </div>
                     </div>
                 @if($state === 'awaiting_payment' && $reservation->latestPayment?->rejected_reason)
-                    <p class="mb-4 rounded-xl bg-terra/10 text-terra text-sm px-4 py-3">
+                    <p class="mb-4 rounded-xl bg-terra/10 text-terra-deep text-sm px-4 py-3">
                         {{ $host->name }} couldn't verify your last payment: {{ $reservation->latestPayment->rejected_reason }}
                     </p>
                 @endif
@@ -477,7 +477,7 @@
                         <p class="text-sm text-ink/65">{{ $departure->starts_at->format('j M') }} · {{ $reservation->party_size }} {{ Str::plural('guest', $reservation->party_size) }}</p>
                     </div>
                     @if($trip->takesDeposit())
-                        <span class="rounded-full bg-amber/12 text-amber text-xs font-semibold px-3 py-1.5">Down payment</span>
+                        <span class="rounded-full bg-amber/12 text-amber-deep text-xs font-semibold px-3 py-1.5">Down payment</span>
                     @endif
                 </div>
 
@@ -503,7 +503,7 @@
                     {{-- Everything below is deliberately restrained: white surfaces, one type scale, numbers
                          in tabular mono. A payment screen earns trust by looking like a record, not a
                          promotion — the cream tint and mixed sizes read as marketing. --}}
-                    <legend class="text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/45 mb-2">How are you paying?</legend>
+                    <legend class="text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/65 mb-2">How are you paying?</legend>
 
                     @forelse($host->hostProfile?->payment_methods ?? [] as $pm)
                         @php($brand = \App\Support\PaymentBrands::resolve($pm['label'] ?? ''))
@@ -525,12 +525,12 @@
                                 <span class="block text-[15px] font-semibold leading-tight">{{ $brand['label'] }}</span>
                                 <span class="block font-mono text-[13px] tabular-nums text-ink/70 truncate mt-0.5">{{ $pm['detail'] ?? '' }}</span>
                                 @if($pm['name'] ?? null)
-                                    <span class="block text-[12px] text-ink/50 truncate">{{ $pm['name'] }}</span>
+                                    <span class="block text-[12px] text-ink/65 truncate">{{ $pm['name'] }}</span>
                                 @endif
                             </span>
 
                             @if($pm['qr'] ?? null)
-                                <span class="rounded border border-ink/15 text-ink/55 px-1.5 py-0.5 text-[10px] font-bold tracking-wide shrink-0">QR</span>
+                                <span class="rounded border border-ink/15 text-ink/65 px-1.5 py-0.5 text-[10px] font-bold tracking-wide shrink-0">QR</span>
                             @endif
                         </label>
 
@@ -583,7 +583,7 @@
 
                                 <dl class="min-w-0 flex-1 divide-y divide-ink/8">
                                     <div class="pb-3">
-                                        <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/45">Send to</dt>
+                                        <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/65">Send to</dt>
                                         <dd class="font-mono text-[19px] font-semibold tabular-nums tracking-tight break-words leading-snug mt-1">{{ $pm['detail'] ?? '' }}</dd>
                                     </div>
 
@@ -592,7 +592,7 @@
                                          should match. --}}
                                     @if($pm['name'] ?? null)
                                         <div class="py-3">
-                                            <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/45">Account name</dt>
+                                            <dt class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/65">Account name</dt>
                                             <dd class="text-[15px] font-semibold mt-1">{{ $pm['name'] }}</dd>
                                         </div>
                                     @endif
@@ -744,7 +744,7 @@
                                            {{ $isOn ? 'bg-surface text-ink shadow-[0_1px_3px_rgba(31,28,21,.12)]' : '' }}
                                            {{ $ready
                                                 ? ($isOn ? '' : 'text-ink/70 hover:text-ink')
-                                                : 'text-ink/45 cursor-not-allowed' }}">
+                                                : 'text-ink/65 cursor-not-allowed' }}">
                                 {{ $t->first_name ?: ($t->fullName() ?: 'Traveller '.($loop->index + 1)) }}
                                 @unless($ready)
                                     {{-- A lock, not just a grey label: colour alone is not a state. --}}
@@ -837,9 +837,9 @@
                 <div class="flex items-center justify-between gap-4 px-5 sm:px-7 py-4 border-b border-ink/8 shrink-0">
                     <div class="min-w-0">
                         <h3 class="font-serif font-semibold text-lg leading-tight">Edit traveller</h3>
-                        <p class="text-sm text-ink/60">Your host needs the name and birthday exactly as they appear on an ID.</p>
+                        <p class="text-sm text-ink/65">Your host needs the name and birthday exactly as they appear on an ID.</p>
                     </div>
-                    <button type="button" wire:click="closeModal" class="text-ink/40 hover:text-ink/70 p-2 -m-2 rounded-lg hover:bg-ink/5 transition-colors shrink-0" aria-label="Close">
+                    <button type="button" wire:click="closeModal" class="text-ink/65 hover:text-ink/70 p-2 -m-2 rounded-lg hover:bg-ink/5 transition-colors shrink-0" aria-label="Close">
                         <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
@@ -851,7 +851,7 @@
                             <input wire:model="edit_first_name" dusk="edit-first-name" class="field">
                             @error('edit_first_name')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                         </label>
-                        <label class="block"><span class="field-label">Middle name <span class="text-ink/45">optional</span></span>
+                        <label class="block"><span class="field-label">Middle name <span class="text-ink/65">optional</span></span>
                             <input wire:model="edit_middle_name" class="field">
                         </label>
                         <label class="block"><span class="field-label">Last name</span>
@@ -861,11 +861,11 @@
                     </div>
 
                     <div class="grid sm:grid-cols-2 gap-3">
-                        <label class="block"><span class="field-label">Email <span class="text-ink/45">optional</span></span>
+                        <label class="block"><span class="field-label">Email <span class="text-ink/65">optional</span></span>
                             <input type="email" wire:model="edit_email" dusk="edit-email" class="field">
                             @error('edit_email')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                         </label>
-                        <label class="block"><span class="field-label">Mobile <span class="text-ink/45">optional</span></span>
+                        <label class="block"><span class="field-label">Mobile <span class="text-ink/65">optional</span></span>
                             <input type="tel" wire:model="edit_phone" dusk="edit-phone" class="field">
                         </label>
                     </div>
@@ -898,7 +898,7 @@
                              with no benefit to anyone. --}}
                         @php($editing = $reservation->participants->firstWhere('id', $editingId))
                         <div class="rounded-xl border border-ink/12 p-3.5">
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/45 mb-2">Photo ID</p>
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.09em] text-ink/65 mb-2">Photo ID</p>
 
                             @if($editing?->id_image)
                                 <a href="{{ route('participants.id', ['participant' => $editing, 'token' => $reservation->public_token]) }}"
@@ -970,7 +970,7 @@
                     @if($removingLast)
                         <p class="text-sm text-ink/70 mb-5">
                             Removing <b>{{ $removingName }}</b> is your last traveller. This will also
-                            <b class="text-terra">cancel the entire booking</b> and release the seat.
+                            <b class="text-terra-deep">cancel the entire booking</b> and release the seat.
                         </p>
                     @else
                         <p class="text-sm text-ink/70 mb-5">

@@ -42,7 +42,7 @@
 
             <div class="mt-3 min-w-0">
                 <div class="font-serif font-semibold text-xl truncate">{{ $name ?: 'Your name' }}</div>
-                <div class="text-sm text-ink/60 truncate">
+                <div class="text-sm text-ink/65 truncate">
                     &commat;{{ $handle ?: 'handle' }}@if($location) · {{ $location }}@endif
                 </div>
             </div>
@@ -92,7 +92,7 @@
         {{-- ══════════ LOOK ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
             <h2 class="font-serif font-semibold text-lg">Look</h2>
-            <p class="text-sm text-ink/60 mt-1 mb-5">Your accent tints your cover, tabs and highlights.</p>
+            <p class="text-sm text-ink/65 mt-1 mb-5">Your accent tints your cover, tabs and highlights.</p>
 
             <span class="block text-sm font-semibold text-ink/70 mb-2">Accent</span>
             <div class="flex flex-wrap gap-2.5 mb-6">
@@ -137,7 +137,7 @@
         {{-- ══════════ GETTING PAID ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
             <h2 class="font-serif font-semibold text-lg">Getting paid</h2>
-            <p class="text-sm text-ink/60 mt-1 mb-5">Joiners pay you directly — Terra never holds your money.</p>
+            <p class="text-sm text-ink/65 mt-1 mb-5">Joiners pay you directly — Terra never holds your money.</p>
 
             <label class="block max-w-[10rem] mb-5">
                 <span class="block text-sm font-semibold text-ink/70 mb-1.5">Currency</span>
@@ -154,7 +154,7 @@
                             {{-- The name on the account, so a joiner can check the e-wallet's
                                  confirmation screen matches before they send anything. --}}
                             <input wire:model="payment_methods.{{ $i }}.name" type="text" placeholder="Account name" aria-label="Account name" class="flex-1 min-w-[10rem] rounded-xl border-ink/15 focus:border-moss focus:ring-moss">
-                            <button type="button" wire:click="removePaymentMethod({{ $i }})" aria-label="Remove payment method" class="mt-2.5 text-ink/40 hover:text-terra">
+                            <button type="button" wire:click="removePaymentMethod({{ $i }})" aria-label="Remove payment method" class="mt-2.5 text-ink/65 hover:text-terra">
                                 <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                             </button>
                         </div>

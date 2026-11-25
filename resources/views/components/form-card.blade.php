@@ -29,10 +29,10 @@
             <span class="flex-1 min-w-0">
                 <span class="block font-semibold leading-tight">
                     {{ $title }}
-                    @if($optional)<span class="font-normal text-ink/50 text-sm">— optional</span>@endif
+                    @if($optional)<span class="font-normal text-ink/65 text-sm">— optional</span>@endif
                 </span>
                 @if($summary)
-                    <span x-show="!open" class="block text-sm text-ink/60 truncate mt-0.5">{{ $summary }}</span>
+                    <span x-show="!open" class="block text-sm text-ink/65 truncate mt-0.5">{{ $summary }}</span>
                 @endif
             </span>
 

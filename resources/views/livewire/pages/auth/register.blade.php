@@ -122,7 +122,7 @@ new #[Layout('layouts.guest')] class extends Component
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-ink/60 hover:text-ink rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moss" href="{{ route('login') }}" wire:navigate>
+            <a class="underline text-sm text-ink/65 hover:text-ink rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-moss" href="{{ route('login') }}" wire:navigate>
                 {{ __('Already registered?') }}
             </a>
 

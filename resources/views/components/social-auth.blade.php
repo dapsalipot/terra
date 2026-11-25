@@ -10,7 +10,7 @@
     <div class="mt-6">
         <div class="relative text-center">
             <span class="absolute inset-x-0 top-1/2 border-t border-ink/10" aria-hidden="true"></span>
-            <span class="relative inline-block bg-canvas px-3 text-xs font-semibold uppercase tracking-wide text-ink/50">{{ $label }}</span>
+            <span class="relative inline-block bg-canvas px-3 text-xs font-semibold uppercase tracking-wide text-ink/65">{{ $label }}</span>
         </div>
 
         <div class="mt-4 space-y-2">

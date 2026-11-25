@@ -33,7 +33,7 @@
                     <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 fill-cream" aria-hidden="true"><path d="M3 19.5l6.4-9.7 3.7 5.1 3.2-4.7 6.3 9.3z"/></svg>
                 </span>
                 <span class="font-serif font-semibold text-lg text-cream">Terra</span>
-                <span class="text-[10px] font-semibold uppercase tracking-widest text-cream/50 mt-1">Host</span>
+                <span class="text-[10px] font-semibold uppercase tracking-widest text-cream/70 mt-1">Host</span>
             </a>
         </div>
 
@@ -75,7 +75,7 @@
                     class="grid place-items-center w-11 h-11 -ml-1.5 rounded-xl hover:bg-cream/10">
                 <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
             </button>
-            <a href="{{ route('host.dashboard') }}" class="font-serif font-semibold text-lg">Terra <span class="text-[10px] uppercase tracking-widest text-cream/60">Host</span></a>
+            <a href="{{ route('host.dashboard') }}" class="font-serif font-semibold text-lg">Terra <span class="text-[10px] uppercase tracking-widest text-cream/70">Host</span></a>
             <a href="{{ route('host.trips.create') }}" class="ml-auto inline-flex items-center h-11 px-4 rounded-full bg-cream/15 text-sm font-semibold hover:bg-cream/25">＋ New</a>
         </div>
 
@@ -89,7 +89,7 @@
                  class="absolute inset-y-0 left-0 w-[17rem] max-w-[85%] glass-pine text-cream/90 flex flex-col">
 
                 <div class="px-5 h-[60px] flex items-center border-b border-cream/10">
-                    <span class="font-serif font-semibold text-lg text-cream">Terra <span class="text-[10px] uppercase tracking-widest text-cream/60">Host</span></span>
+                    <span class="font-serif font-semibold text-lg text-cream">Terra <span class="text-[10px] uppercase tracking-widest text-cream/70">Host</span></span>
                     <button type="button" @click="nav = false" aria-label="Close menu" dusk="mobile-nav-close"
                             class="ml-auto grid place-items-center w-11 h-11 -mr-2 rounded-xl hover:bg-cream/10">
                         <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>

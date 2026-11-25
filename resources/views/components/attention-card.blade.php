@@ -5,9 +5,9 @@
         'pay' => ['bg-terra/[.06] border-terra/20', 'text-terra'],
         'balance' => ['bg-amber/[.07] border-amber/25', 'text-amber'],
         'details' => ['bg-amber/[.07] border-amber/25', 'text-amber'],
-        'waiting' => ['bg-ink/[.03] border-ink/8', 'text-ink/55'],
+        'waiting' => ['bg-ink/[.03] border-ink/8', 'text-ink/65'],
         'review' => ['bg-moss/[.07] border-moss/20', 'text-moss'],
-    ][$item['kind']] ?? ['bg-ink/[.03] border-ink/8', 'text-ink/60'];
+    ][$item['kind']] ?? ['bg-ink/[.03] border-ink/8', 'text-ink/65'];
 
     $icon = [
         'pay' => '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/>',
@@ -42,7 +42,7 @@
              is an affordance that costs somebody their place on a trip. --}}
         @if($dismissible && ! $item['urgent'])
             <button type="button" wire:click="dismissAttention('{{ $item['kind'] }}')"
-                    class="shrink-0 -mt-1 -mr-1 text-ink/35 hover:text-ink/70 p-2 rounded-lg hover:bg-ink/5 transition-colors"
+                    class="shrink-0 -mt-1 -mr-1 text-ink/65 hover:text-ink p-2 rounded-lg hover:bg-ink/5 transition-colors"
                     aria-label="Dismiss">
                 <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>

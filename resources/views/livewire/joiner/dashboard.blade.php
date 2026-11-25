@@ -13,9 +13,9 @@
 ])
 
 @php($attentionColor = [
-    'pay' => 'text-terra',
-    'details' => 'text-amber',
-    'balance' => 'text-amber',
+    'pay' => 'text-terra-deep',
+    'details' => 'text-amber-deep',
+    'balance' => 'text-amber-deep',
     'review' => 'text-ink/70',
 ])
 
@@ -506,7 +506,7 @@
                                 <span class="rounded-full bg-cream/10 px-2.5 py-1 text-[11px] font-semibold text-cream/85">{{ $inclusion }}</span>
                             @endforeach
                             @if($pastTotals['inclusions']->count() > 8)
-                                <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold text-cream/50">
+                                <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold text-cream/70">
                                     +{{ $pastTotals['inclusions']->count() - 8 }} more
                                 </span>
                             @endif
@@ -754,7 +754,7 @@
                                         <span class="block font-semibold text-sm truncate">{{ $r->departure->trip->title }}</span>
                                         <span class="block text-xs text-ink/70">{{ $r->departure->starts_at->format('D, j M Y') }}</span>
                                     </span>
-                                    <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink/35 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6l6 6-6 6"/></svg>
+                                    <svg viewBox="0 0 24 24" class="w-4 h-4 text-ink/35 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6l6 6-6 6"/></svg>
                                 </a>
                             </li>
                         @endforeach
@@ -773,7 +773,7 @@
             <section dusk="awaiting-payment">
                 <h2 class="marker text-[11px] font-semibold text-ink/70 mb-3">
                     For payment
-                    <span class="ml-1 rounded-full bg-terra/12 text-terra px-2 py-0.5 text-[11px] font-bold tabular-nums">{{ $awaitingPayment->count() }}</span>
+                    <span class="ml-1 rounded-full bg-terra/12 text-terra-deep px-2 py-0.5 text-[11px] font-bold tabular-nums">{{ $awaitingPayment->count() }}</span>
                 </h2>
 
                 <div class="space-y-2.5">
@@ -798,7 +798,7 @@
                                          but a hold is what runs before the host answers — those
                                          bookings sit in the confirmation panel now. What matters on
                                          a granted seat is when the money has to be in. --}}
-                                    <p class="text-xs font-semibold mt-1.5 {{ $submitted ? 'text-amber' : ($r->paymentOverdue() ? 'text-terra' : 'text-ink/70') }}">
+                                    <p class="text-xs font-semibold mt-1.5 {{ $submitted ? 'text-amber-deep' : ($r->paymentOverdue() ? 'text-terra-deep' : 'text-ink/70') }}">
                                         @if($submitted)
                                             Proof sent — waiting on {{ $r->departure->trip->host->name }}
                                         @elseif($r->paymentOverdue())
@@ -858,7 +858,7 @@
                         {{-- The hold clock belongs here: it is the window the host has to answer
                              in, and a lapsed one is the only thing on this page that costs you
                              the trip. --}}
-                        <span class="block text-xs font-semibold mt-0.5 {{ $r->expires_at && $r->expires_at->isPast() ? 'text-terra' : 'text-ink/70' }}">
+                        <span class="block text-xs font-semibold mt-0.5 {{ $r->expires_at && $r->expires_at->isPast() ? 'text-terra-deep' : 'text-ink/70' }}">
                             {{ $this->holdWording($r) }}
                         </span>
                     </span>
@@ -1039,7 +1039,7 @@
                                 @php($span = $dep->spanDays())
                                 <span class="flex items-center gap-1.5 px-3 pt-2.5 text-xs">
                                     <x-icon.calendar class="w-3.5 h-3.5 shrink-0 {{ $startsHere ? 'text-moss' : 'text-amber' }}" />
-                                    <span class="truncate {{ $startsHere ? 'text-ink/70' : 'text-amber font-semibold' }}">
+                                    <span class="truncate {{ $startsHere ? 'text-ink/70' : 'text-amber-deep font-semibold' }}">
                                         @if($startsHere)
                                             Starts {{ $dep->starts_at->format('D j M') }}
                                             @if($span > 1)

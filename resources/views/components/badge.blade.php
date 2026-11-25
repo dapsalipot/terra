@@ -14,8 +14,8 @@
 @php
     $tones = [
         'moss' => 'bg-moss/12 text-pine',
-        'amber' => 'bg-amber/15 text-amber',
-        'terra' => 'bg-terra/12 text-terra',
+        'amber' => 'bg-amber/15 text-amber-deep',
+        'terra' => 'bg-terra/12 text-terra-deep',
         'ink' => 'bg-ink/[.06] text-ink/65',
     ];
     $dots = ['moss' => 'bg-moss', 'amber' => 'bg-amber', 'terra' => 'bg-terra', 'ink' => 'bg-ink/40'];

@@ -17,12 +17,12 @@
             @foreach($steps as $n => $name)
                 <li class="flex items-center gap-3 rounded-xl px-3 py-2.5 {{ $step === $n ? 'bg-ink/[.05]' : '' }}">
                     <span class="grid place-items-center w-6 h-6 rounded-full text-[11px] font-bold shrink-0
-                                 {{ $step > $n ? 'bg-moss text-cream' : ($step === $n ? 'bg-pine text-cream' : 'bg-ink/10 text-ink/50') }}">
+                                 {{ $step > $n ? 'bg-moss text-cream' : ($step === $n ? 'bg-pine text-cream' : 'bg-ink/10 text-ink/65') }}">
                         @if($step > $n)
                             <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.6l4.6 4.6L19 7.4"/></svg>
                         @else{{ $n }}@endif
                     </span>
-                    <span class="text-sm font-semibold {{ $step === $n ? 'text-ink' : 'text-ink/60' }}">{{ $name }}</span>
+                    <span class="text-sm font-semibold {{ $step === $n ? 'text-ink' : 'text-ink/65' }}">{{ $name }}</span>
                 </li>
             @endforeach
         </ol>
@@ -37,7 +37,7 @@
         <div class="lg:hidden mb-6" role="group" aria-label="Wizard progress">
             <div class="flex items-baseline justify-between mb-2">
                 <span class="text-sm font-semibold">{{ $steps[$step] }}</span>
-                <span class="text-xs text-ink/60">Step {{ $step }} of {{ count($steps) }}</span>
+                <span class="text-xs text-ink/65">Step {{ $step }} of {{ count($steps) }}</span>
             </div>
             <div class="flex gap-1.5" aria-hidden="true">
                 @foreach($steps as $n => $name)
@@ -102,15 +102,15 @@
                             </span>
                             <span class="flex items-center gap-0.5 shrink-0">
                                 <button type="button" wire:click="moveDestination({{ $i }}, -1)" @disabled($i === 0)
-                                        aria-label="Move {{ $place?->name }} earlier" class="grid place-items-center w-11 h-11 rounded-lg text-ink/60 hover:text-ink hover:bg-ink/5 disabled:opacity-30">
+                                        aria-label="Move {{ $place?->name }} earlier" class="grid place-items-center w-11 h-11 rounded-lg text-ink/65 hover:text-ink hover:bg-ink/5 disabled:opacity-30">
                                     <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"/></svg>
                                 </button>
                                 <button type="button" wire:click="moveDestination({{ $i }}, 1)" @disabled($i === count($destinations) - 1)
-                                        aria-label="Move {{ $place?->name }} later" class="grid place-items-center w-11 h-11 rounded-lg text-ink/60 hover:text-ink hover:bg-ink/5 disabled:opacity-30">
+                                        aria-label="Move {{ $place?->name }} later" class="grid place-items-center w-11 h-11 rounded-lg text-ink/65 hover:text-ink hover:bg-ink/5 disabled:opacity-30">
                                     <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10l6 6 6-6"/></svg>
                                 </button>
                                 <button type="button" wire:click="removeDestination({{ $i }})" aria-label="Remove {{ $place?->name }}"
-                                        class="grid place-items-center w-11 h-11 rounded-lg text-ink/60 hover:text-terra hover:bg-ink/5">
+                                        class="grid place-items-center w-11 h-11 rounded-lg text-ink/65 hover:text-terra hover:bg-ink/5">
                                     <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                                 </button>
                             </span>
@@ -131,7 +131,7 @@
                                         @if(count($days) > 1)
                                             <button type="button" wire:click="removeDay({{ $i }}, {{ $d }})"
                                                     aria-label="Remove day {{ $d + 1 }}"
-                                                    class="grid place-items-center w-11 h-11 shrink-0 rounded-lg text-ink/60 hover:text-terra hover:bg-ink/5">
+                                                    class="grid place-items-center w-11 h-11 shrink-0 rounded-lg text-ink/65 hover:text-terra hover:bg-ink/5">
                                                 <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                                             </button>
                                         @endif
@@ -152,7 +152,7 @@
                                     <div class="flex items-center gap-2.5 mb-1">
                                         <svg viewBox="0 0 24 24" class="w-5 h-5 text-moss shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 20l7-13 4 7 3-5 4 11z"/></svg>
                                         <h3 class="font-serif font-semibold text-lg">The trail</h3>
-                                        <span class="text-sm text-ink/50">— optional</span>
+                                        <span class="text-sm text-ink/65">— optional</span>
                                     </div>
                                     <p class="text-sm text-ink/65 mb-5">What hikers want to know about {{ $place?->name }} before they commit.</p>
 
@@ -188,7 +188,7 @@
                                     </div>
 
                                     <div class="mt-6">
-                                        <span class="field-label mb-1">Trail grade <span class="font-normal text-ink/50">— PinoyMountaineer 1–9</span></span>
+                                        <span class="field-label mb-1">Trail grade <span class="font-normal text-ink/65">— PinoyMountaineer 1–9</span></span>
                                         <p class="text-xs text-ink/65 mb-2.5">1–4 minor climb · 5–8 major climb · 9 hardcore</p>
                                         <div class="grid grid-cols-5 sm:grid-cols-9 gap-2">
                                             @foreach(\App\Support\HikeGrades::DIFFICULTY as $n => $meta)
@@ -210,7 +210,7 @@
                                     </div>
 
                                     <div class="mt-6">
-                                        <span class="field-label">Trail class <span class="font-normal text-ink/50">— hardest move on the route</span></span>
+                                        <span class="field-label">Trail class <span class="font-normal text-ink/65">— hardest move on the route</span></span>
                                         <div class="grid grid-cols-5 gap-2 max-w-[20rem]">
                                             @foreach(\App\Support\HikeGrades::TRAIL_CLASS as $n => $meta)
                                                 <button type="button" wire:click="$set('hikes.{{ $place->id }}.trail_class', {{ $n }})" title="{{ $meta['note'] }}"
@@ -318,7 +318,7 @@
                     </label>
 
                     <label class="block mt-5">
-                        <span class="field-label">Description <span class="font-normal text-ink/50">— optional</span></span>
+                        <span class="field-label">Description <span class="font-normal text-ink/65">— optional</span></span>
                         <textarea wire:model.live="description" rows="5" placeholder="What the trip is like, who it suits, what to expect."
                                   class="field"></textarea>
                         @error('description')<p class="text-terra text-sm mt-2">{{ $message }}</p>@enderror
@@ -349,7 +349,7 @@
                          to remember to change. Empty means the flat price above applies. --}}
                     <div class="mt-6 pt-6 border-t border-ink/10">
                         <div class="flex items-center justify-between gap-3 mb-1">
-                            <h3 class="font-semibold">Price windows <span class="font-normal text-ink/50">— optional</span></h3>
+                            <h3 class="font-semibold">Price windows <span class="font-normal text-ink/65">— optional</span></h3>
                             @if($priceTiers)
                                 <button type="button" wire:click="addTier" dusk="add-tier" class="text-sm font-semibold text-moss min-h-[44px]">＋ Add a window</button>
                             @endif
@@ -378,18 +378,18 @@
                                                 @error('priceTiers.'.$i.'.amount')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                                             </label>
                                             <button type="button" wire:click="removeTier({{ $i }})" aria-label="Remove {{ $tier['label'] ?: 'this window' }}"
-                                                    class="grid place-items-center w-11 h-11 self-end rounded-lg text-ink/60 hover:text-terra hover:bg-ink/5">
+                                                    class="grid place-items-center w-11 h-11 self-end rounded-lg text-ink/65 hover:text-terra hover:bg-ink/5">
                                                 <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                                             </button>
                                         </div>
                                         <div class="grid grid-cols-2 gap-4 mt-4">
                                             <label class="block min-w-0">
-                                                <span class="field-label">From <span class="font-normal text-ink/50">— optional</span></span>
+                                                <span class="field-label">From <span class="font-normal text-ink/65">— optional</span></span>
                                                 <input wire:model.live="priceTiers.{{ $i }}.starts_at" type="date" class="field">
                                                 @error('priceTiers.'.$i.'.starts_at')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                                             </label>
                                             <label class="block min-w-0">
-                                                <span class="field-label">Until <span class="font-normal text-ink/50">— optional</span></span>
+                                                <span class="field-label">Until <span class="font-normal text-ink/65">— optional</span></span>
                                                 <input wire:model.live="priceTiers.{{ $i }}.ends_at" type="date" class="field">
                                                 @error('priceTiers.'.$i.'.ends_at')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                                             </label>
@@ -521,7 +521,7 @@
                             <input wire:model.live="inclusions.{{ $i }}.label" type="text" placeholder="Transport"
                                    class="flex-1 rounded-lg border-ink/15 px-3 py-2.5 font-semibold focus:border-moss focus:ring-moss">
                             @if(count($inclusions) > 1)
-                                <button type="button" wire:click="removeInclusion({{ $i }})" aria-label="Remove inclusion" class="text-ink/40 hover:text-terra">
+                                <button type="button" wire:click="removeInclusion({{ $i }})" aria-label="Remove inclusion" class="text-ink/65 hover:text-terra">
                                     <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                                 </button>
                             @endif
@@ -589,14 +589,14 @@
                            class="mt-0.5 rounded border-ink/25 text-pine focus:ring-pine">
                     <span class="text-sm">
                         <span class="block font-semibold">Require a photo ID from every traveller</span>
-                        <span class="block text-ink/60 mt-0.5">
+                        <span class="block text-ink/65 mt-0.5">
                             Joiners upload one when they register, and you see them on the roster.
                             Turn this on for permits, boat manifests or anywhere names are checked.
                         </span>
                     </span>
                 </label>
 
-                <p class="text-sm text-ink/55 mt-4" dusk="packing-count">
+                <p class="text-sm text-ink/65 mt-4" dusk="packing-count">
                     {{ count($packing) }} {{ \Illuminate\Support\Str::plural('item', count($packing)) }} selected.
                     @if(count($packing) === 0) Optional, but joiners turn up better prepared when it is filled in. @endif
                 </p>
@@ -622,7 +622,7 @@
                                     {{-- Locked: people have booked these dates. Moving one under them
                                          is not an edit, it is a different trip. --}}
                                     <div class="flex flex-wrap items-center gap-3 mb-4">
-                                        <span class="grid place-items-center w-9 h-9 rounded-xl bg-ink/[.06] text-ink/60 shrink-0">
+                                        <span class="grid place-items-center w-9 h-9 rounded-xl bg-ink/[.06] text-ink/65 shrink-0">
                                             <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M5 11h14v9H5z"/></svg>
                                         </span>
                                         <div class="min-w-0">
@@ -652,7 +652,7 @@
                                         @error('departures.'.$i.'.capacity')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                                     </label>
                                     @if(count($departures) > 1)
-                                        <button type="button" wire:click="removeDeparture({{ $i }})" aria-label="Remove departure" class="grid place-items-center w-11 h-11 rounded-lg text-ink/60 hover:text-terra hover:bg-ink/5">
+                                        <button type="button" wire:click="removeDeparture({{ $i }})" aria-label="Remove departure" class="grid place-items-center w-11 h-11 rounded-lg text-ink/65 hover:text-terra hover:bg-ink/5">
                                             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                                         </button>
                                     @endif
@@ -678,7 +678,7 @@
                                 <div class="flex items-center gap-2 mb-4">
                                     <span class="grid place-items-center w-7 h-7 rounded-full bg-terra text-cream text-xs font-bold shrink-0">{{ $i + 1 }}</span>
                                     @if(count($meetups) > 1)
-                                        <button type="button" wire:click="removeMeetup({{ $i }})" aria-label="Remove pickup point" class="grid place-items-center w-11 h-11 ml-auto rounded-lg text-ink/60 hover:text-terra hover:bg-ink/5">
+                                        <button type="button" wire:click="removeMeetup({{ $i }})" aria-label="Remove pickup point" class="grid place-items-center w-11 h-11 ml-auto rounded-lg text-ink/65 hover:text-terra hover:bg-ink/5">
                                             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                                         </button>
                                     @endif
@@ -702,7 +702,7 @@
                                     <input wire:model="meetups.{{ $i }}.address" type="text" placeholder="EDSA cor. Aurora Blvd, Quezon City" class="field">
                                 </label>
                                 <label class="block mt-4">
-                                    <span class="field-label">Note <span class="font-normal text-ink/50">— optional</span></span>
+                                    <span class="field-label">Note <span class="font-normal text-ink/65">— optional</span></span>
                                     <input wire:model="meetups.{{ $i }}.note" type="text" placeholder="Look for the blue van" class="field">
                                 </label>
 
@@ -769,18 +769,18 @@
                                         @error('dropoffs.'.$i.'.time')<p class="text-terra text-xs mt-1">{{ $message }}</p>@enderror
                                     </label>
                                     @if(count($dropoffs) > 1)
-                                        <button type="button" wire:click="removeDropoff({{ $i }})" aria-label="Remove drop-off point" class="grid place-items-center w-11 h-11 self-end rounded-lg text-ink/60 hover:text-terra hover:bg-ink/5">
+                                        <button type="button" wire:click="removeDropoff({{ $i }})" aria-label="Remove drop-off point" class="grid place-items-center w-11 h-11 self-end rounded-lg text-ink/65 hover:text-terra hover:bg-ink/5">
                                             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                                         </button>
                                     @endif
                                 </div>
 
                                 <label class="block mt-4">
-                                    <span class="field-label">Address <span class="font-normal text-ink/50">— optional</span></span>
+                                    <span class="field-label">Address <span class="font-normal text-ink/65">— optional</span></span>
                                     <input wire:model="dropoffs.{{ $i }}.address" type="text" placeholder="EDSA cor. Aurora Blvd, Quezon City" class="field">
                                 </label>
                                 <label class="block mt-4">
-                                    <span class="field-label">Note <span class="font-normal text-ink/50">— optional</span></span>
+                                    <span class="field-label">Note <span class="font-normal text-ink/65">— optional</span></span>
                                     <input wire:model="dropoffs.{{ $i }}.note" type="text" placeholder="Traffic dependent, could be an hour later" class="field">
                                 </label>
 
@@ -866,7 +866,7 @@
                                     \App\Support\HikeGrades::trailTypeLabel($h['trail_type'] ?: null),
                                     $h['features'] ? count($h['features']).' features' : null,
                                 ]))
-                                <p class="text-sm mt-2 {{ $bits ? 'text-ink/70' : 'text-amber' }}">
+                                <p class="text-sm mt-2 {{ $bits ? 'text-ink/70' : 'text-amber-deep' }}">
                                     <span class="font-semibold">Trail</span> ·
                                     {{ $bits ? implode(' · ', $bits) : 'nothing added — hikers will not know what they are walking into' }}
                                 </p>
@@ -888,11 +888,11 @@
                         </div>
                         <div>
                             <dt class="marker text-[10px] font-semibold text-ink/65">Cover</dt>
-                            <dd class="font-semibold {{ $cover ? '' : 'text-ink/60' }}">{{ $cover ? 'Uploaded' : 'Stock image' }}</dd>
+                            <dd class="font-semibold {{ $cover ? '' : 'text-ink/65' }}">{{ $cover ? 'Uploaded' : 'Stock image' }}</dd>
                         </div>
                         <div>
                             <dt class="marker text-[10px] font-semibold text-ink/65">Carousel</dt>
-                            <dd class="font-semibold {{ count($photos) ? '' : 'text-ink/60' }}">{{ count($photos) ?: 'None' }}</dd>
+                            <dd class="font-semibold {{ count($photos) ? '' : 'text-ink/65' }}">{{ count($photos) ?: 'None' }}</dd>
                         </div>
                         <div>
                             <dt class="marker text-[10px] font-semibold text-ink/65">Length</dt>
@@ -905,7 +905,7 @@
                 <x-review-section title="What's included" :step="3" :label="$steps[3]">
                     @php($named = collect($inclusions)->filter(fn ($c) => filled($c['label'] ?? null)))
                     @if($named->isEmpty())
-                        <p class="text-ink/60 text-sm">Nothing listed.</p>
+                        <p class="text-ink/65 text-sm">Nothing listed.</p>
                     @else
                         <div class="flex flex-wrap gap-2">
                             @foreach($named as $c)
@@ -941,7 +941,7 @@
                         @php($listed = collect($spots)->filter(fn ($m) => filled($m['label'] ?? null)))
                         <p class="text-sm font-semibold text-ink/70 mt-4 mb-1.5">{{ $heading }}</p>
                         @if($listed->isEmpty())
-                            <p class="text-ink/60 text-sm">None set.</p>
+                            <p class="text-ink/65 text-sm">None set.</p>
                         @else
                             <ul class="space-y-1">
                                 @foreach($listed as $m)

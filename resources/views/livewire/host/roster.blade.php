@@ -93,7 +93,7 @@
             <input wire:model.live.debounce.250ms="search" type="search" dusk="roster-search"
                    placeholder="Search name, email or phone"
                    class="w-full rounded-full border border-ink/15 pl-10 pr-4 min-h-[44px] text-sm
-                          placeholder:text-ink/45 focus:border-moss focus:ring-2 focus:ring-moss/25 transition-colors">
+                          placeholder:text-ink/65 focus:border-moss focus:ring-2 focus:ring-moss/25 transition-colors">
             <svg viewBox="0 0 24 24" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/45" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         </label>
 
@@ -113,7 +113,7 @@
                     class="inline-flex items-center gap-1.5 rounded-full px-4 min-h-[44px] text-sm font-semibold border transition-colors
                            {{ $activeFilter === $key ? 'bg-pine text-cream border-pine' : 'border-ink/15 hover:border-ink/35' }}">
                 {{ $filterLabels[$key] ?? $key }}
-                <span class="tabular-nums {{ $activeFilter === $key ? 'text-cream/80' : 'text-ink/60' }}">{{ $counts[$key] ?? 0 }}</span>
+                <span class="tabular-nums {{ $activeFilter === $key ? 'text-cream/80' : 'text-ink/65' }}">{{ $counts[$key] ?? 0 }}</span>
             </button>
         @endforeach
     </div>

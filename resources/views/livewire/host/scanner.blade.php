@@ -57,8 +57,8 @@
 
     <div class="rounded-2xl border border-ink/10 bg-surface p-5 mb-5">
         <div class="flex items-baseline justify-between gap-4 mb-4">
-            <p class="font-serif font-semibold text-2xl tabular-nums">{{ $inCount }} <span class="text-ink/40 font-normal">of {{ $participants->count() }}</span></p>
-            <p class="text-sm text-ink/60">checked in</p>
+            <p class="font-serif font-semibold text-2xl tabular-nums">{{ $inCount }} <span class="text-ink/65 font-normal">of {{ $participants->count() }}</span></p>
+            <p class="text-sm text-ink/65">checked in</p>
         </div>
 
         {{-- Camera, when the browser can decode. --}}
@@ -99,7 +99,7 @@
 
         @if($lastMessage)
             <p dusk="scan-result"
-               class="mt-4 rounded-xl px-4 py-3 text-sm font-semibold {{ $lastOk ? 'bg-moss/12 text-pine' : 'bg-terra/10 text-terra' }}">
+               class="mt-4 rounded-xl px-4 py-3 text-sm font-semibold {{ $lastOk ? 'bg-moss/12 text-pine' : 'bg-terra/10 text-terra-deep' }}">
                 {{ $lastMessage }}
             </p>
         @endif
@@ -111,8 +111,8 @@
             <caption class="sr-only">Everyone expected on this departure</caption>
             <thead>
                 <tr class="bg-ink/[.03] text-left">
-                    <th scope="col" class="px-4 py-2.5 text-[11px] uppercase tracking-wide text-ink/50 font-semibold">Traveller</th>
-                    <th scope="col" class="px-4 py-2.5 text-[11px] uppercase tracking-wide text-ink/50 font-semibold text-right">Status</th>
+                    <th scope="col" class="px-4 py-2.5 text-[11px] uppercase tracking-wide text-ink/65 font-semibold">Traveller</th>
+                    <th scope="col" class="px-4 py-2.5 text-[11px] uppercase tracking-wide text-ink/65 font-semibold text-right">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -121,7 +121,7 @@
                         <th scope="row" class="px-4 py-3 text-left font-normal">
                             <span class="font-semibold">{{ $p->fullName() ?: 'Unnamed traveller' }}</span>
                             @unless($p->pass_code)
-                                <span class="block text-xs text-ink/50">No pass — not marked paid yet</span>
+                                <span class="block text-xs text-ink/65">No pass — not marked paid yet</span>
                             @endunless
                         </th>
                         <td class="px-4 py-3 text-right">
@@ -129,7 +129,7 @@
                                 <span class="inline-flex items-center gap-2">
                                     <x-badge tone="moss">In · {{ $p->checked_in_at->format('g:ia') }}</x-badge>
                                     <button wire:click="undo({{ $p->id }})" dusk="undo-{{ $p->id }}"
-                                            class="text-[11px] font-semibold text-ink/50 hover:text-terra underline decoration-ink/20">Undo</button>
+                                            class="text-[11px] font-semibold text-ink/65 hover:text-terra underline decoration-ink/20">Undo</button>
                                 </span>
                             @else
                                 <x-badge tone="ink">Expected</x-badge>
@@ -137,7 +137,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="2" class="px-4 py-10 text-center text-ink/60">Nobody is booked on this departure yet.</td></tr>
+                    <tr><td colspan="2" class="px-4 py-10 text-center text-ink/65">Nobody is booked on this departure yet.</td></tr>
                 @endforelse
             </tbody>
         </table>

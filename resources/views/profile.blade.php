@@ -1,7 +1,7 @@
 <x-layouts.site>
     <div class="max-w-2xl mx-auto px-6 py-12">
         <h1 class="font-serif font-semibold text-4xl">Account settings</h1>
-        <p class="text-ink/55 mt-2">Manage your profile, password, and account.</p>
+        <p class="text-ink/65 mt-2">Manage your profile, password, and account.</p>
 
         <div class="mt-8 space-y-5">
             <section class="rounded-2xl border border-ink/8 bg-surface p-6 sm:p-8">

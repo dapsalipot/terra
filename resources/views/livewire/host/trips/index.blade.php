@@ -40,7 +40,7 @@
                     {{-- Reviews only. The schedule count is already the chip on the right of this
                          same header, and printing it twice made the card look like it was padding. --}}
                     @if($first->reviews_count)
-                        <p class="text-sm text-ink/55 mt-1">
+                        <p class="text-sm text-ink/65 mt-1">
                             {{ $first->reviews_count }} {{ \Illuminate\Support\Str::plural('review', $first->reviews_count) }}
                         </p>
                     @endif
@@ -66,33 +66,33 @@
                     <li class="grid gap-x-5 gap-y-3 px-5 py-4
                                sm:grid-cols-[minmax(11rem,1.3fr)_minmax(7rem,.8fr)_minmax(9rem,1fr)_auto] sm:items-center">
                         <div class="min-w-0">
-                            <p class="text-[11px] uppercase tracking-wide text-ink/45 font-semibold mb-0.5">When</p>
+                            <p class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold mb-0.5">When</p>
                             <p class="font-semibold">
                                 {{ $dep?->starts_at?->format('D j M Y') ?? 'No date' }}
                                 @if($dep?->ends_at) <span class="font-normal text-ink/65">→ {{ $dep->ends_at->format('j M') }}</span>@endif
                             </p>
                             @if($dep)
-                                <p class="text-sm mt-0.5 {{ $dep->starts_at->isPast() ? 'text-ink/55' : 'text-pine font-semibold' }}">
+                                <p class="text-sm mt-0.5 {{ $dep->starts_at->isPast() ? 'text-ink/65' : 'text-pine font-semibold' }}">
                                     {{ $dep->starts_at->isPast() ? 'Ran' : $dep->starts_at->diffForHumans() }}
                                 </p>
                             @endif
                         </div>
 
                         <div class="min-w-0">
-                            <p class="text-[11px] uppercase tracking-wide text-ink/45 font-semibold mb-0.5">Price</p>
+                            <p class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold mb-0.5">Price</p>
                             <p class="font-serif font-semibold text-lg tabular-nums">
                                 {{ $trip->host->hostProfile?->currency ?? 'PHP' }} {{ number_format((float) $trip->price) }}
                             </p>
-                            <p class="text-sm text-ink/55">per person</p>
+                            <p class="text-sm text-ink/65">per person</p>
                         </div>
 
                         @if($dep)
                             <div class="min-w-0">
-                                <p class="text-[11px] uppercase tracking-wide text-ink/45 font-semibold mb-0.5">Booked</p>
+                                <p class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold mb-0.5">Booked</p>
                                 <p class="font-semibold tabular-nums">
-                                    {{ $held }} <span class="text-ink/50 font-normal">of {{ $capacity }}</span>
+                                    {{ $held }} <span class="text-ink/65 font-normal">of {{ $capacity }}</span>
                                     @if($capacity > 0 && $held >= $capacity)
-                                        <span class="ml-1 rounded-full bg-terra/12 text-terra px-2 py-0.5 text-[11px] font-bold align-middle">Full</span>
+                                        <span class="ml-1 rounded-full bg-terra/12 text-terra-deep px-2 py-0.5 text-[11px] font-bold align-middle">Full</span>
                                     @endif
                                 </p>
                                 {{-- A bar, because "8 of 12" and "2 of 12" read the same at a glance

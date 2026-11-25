@@ -115,7 +115,7 @@
                 @foreach([0, 1] as $dup)
                     <div class="flex items-center shrink-0">
                         @foreach($names as $name)
-                            <span class="marker text-xs font-semibold text-ink/45 px-6 whitespace-nowrap">{{ $name }}</span>
+                            <span class="marker text-xs font-semibold text-ink/65 px-6 whitespace-nowrap">{{ $name }}</span>
                             <svg viewBox="0 0 24 24" class="w-2.5 h-2.5 text-terra/60 shrink-0" fill="currentColor"><path d="M3 19.5l6.4-9.7 3.7 5.1 3.2-4.7 6.3 9.3z"/></svg>
                         @endforeach
                     </div>
@@ -158,7 +158,7 @@
 
                 {{-- DIGEST --}}
                 <div class="flex flex-col h-full">
-                    <span class="marker text-xs font-semibold text-ink/55 mb-1" data-reveal>Also departing</span>
+                    <span class="marker text-xs font-semibold text-ink/65 mb-1" data-reveal>Also departing</span>
                     <div class="divide-y divide-ink/10">
                         @foreach($digest as $t)
                             <a href="{{ route('trips.show', $t) }}" class="group flex items-center gap-4 py-4" data-reveal style="--reveal-delay:{{ .08 * $loop->index }}s">
@@ -210,7 +210,7 @@
         <div class="grain-overlay" style="opacity:.35" aria-hidden="true"></div>
         <div class="relative max-w-6xl mx-auto px-6 py-16 md:py-20">
             <div class="flex items-baseline gap-4 mb-9" data-reveal>
-                <span class="font-serif italic text-amber text-xl leading-none">04</span>
+                <span class="font-serif italic text-[#E8C58C] text-xl leading-none">04</span>
                 <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">Fresh off a trip</h2>
                 <span class="hidden sm:block h-px flex-1 bg-cream/20 self-center"></span>
                 <a href="{{ route('hosts.index') }}" class="inline-flex items-center py-1.5 -my-1.5 text-sm font-semibold text-cream/75 hover:text-cream whitespace-nowrap">Meet the hosts →</a>
@@ -234,7 +234,7 @@
             @endif
 
             <div class="mt-12 pt-10 border-t border-cream/[.14]">
-                <span class="marker text-xs font-semibold text-cream/55" data-reveal>Hosts to follow</span>
+                <span class="marker text-xs font-semibold text-cream/70" data-reveal>Hosts to follow</span>
                 <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
                     @foreach($hosts as $host)
                         <a href="{{ route('hosts.show', $host) }}" class="rounded-2xl bg-cream/[.06] border border-cream/10 p-5 hover:bg-cream/10 hover:-translate-y-0.5 transition-all" data-reveal style="--reveal-delay:{{ .07 * $loop->index }}s">

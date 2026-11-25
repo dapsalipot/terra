@@ -237,7 +237,7 @@ body {
 @layer components {
     .field {
         @apply w-full rounded-xl border-ink/15 bg-surface px-4 py-3 text-base
-               placeholder:text-ink/40 focus:border-moss focus:ring-1 focus:ring-moss;
+               placeholder:text-ink/65 focus:border-moss focus:ring-1 focus:ring-moss;
     }
 
     /* Only for genuinely narrow numerics (nights, capacity) — same height, less width. */

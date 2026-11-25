@@ -14,7 +14,7 @@
             <div class="sticky top-0 flex items-center justify-between gap-3 px-5 py-4 bg-surface border-b border-ink/8">
                 <p class="font-serif font-semibold text-lg">Payment proofs</p>
                 <button type="button" wire:click="closeProofs" dusk="close-proofs" aria-label="Close"
-                        class="grid place-items-center w-11 h-11 -mr-2 rounded-lg text-ink/45 hover:text-ink hover:bg-ink/5">
+                        class="grid place-items-center w-11 h-11 -mr-2 rounded-lg text-ink/65 hover:text-ink hover:bg-ink/5">
                     <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>

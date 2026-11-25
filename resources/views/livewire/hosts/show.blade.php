@@ -90,7 +90,7 @@
             ] as [$value, $label])
                 <div>
                     <dd class="font-serif font-semibold text-3xl leading-none">{{ $value }}</dd>
-                    <dt class="marker text-[11px] font-semibold text-ink/55 mt-2">{{ $label }}</dt>
+                    <dt class="marker text-[11px] font-semibold text-ink/65 mt-2">{{ $label }}</dt>
                 </div>
             @endforeach
         </dl>
@@ -117,10 +117,10 @@
             @foreach($tabs as $key => $label)
                 <button wire:click="setTab('{{ $key }}')" role="tab" aria-selected="{{ $tab === $key ? 'true' : 'false' }}"
                         dusk="tab-{{ $key }}"
-                        class="relative px-3 sm:px-5 py-3.5 min-h-[44px] text-sm font-semibold whitespace-nowrap transition-colors {{ $tab === $key ? 'text-ink' : 'text-ink/55 hover:text-ink' }}">
+                        class="relative px-3 sm:px-5 py-3.5 min-h-[44px] text-sm font-semibold whitespace-nowrap transition-colors {{ $tab === $key ? 'text-ink' : 'text-ink/65 hover:text-ink' }}">
                     {{ $label }}
                     @if($key === 'reviews' && $reviews->isNotEmpty())
-                        <span class="ml-1 text-ink/40 font-normal">{{ $reviews->count() }}</span>
+                        <span class="ml-1 text-ink/65 font-normal">{{ $reviews->count() }}</span>
                     @endif
                     @if($tab === $key)
                         <span class="absolute inset-x-3 -bottom-px h-0.5 rounded-full" style="background: var(--accent)"></span>
@@ -145,7 +145,7 @@
                     @if($this->isOwner)
                         <a href="{{ route('host.trips.create') }}" class="inline-block mt-4 rounded-full bg-pine text-cream px-6 py-3 font-semibold text-sm">Post your first trip</a>
                     @else
-                        <p class="text-ink/60 mt-1">Follow to hear when {{ $user->name }} posts one.</p>
+                        <p class="text-ink/65 mt-1">Follow to hear when {{ $user->name }} posts one.</p>
                     @endif
                 </div>
             @endif
@@ -182,7 +182,7 @@
                                 Photos
                                 <input wire:model="postImages" type="file" accept="image/*" multiple class="hidden">
                             </label>
-                            <span wire:loading wire:target="postImages" class="text-xs text-ink/50">Uploading…</span>
+                            <span wire:loading wire:target="postImages" class="text-xs text-ink/65">Uploading…</span>
                             <button wire:click="publishPost" dusk="post-publish" class="ml-auto rounded-full bg-pine text-cream px-6 py-2.5 font-semibold text-sm hover:bg-pine/90 transition-colors">Post</button>
                         </div>
                     </div>
@@ -199,7 +199,7 @@
                                 </span>
                                 <div class="min-w-0">
                                     <div class="font-semibold text-sm leading-tight">{{ $user->name }}</div>
-                                    <div class="text-xs text-ink/55">{{ $post->created_at->diffForHumans() }}</div>
+                                    <div class="text-xs text-ink/65">{{ $post->created_at->diffForHumans() }}</div>
                                 </div>
                                 @if($post->isRecap())
                                     <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background: var(--accent-soft); color: var(--accent)">Recap</span>
@@ -213,7 +213,7 @@
                                         cancel-label="Keep it"
                                         tone="terra" icon="trash"
                                         dusk="delete-post-{{ $post->id }}"
-                                        aria-label="Delete post" class="ml-auto text-ink/35 hover:text-terra">
+                                        aria-label="Delete post" class="ml-auto text-ink/65 hover:text-terra">
                                         <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
                                     </x-confirm-action>
                                 @endif
@@ -236,7 +236,7 @@
                     @empty
                         <div class="text-center py-16">
                             <p class="font-serif text-xl text-ink/70">Nothing posted yet.</p>
-                            <p class="text-ink/60 mt-1">{{ $this->isOwner ? 'Share a photo or an update to start your wall.' : 'Check back after their next trip.' }}</p>
+                            <p class="text-ink/65 mt-1">{{ $this->isOwner ? 'Share a photo or an update to start your wall.' : 'Check back after their next trip.' }}</p>
                         </div>
                     @endforelse
                 </div>
@@ -250,7 +250,7 @@
                     <div class="flex items-baseline gap-3 mb-6">
                         <span class="font-serif font-semibold text-4xl">{{ $p?->rating ?? '—' }}</span>
                         <span class="text-amber text-lg tracking-widest">{{ str_repeat('★', (int) round($p?->rating ?? 0)) }}</span>
-                        <span class="text-ink/60 text-sm">{{ $reviews->count() }} {{ Str::plural('review', $reviews->count()) }}</span>
+                        <span class="text-ink/65 text-sm">{{ $reviews->count() }} {{ Str::plural('review', $reviews->count()) }}</span>
                     </div>
 
                     <div class="space-y-4">
@@ -262,7 +262,7 @@
                                     </span>
                                     <div class="min-w-0">
                                         <div class="font-semibold text-sm">{{ $review->joiner->name }}</div>
-                                        <div class="text-xs text-ink/55">{{ $review->created_at->diffForHumans() }}</div>
+                                        <div class="text-xs text-ink/65">{{ $review->created_at->diffForHumans() }}</div>
                                     </div>
                                     <span class="ml-auto text-amber text-sm tracking-widest">{{ str_repeat('★', $review->rating) }}</span>
                                 </div>
@@ -278,7 +278,7 @@
                 @else
                     <div class="text-center py-16">
                         <p class="font-serif text-xl text-ink/70">No reviews yet.</p>
-                        <p class="text-ink/60 mt-1">Reviews appear here once joiners finish a trip.</p>
+                        <p class="text-ink/65 mt-1">Reviews appear here once joiners finish a trip.</p>
                     </div>
                 @endif
             </div>
@@ -298,7 +298,7 @@
                 @if($p?->payment_methods)
                     <section class="rounded-2xl border border-ink/10 bg-surface p-6">
                         <h2 class="font-serif font-semibold text-lg mb-1">How you pay</h2>
-                        <p class="text-sm text-ink/60 mb-4">You pay {{ $user->name }} directly — Terra never holds your money.</p>
+                        <p class="text-sm text-ink/65 mb-4">You pay {{ $user->name }} directly — Terra never holds your money.</p>
                         <div class="grid sm:grid-cols-2 gap-3">
                             @foreach($p->payment_methods as $m)
                                 <div class="flex items-center gap-3 rounded-2xl border border-ink/12 p-3">
@@ -311,7 +311,7 @@
                                         <div class="font-semibold text-sm">{{ $m['label'] ?? '' }}</div>
                                         <div class="text-sm text-ink/65 break-words">{{ $m['detail'] ?? '' }}</div>
                                         @if($m['qr'] ?? null)
-                                            <div class="text-[11px] text-ink/50 mt-1">Scan to pay</div>
+                                            <div class="text-[11px] text-ink/65 mt-1">Scan to pay</div>
                                         @endif
                                     </div>
                                 </div>

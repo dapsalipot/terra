@@ -21,6 +21,11 @@ export default {
                 ink: '#1F1C15',
                 terra: '#BC4B26',
                 amber: '#A8761F',
+                // Text-safe siblings of amber and terra. On their own tints the brand tones read 3.2:1 and
+                // 4.1:1, which is fine for a dot or an icon but not for words; these are the same hues
+                // pulled toward ink until the smallest text clears 4.5:1 on canvas, sand and the tint.
+                'amber-deep': '#7F5B1C',
+                'terra-deep': '#9D4223',
                 cream: '#F7F4EC',
             },
             fontFamily: {
