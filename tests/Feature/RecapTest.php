@@ -32,3 +32,35 @@ it('the departures:complete command finishes past trips', function () {
 
     expect(Post::where('type', 'recap')->count())->toBe(1);
 });
+
+// A recap names the trip on the host's public wall, so only a trip that is public by now gets one.
+it('publishes the recap only for a trip that is public by now', function (Closure $listing, int $recaps) {
+    $host = User::factory()->create(['role' => 'host']);
+    $trip = $listing(Trip::factory()->published())->create(['host_id' => $host->id]);
+    $departure = TripDeparture::factory()->for($trip)->create(['status' => 'open']);
+
+    app(DepartureCompletionService::class)->complete($departure);
+
+    // The departure completes either way: reviews and chat wait on it.
+    expect($departure->fresh()->status)->toBe('completed')
+        ->and(Post::where('host_id', $host->id)->where('type', 'recap')->count())->toBe($recaps);
+})->with([
+    'public' => [fn ($trip) => $trip, 1],
+    'link only' => [fn ($trip) => $trip->linkOnly(), 0],
+    'followers first, window still open' => [fn ($trip) => $trip->followersFirst(), 0],
+    'followers first, window passed' => [fn ($trip) => $trip->followersFirst(now()->subDay()), 1],
+]);
+
+it('words the recap of a public trip as it always has', function () {
+    $host = User::factory()->create(['role' => 'host']);
+    $trip = Trip::factory()->published()->create(['host_id' => $host->id, 'title' => 'Mount Rinjani Traverse']);
+    $departure = TripDeparture::factory()->for($trip)->create(['status' => 'open']);
+    Reservation::factory()->confirmed()->create(['trip_departure_id' => $departure->id, 'party_size' => 3]);
+
+    app(DepartureCompletionService::class)->complete($departure);
+
+    expect(Post::where('host_id', $host->id)->sole())
+        ->type->toBe('recap')
+        ->trip_id->toBe($trip->id)
+        ->body->toBe('Just wrapped Mount Rinjani Traverse — 3 joiners on the trail. Until the next one!');
+});

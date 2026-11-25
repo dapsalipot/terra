@@ -4,10 +4,11 @@ namespace App\Services;
 
 use App\Models\Post;
 use App\Models\TripDeparture;
+use App\Support\Visibility;
 
 class DepartureCompletionService
 {
-    /** Mark a departure completed and auto-publish a recap to the host wall. */
+    /** Mark a departure completed and, for a trip that is public by now, auto-publish a recap to the host wall. */
     public function complete(TripDeparture $departure): void
     {
         if ($departure->status === 'completed') {
@@ -17,6 +18,13 @@ class DepartureCompletionService
         $departure->update(['status' => 'completed']);
 
         $trip = $departure->trip;
+
+        // The recap names the trip on the host's public wall, so a trip only some people can find stays off it: a link-only
+        // trip is for its own group, and a followers-first one is announced once its window has passed.
+        if ($trip->effectiveVisibility() !== Visibility::PUBLIC) {
+            return;
+        }
+
         $guests = (int) $departure->reservations()->where('status', 'confirmed')->sum('party_size');
 
         Post::create([
