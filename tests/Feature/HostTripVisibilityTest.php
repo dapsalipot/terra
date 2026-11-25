@@ -171,7 +171,7 @@ it('shows the chip on the host\'s own page and not to a visitor', function () {
     $this->actingAs($host)->get(route('hosts.show', $host))->assertSee('Link only')->assertSee($trip->title);
 });
 
-it('draws a chip on each schedule that is not public and an action menu on each offering', function () {
+it('draws a chip on each schedule that is not public and a menu on each offering', function () {
     $host = newWizardHost();
     [$first, $second] = myTripsOffering($host, 2, ['title' => 'Mount Pulag Traverse']);
     $first->update(['visibility' => 'link']);
@@ -194,10 +194,61 @@ it('draws a chip on each schedule that is not public and an action menu on each 
             '<option value="followers:3d">Followers first for 3 days</option>',
             '<option value="followers:1w">Followers first for 1 week</option>',
             '<option value="link">Link only</option>',
-        ])
-        // and a pick reaches setVisibility with that offering's own key
-        ->assertSeeHtml("setVisibility('{$group}', \$event.target.value)")
-        ->assertSeeHtml("setVisibility('solo-{$solo->id}', \$event.target.value)");
+        ]);
+});
+
+it('holds a pick in the select and applies it only from the Apply button', function () {
+    $host = newWizardHost();
+    $group = myTripsOffering($host, 2, ['title' => 'Mount Pulag Traverse'])->first()->trip_group_id;
+    $solo = Trip::factory()->published()->create(['host_id' => $host->id]);
+
+    Livewire::actingAs($host)->test(HostTripsIndex::class)->set('filter', 'all')
+        // On Windows and Linux every arrow key on a closed select fires `change`, so a select that saved on
+        // change would flip a private trip to Everyone on a stray keystroke. It only holds the pick.
+        ->assertDontSeeHtml('wire:change')
+        ->assertSeeHtml('x-model="choice"')
+        // One Apply per offering, off until something is picked, named for its offering, sending the pick and
+        // then clearing it so the menu is back on its prompt.
+        ->assertSeeHtml('dusk="visibility-apply-'.$group.'"')
+        ->assertSeeHtml('dusk="visibility-apply-solo-'.$solo->id.'"')
+        ->assertSeeHtml('aria-label="Apply to Mount Pulag Traverse"')
+        ->assertSeeHtml('type="button"')
+        ->assertSeeHtml(':disabled="choice === \'\'"')
+        ->assertSeeHtml("\$wire.setVisibility('{$group}', choice); choice = ''")
+        ->assertSeeHtml("\$wire.setVisibility('solo-{$solo->id}', choice); choice = ''")
+        // Each offering is its own morph unit, so a pick pending on one cannot carry onto another when the
+        // filter swaps the list.
+        ->assertSeeHtml('wire:key="offering-'.$group.'"')
+        ->assertSeeHtml('wire:key="offering-solo-'.$solo->id.'"');
+});
+
+it('announces the new setting for a screen reader', function () {
+    $this->travelTo('2026-11-26 09:00:00');
+    $host = newWizardHost();
+    $group = myTripsOffering($host, 2, ['title' => 'Mount Pulag Traverse'])->first()->trip_group_id;
+
+    $page = Livewire::actingAs($host)->test(HostTripsIndex::class)
+        // the live region is on the page from the start, empty, so there is something for the words to arrive in
+        ->assertSeeHtml('role="status" aria-live="polite"')
+        ->assertSetStrict('announcement', '');
+
+    $page->call('setVisibility', $group, 'link')
+        ->assertSet('announcement', 'Who can see Mount Pulag Traverse: Link only.')
+        ->assertSeeHtml('>Who can see Mount Pulag Traverse: Link only.</p>');
+
+    $page->call('setVisibility', $group, 'followers:1w')
+        ->assertSet('announcement', 'Who can see Mount Pulag Traverse: Followers first until 3 Dec.');
+
+    $page->call('setVisibility', $group, 'public')
+        ->assertSet('announcement', 'Who can see Mount Pulag Traverse: Everyone.');
+});
+
+it('announces nothing when a choice changed nothing', function () {
+    $host = newWizardHost();
+    $group = myTripsOffering($host)->first()->trip_group_id;
+
+    Livewire::actingAs($host)->test(HostTripsIndex::class)->call('setVisibility', $group, 'bogus')->assertSetStrict('announcement', '');
+    Livewire::actingAs(newWizardHost())->test(HostTripsIndex::class)->call('setVisibility', $group, 'link')->assertSetStrict('announcement', '');
 });
 
 it('changes the listing from the page', function () {

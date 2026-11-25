@@ -26,23 +26,39 @@ class ListingControlFlowTest extends DuskTestCase
         ]);
         TripDeparture::factory()->for($trip)->create(['starts_at' => now()->addWeeks(3)]);
         $menu = '@visibility-solo-'.$trip->id;
+        $apply = '@visibility-apply-solo-'.$trip->id;
         $chip = '@chip-'.$trip->id;
 
-        $this->browse(function (Browser $browser) use ($host, $trip, $menu, $chip) {
+        $this->browse(function (Browser $browser) use ($host, $trip, $menu, $apply, $chip) {
             $browser->loginAs($host)
                 // listed to everyone to begin with, which is what gives its absence below any meaning
                 ->visit('/trips')
                 ->assertSee($trip->title)
                 ->visit('/host/trips')
                 ->waitFor($menu)
+                // Nothing to apply until something is picked, and picking is not applying: `select` fires the same
+                // `change` an arrow key does on Windows, and it must not touch the listing.
+                ->assertDisabled($apply)
                 ->select($menu, 'link')
+                ->assertEnabled($apply)
+                ->pause(600)
+                ->assertMissing($chip)
+                ->click($apply)
                 // "Link only" is also one of the menu's own options, so waiting for those words proves nothing:
                 // the chip is drawn from the saved trip, so it is only there once the change has landed
                 ->waitFor($chip)
                 ->assertSeeIn($chip, 'Link only')
-                // a menu of actions goes back to its prompt instead of claiming to be the offering's state
+                // the menu is back on its prompt with nothing left to apply, rather than claiming to be the state,
+                // and it has the focus, because the button that was just pressed has switched itself off
                 ->assertSelected($menu, '')
-                ->logout()
+                ->assertDisabled($apply)
+                ->assertFocused($menu);
+
+            // said aloud as well: the region is visually hidden, so read its text rather than look for it
+            $spoken = $browser->script('return document.querySelector(\'[dusk="visibility-status"]\').textContent')[0];
+            $this->assertSame('Who can see Sagada Echo Valley Hike: Link only.', trim($spoken));
+
+            $browser->logout()
                 ->visit('/trips')
                 ->assertDontSee($trip->title)
                 // off the listings is not off the internet: the link still opens it

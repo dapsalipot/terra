@@ -1,4 +1,8 @@
 <div>
+    {{-- Spoken, never shown. The chips change and the menu goes back to its prompt without a word otherwise, and
+         the region has to be on the page already, empty, for a screen reader to speak into it. --}}
+    <p class="sr-only" role="status" aria-live="polite" dusk="visibility-status">{{ $announcement }}</p>
+
     <div class="flex flex-wrap items-end justify-between gap-4 mb-7">
         <div>
             <h1 class="tracking-tight font-semibold text-3xl mb-1">My trips</h1>
@@ -25,7 +29,7 @@
 
     @forelse($groups as $groupKey => $group)
         @php($first = $group->first())
-        <section class="glass-card overflow-hidden mb-4">
+        <section wire:key="offering-{{ $groupKey }}" class="glass-card overflow-hidden mb-4">
             {{-- The photo carries the identity of the offering, so it gets a real size rather
                  than a 64px chip. A 16/10 tile at the header height reads as the trip; a square
                  thumbnail that small read as an icon. --}}
@@ -47,36 +51,51 @@
                     @endif
                 </div>
                 {{-- The count and the menu travel together: beside the title where there is room, on a line of
-                     their own under it where there is not (a phone, or the console beside its sidebar). --}}
-                <div class="flex w-full items-center gap-3 sm:ml-auto sm:w-auto sm:shrink-0">
+                     their own under it where there is not. On a phone that is two lines, the count and then the
+                     menu with its button. --}}
+                <div class="flex w-full flex-wrap items-center gap-x-3 gap-y-2 sm:ml-auto sm:w-auto">
                     <span class="shrink-0 rounded-full bg-ink/[.06] px-3 py-1.5 text-xs font-bold">
                         {{ $group->count() }} {{ \Illuminate\Support\Str::plural('schedule', $group->count()) }}
                     </span>
 
                     {{--
-                        A menu of actions, not a state: each pick is written to every schedule here and the
-                        menu goes back to its prompt, so it never claims to be what the offering is now (the
-                        chips on the rows say that, and a window that has closed would make a stored choice
-                        wrong). Both happen in the one handler, so the value is read before it is reset.
-                        A native select, as on the host directory: reachable by keyboard and screen reader as is.
+                        A menu of choices that the button beside it applies, and the select never does.
+
+                        On Windows and Linux every arrow key or typed letter on a closed select fires `change`, so
+                        a select that saved on change would re-list a trip on a stray keystroke (a private link-only
+                        trip turning into Everyone) and a keyboard user could never arrive at "Link only". Here the
+                        select only holds the pick, in `choice`, and Apply is off until there is one. Apply sends
+                        it, clears it, so the menu is back on its prompt and never claims to be the offering's state
+                        (the chips say that), and puts focus back on the menu, because a button that has just turned
+                        itself off cannot keep it.
                     --}}
-                    <div class="relative min-w-0 flex-1 sm:flex-none">
-                        <select wire:change="setVisibility('{{ $groupKey }}', $event.target.value); $event.target.selectedIndex = 0"
-                                dusk="visibility-{{ $groupKey }}"
-                                aria-label="Who can see it: {{ $first->title }}"
-                                class="appearance-none w-full rounded-full border border-ink/15 bg-surface pl-4 pr-10 min-h-[44px] text-sm font-semibold
-                                       focus:border-moss focus:ring-2 focus:ring-moss/25 transition-colors cursor-pointer">
-                            <option value="" selected disabled>Who can see it</option>
-                            <option value="{{ \App\Support\Visibility::PUBLIC }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::PUBLIC] }}</option>
-                            @foreach(\App\Support\Visibility::WINDOWS as $window => [, $windowLabel])
-                                <option value="{{ \App\Support\Visibility::FOLLOWERS }}:{{ $window }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::FOLLOWERS] }} for {{ $windowLabel }}</option>
-                            @endforeach
-                            <option value="{{ \App\Support\Visibility::LINK }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::LINK] }}</option>
-                        </select>
-                        <svg viewBox="0 0 24 24" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/65 pointer-events-none"
-                             fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M6 9l6 6 6-6"/>
-                        </svg>
+                    <div x-data="{ choice: '' }" class="flex w-full items-center gap-2 sm:w-auto">
+                        <div class="relative min-w-0 flex-1 sm:flex-none">
+                            <select x-model="choice" x-ref="menu"
+                                    dusk="visibility-{{ $groupKey }}"
+                                    aria-label="Who can see it: {{ $first->title }}"
+                                    class="appearance-none w-full rounded-full border border-ink/15 bg-surface pl-4 pr-10 min-h-[44px] text-sm font-semibold
+                                           focus:border-moss focus:ring-2 focus:ring-moss/25 transition-colors cursor-pointer">
+                                <option value="" selected disabled>Who can see it</option>
+                                <option value="{{ \App\Support\Visibility::PUBLIC }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::PUBLIC] }}</option>
+                                @foreach(\App\Support\Visibility::WINDOWS as $window => [, $windowLabel])
+                                    <option value="{{ \App\Support\Visibility::FOLLOWERS }}:{{ $window }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::FOLLOWERS] }} for {{ $windowLabel }}</option>
+                                @endforeach
+                                <option value="{{ \App\Support\Visibility::LINK }}">{{ \App\Support\Visibility::CATALOG[\App\Support\Visibility::LINK] }}</option>
+                            </select>
+                            <svg viewBox="0 0 24 24" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink/65 pointer-events-none"
+                                 fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </div>
+                        <button type="button" dusk="visibility-apply-{{ $groupKey }}"
+                                aria-label="Apply to {{ $first->title }}"
+                                :disabled="choice === ''"
+                                @click="$wire.setVisibility('{{ $groupKey }}', choice); choice = ''; $refs.menu.focus()"
+                                class="shrink-0 rounded-full bg-pine text-cream px-4 min-h-[44px] text-sm font-semibold
+                                       hover:bg-pine/90 disabled:opacity-40 disabled:hover:bg-pine disabled:cursor-not-allowed transition-colors">
+                            Apply
+                        </button>
                     </div>
                 </div>
             </header>

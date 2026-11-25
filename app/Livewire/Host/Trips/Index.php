@@ -14,13 +14,17 @@ class Index extends Component
     #[Url]
     public string $filter = 'upcoming';
 
+    /** What a screen reader hears after a change, since the chips update and the menu resets without a word. Empty until there is one. */
+    public string $announcement = '';
+
     /**
-     * Who can find every schedule of one offering, chosen from the menu in its header.
+     * Who can find every schedule of one offering, chosen from the menu in its header and sent by its Apply button.
      *
      * `$group` is the key the page already groups by (a trip group, or `solo-{id}` for a trip with no group) and
      * `$choice` is `public`, `link`, or `followers:` plus a key of Visibility::WINDOWS. The trips are looked up
      * among the signed-in host's own, so another host's key matches nothing, and a choice the menu does not
      * offer changes nothing. One UPDATE writes one opening date, so the schedules cannot disagree on it.
+     * Only a change that happened is announced.
      */
     public function setVisibility(string $group, string $choice): void
     {
@@ -36,16 +40,29 @@ class Index extends Component
             return;
         }
 
-        Trip::where('host_id', Auth::id())
+        $trips = Trip::where('host_id', Auth::id())
             ->when(
                 str_starts_with($group, 'solo-'),
                 fn ($q) => $q->whereKey((int) substr($group, 5)),
                 fn ($q) => $q->where('trip_group_id', $group),
             )
-            ->update([
-                'visibility' => $visibility,
-                'public_at' => $visibility === Visibility::FOLLOWERS ? Visibility::opensAt($window) : null,
-            ]);
+            ->get(['id', 'title']);
+
+        if ($trips->isEmpty()) {
+            return;
+        }
+
+        $listing = [
+            'visibility' => $visibility,
+            'public_at' => $visibility === Visibility::FOLLOWERS ? Visibility::opensAt($window) : null,
+        ];
+
+        Trip::whereKey($trips->modelKeys())->update($listing);
+
+        // An unsaved copy that carries the new listing, so the chip's own wording says what was heard, as the row will show it.
+        $trip = $trips->first()->forceFill($listing);
+        $now = Visibility::chip($trip) ?? Visibility::CATALOG[Visibility::PUBLIC];
+        $this->announcement = "Who can see {$trip->title}: {$now}.";
     }
 
     public function render()
