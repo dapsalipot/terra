@@ -381,3 +381,32 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .stagger-in { animation: none; }
 }
+
+/* ── host identity: the trail on a host's cover, and the backdrop behind their page ───────────────────
+   The shapes are drawn once (public/images/patterns) and coloured per host here, by using the drawing as
+   a mask over their accent, so each host's pattern comes out in their own colour. Pseudo-elements, never
+   a background on a real element, for the same reason as .trail-bg: the contrast audit would otherwise
+   skip the text over them. */
+.cover-trail::before {
+    content: ''; position: absolute; inset: 0; background: #fff; opacity: .32;
+    -webkit-mask: url('/images/patterns/trail.svg') center / cover no-repeat;
+    mask: url('/images/patterns/trail.svg') center / cover no-repeat;
+}
+
+.backdrop { position: relative; isolation: isolate; }
+.backdrop::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--accent); opacity: .2; }
+.backdrop-trail::before {
+    -webkit-mask: url('/images/patterns/trail.svg') center top / max(100%, 960px) auto repeat-y;
+    mask: url('/images/patterns/trail.svg') center top / max(100%, 960px) auto repeat-y;
+}
+.backdrop-contours::before {
+    opacity: .16;
+    -webkit-mask: url('/images/patterns/contours.svg') center top / max(100%, 1100px) auto repeat-y;
+    mask: url('/images/patterns/contours.svg') center top / max(100%, 1100px) auto repeat-y;
+}
+.backdrop-dots::before {
+    opacity: .22;
+    -webkit-mask: radial-gradient(circle, #000 1.1px, transparent 1.6px) 0 0 / 20px 20px;
+    mask: radial-gradient(circle, #000 1.1px, transparent 1.6px) 0 0 / 20px 20px;
+}
+.backdrop-none::before { display: none; }

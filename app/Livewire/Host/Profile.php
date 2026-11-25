@@ -3,7 +3,11 @@
 namespace App\Livewire\Host;
 
 use App\Models\HostProfile;
+use App\Models\User;
 use App\Support\Accents;
+use App\Support\Backdrops;
+use App\Support\HostCompleteness;
+use App\Support\Vibes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -25,8 +29,17 @@ class Profile extends Component
 
     public string $bio = '';
 
+    // Personality: what joiners choose between when the trip is the same
+    /** @var list<string> keys from App\Support\Vibes */
+    public array $vibes = [];
+
+    /** @var list<string> up to three "why join us" lines */
+    public array $highlights = ['', '', ''];
+
     // Look
     public string $accent = Accents::DEFAULT;
+
+    public string $backdrop = Backdrops::DEFAULT;
 
     public $avatar = null;
 
@@ -56,6 +69,9 @@ class Profile extends Component
         $this->location = (string) $profile?->location;
         $this->bio = (string) $profile?->bio;
         $this->accent = $profile?->accent ?: Accents::DEFAULT;
+        $this->backdrop = Backdrops::key($profile?->backdrop);
+        $this->vibes = array_values($profile?->vibes ?? []);
+        $this->highlights = array_pad(array_slice(array_values($profile?->highlights ?? []), 0, 3), 3, '');
         $this->currency = $profile?->currency ?: 'PHP';
         $this->links = array_merge($this->links, $profile?->links ?? []);
         $this->payment_methods = $profile?->payment_methods ?: [['label' => '', 'name' => '', 'detail' => '', 'qr' => null]];
@@ -95,6 +111,11 @@ class Profile extends Component
             'location' => ['nullable', 'string', 'max:80'],
             'bio' => ['nullable', 'string', 'max:600'],
             'accent' => ['required', Rule::in(Accents::keys())],
+            'backdrop' => ['required', Rule::in(Backdrops::keys())],
+            'vibes' => ['array', 'max:'.Vibes::MAX],
+            'vibes.*' => [Rule::in(Vibes::keys())],
+            'highlights' => ['array', 'max:3'],
+            'highlights.*' => ['nullable', 'string', 'max:80'],
             'currency' => ['required', 'string', 'size:3'],
             'avatar' => ['nullable', 'image', 'max:5120'],
             'cover' => ['nullable', 'image', 'max:8192'],
@@ -129,6 +150,9 @@ class Profile extends Component
             'location' => $this->location ?: null,
             'bio' => $this->bio ?: null,
             'accent' => $this->accent,
+            'backdrop' => $this->backdrop,
+            'vibes' => array_values(array_unique($this->vibes)),
+            'highlights' => array_values(array_filter(array_map('trim', $this->highlights))),
             'currency' => strtoupper($this->currency),
             'links' => array_filter($this->links),
             // drop rows the host left blank
@@ -174,11 +198,51 @@ class Profile extends Component
         }
     }
 
+    /**
+     * The host as the directory will draw them, from what is on screen rather than what is saved, so the
+     * card changes as they type. Never persisted: it only exists to be rendered.
+     */
+    private function previewHost(User $user): User
+    {
+        $host = new User(['name' => $this->name ?: 'Your name']);
+        $host->forceFill(['handle' => $this->handle, 'avatar' => $user->avatar]);
+        $host->setRelation('hostProfile', new HostProfile([
+            'tagline' => $this->tagline ?: null,
+            'location' => $this->location ?: null,
+            'bio' => $this->bio ?: null,
+            'accent' => $this->accent,
+            'vibes' => $this->vibes,
+            'cover_photo' => $user->hostProfile?->cover_photo,
+            'rating' => $user->hostProfile?->rating,
+            'trips_count' => $user->hostProfile?->trips_count ?? 0,
+            'verified_at' => $user->hostProfile?->verified_at,
+        ]));
+
+        return $host;
+    }
+
     public function render()
     {
+        $user = Auth::user()->fresh('hostProfile');
+
         return view('livewire.host.profile', [
-            'user' => Auth::user()->fresh('hostProfile'),
+            'user' => $user,
             'palette' => Accents::PALETTE,
+            'backdrops' => Backdrops::CATALOG,
+            'vibeCatalog' => Vibes::CATALOG,
+            'maxVibes' => Vibes::MAX,
+            'previewHost' => $this->previewHost($user),
+            'completeness' => HostCompleteness::score([
+                'avatar' => filled($user->avatar) || $this->avatar,
+                'cover' => filled($user->hostProfile?->cover_photo) || $this->cover,
+                'tagline' => $this->tagline,
+                'bio' => $this->bio,
+                'location' => $this->location,
+                'vibes' => count($this->vibes),
+                'highlights' => count(array_filter(array_map('trim', $this->highlights))),
+                'links' => count(array_filter($this->links)),
+                'posts' => $user->posts()->count(),
+            ]),
         ])->layout('components.layouts.host', ['title' => 'Terra · Profile']);
     }
 }

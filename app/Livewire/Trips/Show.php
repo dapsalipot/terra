@@ -2,15 +2,19 @@
 
 namespace App\Livewire\Trips;
 
+use App\Livewire\Concerns\FollowsHosts;
 use App\Models\Review;
 use App\Models\Trip;
 use App\Services\ReviewGate;
 use App\Services\ReviewService;
+use App\Support\HostCards;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class Show extends Component
 {
+    use FollowsHosts;
+
     public Trip $trip;
 
     public ?int $departureId = null;
@@ -107,7 +111,10 @@ class Show extends Component
             ->latest()
             ->get();
 
-        return view('livewire.trips.show', ['reviews' => $reviews])
+        // How many reviews stand behind the host's rating, and whether this viewer already follows them.
+        $hostExtras = HostCards::extras([$this->trip->host_id], Auth::user());
+
+        return view('livewire.trips.show', ['reviews' => $reviews, 'hostExtras' => $hostExtras])
             ->layout('components.layouts.site', ['tabbar' => false]);
     }
 }

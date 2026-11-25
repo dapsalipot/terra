@@ -2,12 +2,17 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\FollowsHosts;
 use App\Models\Trip;
 use App\Models\User;
+use App\Support\HostCards;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class Home extends Component
 {
+    use FollowsHosts;
+
     public function render()
     {
         // One tile per offering, not one per date, soonest first. The cap keeps the page's own query bounded as
@@ -54,7 +59,9 @@ class Home extends Component
             ->orderByDesc('total')
             ->pluck('total', 'places.category');
 
-        return view('livewire.home', compact('soon', 'rows', 'hosts', 'stats', 'tripTypes'))
+        $hostExtras = HostCards::extras($hosts->pluck('id'), Auth::user());
+
+        return view('livewire.home', compact('soon', 'rows', 'hosts', 'hostExtras', 'stats', 'tripTypes'))
             ->layout('components.layouts.site');
     }
 }

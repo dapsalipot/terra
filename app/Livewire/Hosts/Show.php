@@ -5,6 +5,7 @@ namespace App\Livewire\Hosts;
 use App\Models\Post;
 use App\Models\Review;
 use App\Models\Trip;
+use App\Models\TripDeparture;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -126,7 +127,17 @@ class Show extends Component
             ->latest()
             ->get();
 
-        return view('livewire.hosts.show', compact('trips', 'posts', 'reviews'))
+        // What is coming up across every one of their trips, soonest first: on Facebook this is the post people scroll for.
+        $upcoming = TripDeparture::query()
+            ->with('trip.place')
+            ->whereHas('trip', fn ($t) => $t->published()->where('host_id', $this->user->id))
+            ->where('status', 'open')
+            ->where('starts_at', '>', now())
+            ->orderBy('starts_at')
+            ->limit(5)
+            ->get();
+
+        return view('livewire.hosts.show', compact('trips', 'posts', 'reviews', 'upcoming'))
             ->layout('components.layouts.site', ['title' => $this->user->name.' · Terra']);
     }
 }

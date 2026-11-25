@@ -68,7 +68,7 @@
     @if($hosts->isNotEmpty())
         <x-scroller title="Top hosts" :href="route('hosts.index')" class="mt-10 md:mt-14">
             @foreach($hosts as $host)
-                <div class="w-[58vw] shrink-0 snap-start sm:w-[calc(33.333%-13.34px)] md:w-[calc(25%-15px)] lg:w-[calc(20%-16px)] stagger-in" style="--i:{{ $loop->index }}"><x-host-tile :host="$host" /></div>
+                <div class="w-[78vw] shrink-0 snap-start sm:w-[calc(50%-10px)] md:w-[calc(33.333%-13.34px)] lg:w-[calc(25%-15px)] stagger-in" style="--i:{{ $loop->index }}"><x-host-card :host="$host" :extras="$hostExtras" /></div>
             @endforeach
         </x-scroller>
     @endif

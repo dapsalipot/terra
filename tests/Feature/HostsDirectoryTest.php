@@ -106,17 +106,18 @@ it('falls back to featured on an unknown sort', function () {
     Livewire::test(Index::class)->call('setSort', 'whatever')->assertSet('sort', 'featured');
 });
 
-it('counts only open future departures as upcoming', function () {
+it("shows each host's next open departure, not a past or a cancelled one", function () {
     $host = directoryHost('Ridgeline', 'ridgeline', [], 'hike');
     $trip = $host->trips()->first();
 
-    TripDeparture::factory()->for($trip)->create(['status' => 'open', 'starts_at' => now()->addWeek()]);
+    $soonest = TripDeparture::factory()->for($trip)->create(['status' => 'open', 'starts_at' => now()->addWeek()]);
+    TripDeparture::factory()->for($trip)->create(['status' => 'open', 'starts_at' => now()->addWeeks(3)]);
     TripDeparture::factory()->for($trip)->create(['status' => 'open', 'starts_at' => now()->subWeek()]);
-    TripDeparture::factory()->for($trip)->create(['status' => 'cancelled', 'starts_at' => now()->addWeek()]);
+    TripDeparture::factory()->for($trip)->create(['status' => 'cancelled', 'starts_at' => now()->addDays(2)]);
 
-    $upcoming = Livewire::test(Index::class)->viewData('upcomingByHost');
+    $next = Livewire::test(Index::class)->viewData('hostExtras')['next'];
 
-    expect((int) $upcoming[$host->id])->toBe(1);
+    expect($next[$host->id]->id)->toBe($soonest->id);
 });
 
 it('shows what each host runs, deduped', function () {

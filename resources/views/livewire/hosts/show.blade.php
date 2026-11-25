@@ -1,8 +1,9 @@
 @php($p = $user->hostProfile)
 @php($accent = $p?->accent_hex ?? '#5E6B44')
 @php($accentSoft = $p?->accent_soft ?? '#EDF0E6')
+@php($accentText = $p?->accent_text ?? '#5E6B44')
 
-<div style="--accent: {{ $accent }}; --accent-soft: {{ $accentSoft }}">
+<div style="--accent: {{ $accent }}; --accent-soft: {{ $accentSoft }}; --accent-text: {{ $accentText }}">
     {{-- ══════════════════ COVER ══════════════════ --}}
     <div class="relative h-56 md:h-80 overflow-hidden">
         @if($p?->cover_url)
@@ -14,6 +15,7 @@
         <div class="grain-overlay" style="opacity:.22" aria-hidden="true"></div>
     </div>
 
+    <div class="backdrop backdrop-{{ \App\Support\Backdrops::key($p?->backdrop) }}">
     {{-- ══════════════════ IDENTITY ══════════════════
          Only the avatar overlaps the cover; all text sits on the canvas so it is
          always legible regardless of what the host uploaded behind it. --}}
@@ -60,7 +62,12 @@
 
         {{-- name block, fully on canvas --}}
         <div class="mt-5">
-            <h1 class="tracking-tight font-semibold text-4xl md:text-5xl leading-none">{{ $user->name }}</h1>
+            <h1 class="flex items-center gap-2.5 tracking-tight font-semibold text-4xl md:text-5xl leading-none">
+                {{ $user->name }}
+                @if($p?->isVerified())
+                    <svg viewBox="0 0 24 24" class="h-7 w-7 shrink-0 md:h-8 md:w-8" style="color: var(--accent-text)" role="img" aria-label="Verified host"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                @endif
+            </h1>
             <p class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-ink/70 mt-2.5">
                 <span class="font-semibold">&commat;{{ $user->handle }}</span>
                 @if($p?->location)
@@ -73,10 +80,27 @@
             </p>
 
             @if($p?->tagline)
-                <p class="tracking-tight text-2xl mt-4" style="color: var(--accent)">{{ $p->tagline }}</p>
+                <p class="tracking-tight text-2xl mt-4" style="color: var(--accent-text)">{{ $p->tagline }}</p>
+            @endif
+            @if($p?->vibeLabels())
+                <div class="mt-4 flex flex-wrap gap-2" aria-label="How {{ $user->name }}'s trips feel">
+                    @foreach($p->vibeLabels() as $label)
+                        <span class="rounded-full px-3.5 py-1.5 text-sm font-semibold" style="background: var(--accent-soft); color: var(--accent-text)">{{ $label }}</span>
+                    @endforeach
+                </div>
             @endif
             @if($p?->bio)
-                <p class="text-ink/75 leading-relaxed mt-3 max-w-2xl">{{ $p->bio }}</p>
+                <p class="text-ink/75 leading-relaxed mt-4 max-w-2xl">{{ $p->bio }}</p>
+            @endif
+            @if($p?->highlightLines())
+                <ul class="mt-5 max-w-2xl space-y-2" aria-label="Why join {{ $user->name }}" dusk="highlights">
+                    @foreach($p->highlightLines() as $line)
+                        <li class="flex items-start gap-2.5 text-ink/85">
+                            <svg viewBox="0 0 24 24" class="mt-0.5 h-5 w-5 shrink-0" style="color: var(--accent-text)" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.6l4.6 4.6L19 7.4"/></svg>
+                            {{ $line }}
+                        </li>
+                    @endforeach
+                </ul>
             @endif
         </div>
 
@@ -86,6 +110,7 @@
                 [$p?->trips_count ?? 0, 'Trips led'],
                 [$p?->guests_count ?? 0, 'Guests'],
                 [$p?->followers_count ?? 0, 'Followers'],
+                [$reviews->count(), 'Reviews'],
                 [$p?->rating ?? '—', 'Rating'],
             ] as [$value, $label])
                 <div>
@@ -102,7 +127,7 @@
                     @continue(! $href)
                     <a href="{{ $href }}" target="_blank" rel="noopener noreferrer"
                        class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold hover:brightness-95 hover:-translate-y-0.5 transition-all"
-                       style="background: var(--accent-soft); color: var(--accent)">
+                       style="background: var(--accent-soft); color: var(--accent-text)">
                         {{ ucfirst($kind) }} · {{ \App\Support\SocialLinks::label($kind, $value) }}
                         <svg viewBox="0 0 24 24" class="w-3 h-3 opacity-70" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"/></svg>
                     </a>
@@ -135,7 +160,35 @@
 
         {{-- ───── TRIPS ───── --}}
         @if($tab === 'trips')
+            @if($upcoming->isNotEmpty())
+                <section class="mb-10" aria-labelledby="upcoming-heading" dusk="upcoming">
+                    <h2 id="upcoming-heading" class="text-xl font-semibold tracking-tight">Next departures</h2>
+                    <ul class="mt-4 divide-y divide-ink/10 overflow-hidden rounded-2xl border border-ink/10 bg-surface">
+                        @foreach($upcoming as $dep)
+                            @php($left = $dep->spotsLeft())
+                            <li>
+                                <a href="{{ route('trips.show', $dep->trip) }}" class="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-ink/[.03]">
+                                    <span class="w-12 shrink-0 text-center leading-none">
+                                        <span class="block text-xl font-semibold tabular-nums">{{ $dep->starts_at->format('j') }}</span>
+                                        <span class="mt-1 block text-[11px] font-semibold uppercase tracking-wide text-ink/65">{{ $dep->starts_at->format('M') }}</span>
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block truncate font-semibold">{{ $dep->trip->title }}</span>
+                                        <span class="block truncate text-sm text-ink/65">{{ $dep->trip->place?->name }}@if($dep->trip->place?->country), {{ $dep->trip->place->country }}@endif</span>
+                                    </span>
+                                    <span class="shrink-0 text-right text-sm">
+                                        <span class="block font-semibold tabular-nums">{{ $user->hostProfile?->currency ?? 'PHP' }} {{ number_format($dep->trip->current_price) }}</span>
+                                        @if($left !== null)<span class="block {{ $left <= 4 ? 'font-semibold text-terra-deep' : 'text-ink/65' }}">{{ $left === 0 ? 'Full' : $left.' left' }}</span>@endif
+                                    </span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
+            @endif
+
             @if($trips->isNotEmpty())
+                <h2 class="mb-4 text-xl font-semibold tracking-tight">{{ $upcoming->isNotEmpty() ? 'All trips' : 'Trips' }}</h2>
                 <div class="grid sm:grid-cols-2 gap-8">
                     @foreach($trips as $trip)<x-trip-card :$trip />@endforeach
                 </div>
@@ -202,7 +255,7 @@
                                     <div class="text-xs text-ink/65">{{ $post->created_at->diffForHumans() }}</div>
                                 </div>
                                 @if($post->isRecap())
-                                    <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background: var(--accent-soft); color: var(--accent)">Recap</span>
+                                    <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" style="background: var(--accent-soft); color: var(--accent-text)">Recap</span>
                                 @endif
                                 @if($this->isOwner)
                                     <x-confirm-action
@@ -228,7 +281,7 @@
                             @if($post->trip)
                                 <a href="{{ route('trips.show', $post->trip) }}"
                                    class="flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-t border-ink/6 hover:bg-ink/[.02] transition-colors"
-                                   style="color: var(--accent)">
+                                   style="color: var(--accent-text)">
                                     {{ $post->trip->title }} →
                                 </a>
                             @endif
@@ -268,7 +321,7 @@
                                 </div>
                                 <p class="mt-3 text-ink/80 leading-relaxed">{{ $review->body }}</p>
                                 @if($review->reviewable instanceof \App\Models\Trip)
-                                    <a href="{{ route('trips.show', $review->reviewable) }}" class="inline-block mt-3 text-xs font-semibold" style="color: var(--accent)">
+                                    <a href="{{ route('trips.show', $review->reviewable) }}" class="inline-block mt-3 text-xs font-semibold" style="color: var(--accent-text)">
                                         on {{ $review->reviewable->title }} →
                                     </a>
                                 @endif
@@ -321,5 +374,6 @@
                 @endif
             </div>
         @endif
+    </div>
     </div>
 </div>

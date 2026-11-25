@@ -42,13 +42,75 @@
     <div class="max-w-[1600px] mx-auto px-6 lg:px-10 py-10 grid lg:grid-cols-[minmax(0,1fr)_380px] gap-8 xl:gap-12 items-start">
         {{-- LEFT --}}
         <div class="min-w-0">
-            {{-- host row --}}
+            {{-- ═══ HOSTED BY ═══
+                 When several hosts run the same hike this is the part a joiner is really choosing, so it carries
+                 the host's own promise, vibes and proof rather than a name and a count. Nothing here points at
+                 another host: this page is the host's own ground. --}}
+            @php($host = $trip->host)
+            @php($hp = $host->hostProfile)
+            @php($hostReviews = (int) ($hostExtras['reviews'][$host->id] ?? 0))
+            @php($hostFollowed = isset($hostExtras['following'][$host->id]))
+            {{-- A host with no handle has no page to link to, so the tags become plain text rather than anchors to nowhere. --}}
+            @php($hostUrl = filled($host->handle) ? route('hosts.show', $host) : null)
+            @php($hostTag = $hostUrl ? 'a' : 'span')
             <div class="pb-6 border-b border-ink/8">
-                <p class="text-xs font-semibold uppercase tracking-wide text-ink/65 mb-2">Hosted by</p>
-                {{-- Avatar and name are one target now. The photo used to be inert while only the
-                     name was a link, which is the half of the pair people actually aim at. --}}
-                <x-host-link :host="$trip->host" size="lg" class="gap-3 font-semibold"
-                             :subtitle="($trip->host->hostProfile?->trips_count ?? 0).' trips led · '.($trip->host->hostProfile?->rating ?? '—').' ★'" />
+                <section class="rounded-2xl border border-ink/10 bg-surface p-5" dusk="hosted-by"
+                         style="--accent: {{ $hp?->accent_hex ?? '#5E6B44' }}; --accent-soft: {{ $hp?->accent_soft ?? '#EDF0E6' }}; --accent-text: {{ $hp?->accent_text ?? '#5E6B44' }}">
+                    <div class="flex items-start gap-4">
+                        <{{ $hostTag }} @if($hostUrl) href="{{ $hostUrl }}" wire:navigate tabindex="-1" @endif class="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-pine text-lg font-semibold text-cream" aria-hidden="true">
+                            @if($host->avatar_url)<img src="{{ $host->avatar_url }}" alt="" class="absolute inset-0 h-full w-full object-cover">@else{{ $host->initials }}@endif
+                        </{{ $hostTag }}>
+
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold text-ink/65">Hosted by</p>
+                            <{{ $hostTag }} @if($hostUrl) href="{{ $hostUrl }}" wire:navigate dusk="host-link-{{ $host->id }}" @endif class="inline-flex max-w-full items-center gap-1.5 text-lg font-semibold leading-tight {{ $hostUrl ? 'hover:underline underline-offset-4' : '' }}">
+                                <span class="truncate">{{ $host->name }}</span>
+                                @if($hp?->isVerified())
+                                    <svg viewBox="0 0 24 24" class="h-5 w-5 shrink-0" style="color: var(--accent-text)" role="img" aria-label="Verified host"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                @endif
+                            </{{ $hostTag }}>
+                            @if($hp?->tagline)
+                                <p class="mt-1 text-sm font-medium" style="color: var(--accent-text)">{{ $hp->tagline }}</p>
+                            @endif
+                            <p class="mt-2 flex flex-wrap items-center gap-x-1.5 text-sm">
+                                @if($hp?->rating)
+                                    <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.6 6.1 20.8l1.2-6.5L2.5 9.7l6.6-.9z"/></svg>
+                                    <span class="font-semibold">{{ $hp->rating }}</span>
+                                    @if($hostReviews)<span class="text-ink/65">{{ number_format($hostReviews) }} {{ Str::plural('review', $hostReviews) }}</span>@endif
+                                    <span class="text-ink/65" aria-hidden="true">·</span>
+                                @endif
+                                <span class="text-ink/65">{{ number_format($hp?->trips_count ?? 0) }} trips led</span>
+                                @if($hp?->location)<span class="text-ink/65" aria-hidden="true">·</span><span class="text-ink/65">{{ $hp->location }}</span>@endif
+                            </p>
+                        </div>
+
+                        @if(auth()->id() !== $host->id)
+                            <button type="button" wire:click="toggleFollow({{ $host->id }})" aria-pressed="{{ $hostFollowed ? 'true' : 'false' }}" dusk="trip-follow"
+                                    class="shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95 {{ $hostFollowed ? 'border border-ink/20 bg-surface text-ink hover:border-ink/35' : 'bg-pine text-cream hover:bg-pine/90' }}">
+                                {{ $hostFollowed ? 'Following' : 'Follow' }}
+                            </button>
+                        @endif
+                    </div>
+
+                    @if($hp?->vibeLabels())
+                        <div class="mt-4 flex flex-wrap gap-1.5">
+                            @foreach($hp->vibeLabels() as $label)
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold" style="background: var(--accent-soft); color: var(--accent-text)">{{ $label }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if($hp?->highlightLines())
+                        <ul class="mt-4 space-y-1.5 text-sm text-ink/85">
+                            @foreach($hp->highlightLines() as $line)
+                                <li class="flex items-start gap-2">
+                                    <svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0" style="color: var(--accent-text)" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.6l4.6 4.6L19 7.4"/></svg>
+                                    {{ $line }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </section>
             </div>
 
             {{-- ═══ THE TRAIL — one panel per hiking stop ═══ --}}

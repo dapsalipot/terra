@@ -321,7 +321,9 @@ it('does not repeat an offering on the host’s public page', function () {
 
     $html = Livewire::test(Show::class, ['user' => $host])->html();
 
-    expect(substr_count($html, '>Once Only<'))->toBe(1);
+    // One card for the offering in the trips grid. The "Next departures" list above it names the trip once
+    // per date on purpose, so only what follows its heading counts.
+    expect(substr_count(\Illuminate\Support\Str::after($html, 'All trips'), '>Once Only<'))->toBe(1);
 });
 
 it('offers each past offering once when starting a new trip', function () {

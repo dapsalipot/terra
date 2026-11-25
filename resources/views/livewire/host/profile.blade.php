@@ -1,4 +1,4 @@
-<div class="max-w-4xl" x-data>
+<div class="max-w-6xl" x-data>
     <div class="flex items-end justify-between mb-6">
         <div>
             <h1 class="tracking-tight font-semibold text-3xl">Your page</h1>
@@ -11,6 +11,9 @@
             <span class="rounded-full bg-moss/12 text-moss px-4 py-2 text-sm font-semibold">{{ $saved }}</span>
         @endif
     </div>
+
+    <div class="items-start lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-8">
+    <div class="min-w-0">
 
     {{-- ══════════ LIVE PREVIEW ══════════ --}}
     <div class="rounded-3xl overflow-hidden border border-ink/10 bg-surface shadow-sm mb-8">
@@ -89,6 +92,34 @@
             </label>
         </section>
 
+        {{-- ══════════ PERSONALITY ══════════ --}}
+        <section class="rounded-2xl border border-ink/10 bg-surface p-6">
+            <h2 class="font-semibold text-lg">Your personality</h2>
+            <p class="text-sm text-ink/65 mt-1 mb-5">When several hosts run the same hike, this is what joiners choose between.</p>
+
+            <span class="block text-sm font-semibold text-ink/70 mb-2">How your trips feel <span class="font-normal text-ink/65">(pick up to {{ $maxVibes }})</span></span>
+            <div class="flex flex-wrap gap-2 mb-2" role="group" aria-label="How your trips feel">
+                @foreach($vibeCatalog as $key => $label)
+                    @php($on = in_array($key, $vibes, true))
+                    <label class="cursor-pointer">
+                        <input type="checkbox" wire:model.live="vibes" value="{{ $key }}" dusk="vibe-{{ $key }}" class="peer sr-only" @disabled(! $on && count($vibes) >= $maxVibes)>
+                        <span class="inline-flex items-center rounded-full border border-ink/15 px-3.5 py-2 text-sm font-semibold transition hover:border-ink/30 peer-checked:border-pine peer-checked:bg-pine peer-checked:text-cream peer-focus-visible:ring-2 peer-focus-visible:ring-moss peer-focus-visible:ring-offset-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-40">{{ $label }}</span>
+                    </label>
+                @endforeach
+            </div>
+            @error('vibes')<p class="text-terra-deep text-xs mb-2">{{ $message }}</p>@enderror
+            @error('vibes.*')<p class="text-terra-deep text-xs mb-2">{{ $message }}</p>@enderror
+
+            <span class="block text-sm font-semibold text-ink/70 mt-6 mb-2">Why join you <span class="font-normal text-ink/65">(up to three short lines)</span></span>
+            <div class="space-y-2.5">
+                @foreach(['Small groups, never more than 10', 'Our guides carry first aid and know every trail', 'Hot breakfast waiting at the summit'] as $i => $example)
+                    <input wire:model.live.debounce.400ms="highlights.{{ $i }}" type="text" maxlength="80" placeholder="{{ $example }}" aria-label="Reason {{ $i + 1 }}" dusk="highlight-{{ $i }}"
+                           class="w-full rounded-xl border-ink/15 focus:border-moss focus:ring-moss">
+                    @error('highlights.'.$i)<p class="text-terra-deep text-xs">{{ $message }}</p>@enderror
+                @endforeach
+            </div>
+        </section>
+
         {{-- ══════════ LOOK ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
             <h2 class="font-semibold text-lg">Look</h2>
@@ -107,6 +138,18 @@
                 @endforeach
             </div>
             @error('accent')<p class="text-terra text-xs mb-3">{{ $message }}</p>@enderror
+
+            <span class="block text-sm font-semibold text-ink/70 mb-2">Page backdrop</span>
+            <div class="flex flex-wrap gap-2.5 mb-6">
+                @foreach($backdrops as $key => $label)
+                    <button type="button" wire:click="$set('backdrop', '{{ $key }}')" aria-pressed="{{ $backdrop === $key ? 'true' : 'false' }}" dusk="backdrop-{{ $key }}"
+                            class="w-28 overflow-hidden rounded-xl border text-left transition {{ $backdrop === $key ? 'border-ink/40 ring-2 ring-ink/10' : 'border-ink/12 hover:border-ink/25' }}">
+                        <span class="backdrop backdrop-{{ $key }} block h-14" style="--accent: {{ $palette[$accent]['hex'] ?? '#5E6B44' }}; background: {{ $palette[$accent]['soft'] ?? '#EDF0E6' }}" aria-hidden="true"></span>
+                        <span class="block px-3 py-2 text-xs font-semibold">{{ $label }}</span>
+                    </button>
+                @endforeach
+            </div>
+            @error('backdrop')<p class="text-terra text-xs mb-3">{{ $message }}</p>@enderror
 
             <div class="grid sm:grid-cols-2 gap-5">
                 <div>
@@ -193,4 +236,35 @@
             @endif
         </div>
     </form>
+    </div>
+
+    <aside class="mt-8 space-y-5 lg:sticky lg:top-6 lg:mt-0" aria-label="How your page looks to joiners">
+        <section class="rounded-2xl border border-ink/10 bg-surface p-5" dusk="completeness">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 class="font-semibold">Page completeness</h2>
+                <span class="text-sm font-semibold tabular-nums">{{ $completeness['percent'] }}%</span>
+            </div>
+            <div class="mt-3 h-2 rounded-full bg-ink/10" role="progressbar" aria-valuenow="{{ $completeness['percent'] }}" aria-valuemin="0" aria-valuemax="100" aria-label="Page completeness">
+                <div class="h-2 rounded-full bg-pine transition-all duration-500" style="width: {{ $completeness['percent'] }}%"></div>
+            </div>
+            @if($completeness['todo'])
+                <ul class="mt-4 space-y-2.5 text-sm">
+                    @foreach(array_slice($completeness['todo'], 0, 4, true) as $item)
+                        <li>
+                            <span class="block font-semibold">{{ $item['label'] }}</span>
+                            <span class="block text-ink/65">{{ $item['hint'] }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="mt-4 text-sm text-ink/70">Everything is filled in. Joiners get a full picture of who you are.</p>
+            @endif
+        </section>
+
+        <section>
+            <h2 class="mb-2 text-sm font-semibold text-ink/70">How you look in the directory</h2>
+            <x-host-card :host="$previewHost" preview />
+        </section>
+    </aside>
+    </div>
 </div>

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Accents;
+use App\Support\Vibes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -15,7 +16,13 @@ class HostProfile extends Model
 
     protected function casts(): array
     {
-        return ['payment_methods' => 'array', 'links' => 'array'];
+        return [
+            'payment_methods' => 'array',
+            'links' => 'array',
+            'vibes' => 'array',
+            'highlights' => 'array',
+            'verified_at' => 'datetime',
+        ];
     }
 
     public function user()
@@ -36,5 +43,27 @@ class HostProfile extends Model
     public function getAccentSoftAttribute(): string
     {
         return Accents::soft($this->accent);
+    }
+
+    public function getAccentTextAttribute(): string
+    {
+        return Accents::text($this->accent);
+    }
+
+    /** The host's vibes as key => label, in the order they chose. */
+    public function vibeLabels(): array
+    {
+        return Vibes::resolve($this->vibes);
+    }
+
+    /** Their "why join us" lines, blanks dropped. */
+    public function highlightLines(): array
+    {
+        return array_values(array_filter(array_map('trim', $this->highlights ?? [])));
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->verified_at !== null;
     }
 }

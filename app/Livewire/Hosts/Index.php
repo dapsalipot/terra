@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Hosts;
 
+use App\Livewire\Concerns\FollowsHosts;
 use App\Models\Trip;
-use App\Models\TripDeparture;
 use App\Models\User;
+use App\Support\HostCards;
 use App\Support\PlaceCategories;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -13,7 +15,7 @@ use Livewire\WithPagination;
 
 class Index extends Component
 {
-    use WithPagination;
+    use FollowsHosts, WithPagination;
 
     /** In the URL so a filtered directory can be linked and shared. */
     #[Url(as: 'q')]
@@ -125,8 +127,8 @@ class Index extends Component
         /*
          * What each host actually runs, and what they have coming up.
          *
-         * Two grouped queries for the whole page rather than two per card — the cards show both,
-         * and asking per host is the N+1 that turns a directory into a hundred queries.
+         * Grouped queries for the whole page rather than per card — the cards show all of it, and
+         * asking per host is the N+1 that turns a directory into a hundred queries.
          */
         $ids = $hosts->pluck('id');
 
@@ -138,19 +140,13 @@ class Index extends Component
             ->groupBy('host_id')
             ->map(fn ($rows) => PlaceCategories::resolve($rows->pluck('category')));
 
-        $upcomingByHost = TripDeparture::query()
-            ->join('trips', 'trips.id', '=', 'trip_departures.trip_id')
-            ->whereIn('trips.host_id', $ids)
-            ->where('trips.status', 'published')
-            ->where('trip_departures.status', 'open')
-            ->where('trip_departures.starts_at', '>', now())
-            ->groupBy('trips.host_id')
-            ->pluck(DB::raw('count(*)'), 'trips.host_id');
+        // The next departure, review count and follow state each card shows, in one query apiece.
+        $hostExtras = HostCards::extras($ids, Auth::user());
 
         return view('livewire.hosts.index', [
             'hosts' => $hosts,
             'categoriesByHost' => $categoriesByHost,
-            'upcomingByHost' => $upcomingByHost,
+            'hostExtras' => $hostExtras,
             'total' => User::where('role', 'host')->whereNotNull('handle')->count(),
         ])->layout('components.layouts.site', ['title' => 'Terra · Hosts']);
     }
