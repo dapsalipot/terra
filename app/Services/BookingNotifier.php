@@ -34,7 +34,7 @@ class BookingNotifier
 
     public function send(Reservation $reservation, string $kind, ?string $reason = null): void
     {
-        $to = $reservation->joiner?->email ?: $reservation->contact_email;
+        $to = $reservation->recipientEmail();
 
         if (! $to) {
             return;   // an offline walk-in the host added by hand has nobody to write to

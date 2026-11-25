@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Reservation;
+use App\Support\Ics;
 use Carbon\CarbonInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -49,7 +50,7 @@ class BookingMail extends Mailable
         // "Pulag hike has been cancelled" reads better than the host.
         $subjectSubject = in_array($this->kind, ['confirmed', 'rejected'], true) ? $host->name : $trip->title;
 
-        return $this->subject(sprintf($subject, $subjectSubject))
+        $mail = $this->subject(sprintf($subject, $subjectSubject))
             ->view($view, [
                 'name' => $this->reservation->contactName() ?: $this->reservation->displayName(),
                 'hostName' => $host->name,
@@ -63,6 +64,37 @@ class BookingMail extends Mailable
                     ? $this->reservation->expires_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE, 'parts' => 1])
                     : 'a short while',
                 'url' => route('reservations.show', ['token' => $this->reservation->public_token]),
+                // For clients that do not act on the invite, and for someone who deleted it.
+                'calendarUrl' => route('calendar.booking', ['token' => $this->reservation->public_token]),
             ]);
+
+        /*
+         * The trip, delivered into their calendar rather than offered to them.
+         *
+         * An attachment whose Content-Type carries the method is what makes Gmail, Outlook and
+         * Apple Mail treat this as an invitation: it is filed automatically where the recipient's
+         * settings allow, and shown as an invite card where they do not. The method also has to
+         * appear inside the file; the two must agree or a client ignores both.
+         */
+        if ($method = $this->inviteMethod()) {
+            $mail->attachData(Ics::invite($this->reservation, $method), 'invite.ics', [
+                'mime' => 'text/calendar; charset=UTF-8; method='.$method,
+            ]);
+        }
+
+        return $mail;
+    }
+
+    /** @return 'REQUEST'|'CANCEL'|null */
+    private function inviteMethod(): ?string
+    {
+        return match (true) {
+            $this->kind === 'confirmed' => 'REQUEST',
+            // Only take out what was put in. A request the host never accepted never reached
+            // anybody's calendar, so a cancellation for it would be a stranger's event vanishing.
+            in_array($this->kind, ['cancelled', 'departure_cancelled'], true)
+                && $this->reservation->confirmed_at !== null => 'CANCEL',
+            default => null,
+        };
     }
 }

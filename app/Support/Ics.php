@@ -49,8 +49,33 @@ class Ics
         return self::feed(collect([$reservation]), $name);
     }
 
+    /**
+     * An invitation a mail client files straight into the recipient's calendar.
+     *
+     * Same event, same UID as the feed and the download, so an update or a cancel replaces what an
+     * earlier one put there rather than sitting beside it. What makes it an invite rather than a
+     * published event is METHOD plus an organizer and an attendee: without both, Gmail shows an
+     * attachment instead of an invitation and nothing is added automatically.
+     *
+     * @param  'REQUEST'|'CANCEL'  $method
+     */
+    public static function invite(Reservation $reservation, string $method): string
+    {
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Terra//Trips//EN',
+            'CALSCALE:GREGORIAN',
+            'METHOD:'.$method,
+            ...self::event($reservation, $method, $reservation->recipientEmail()),
+            'END:VCALENDAR',
+        ];
+
+        return implode("\r\n", array_map(self::fold(...), $lines))."\r\n";
+    }
+
     /** @return array<int, string> */
-    private static function event(Reservation $reservation): array
+    private static function event(Reservation $reservation, string $method = 'PUBLISH', ?string $attendee = null): array
     {
         $departure = $reservation->departure;
         $trip = $departure->trip;
@@ -82,6 +107,8 @@ class Ics
             'UID:booking-'.$reservation->public_token.'@terra',
             'DTSTAMP:'.now()->utc()->format('Ymd\THis\Z'),
             // Bumped whenever the booking changes, which is what tells a client to replace it.
+            // ponytail: a Unix timestamp overflows a signed 32-bit SEQUENCE in January 2038, which
+            // some parsers hold it to. Switch to a per-booking revision counter before then.
             'SEQUENCE:'.$reservation->updated_at->timestamp,
             'DTSTART:'.$start,
             'DTEND:'.$end,
@@ -91,9 +118,41 @@ class Ics
             'URL:'.route('trips.show', $trip),
             // A cancelled booking has to stay in the feed saying CANCELLED. Dropping it just
             // leaves the old event sitting in somebody's calendar forever.
-            'STATUS:'.($reservation->status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED'),
+            'STATUS:'.($method === 'CANCEL' || $reservation->status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED'),
+            ...self::people($attendee),
             'END:VEVENT',
         ]);
+    }
+
+    /**
+     * Organizer and attendee, only on an invitation.
+     *
+     * The organizer is whoever the mail is actually from. Mail clients check that an invite's
+     * organizer matches its sender, and an invite that names somebody else is treated as spoofed
+     * and not filed.
+     *
+     * @return array<int, string>
+     */
+    private static function people(?string $attendee): array
+    {
+        if ($attendee === null) {
+            return [];
+        }
+
+        $from = config('mail.from.address');
+
+        return [
+            'ORGANIZER;CN='.self::param(config('mail.from.name') ?: 'Terra').':mailto:'.$from,
+            // RSVP=FALSE: the host already granted the seat, so asking the joiner to accept a place
+            // they were just given would be a second confirmation step for no one's benefit.
+            'ATTENDEE;CN='.self::param($attendee).';ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:'.$attendee,
+        ];
+    }
+
+    /** A value inside a parameter: quoted, because a comma or colon would otherwise end it. */
+    private static function param(string $value): string
+    {
+        return '"'.str_replace('"', "'", $value).'"';
     }
 
     /** Escape the four characters that mean something structural in an ICS TEXT value. */

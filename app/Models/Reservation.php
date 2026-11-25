@@ -101,6 +101,18 @@ class Reservation extends Model
         return $this->participants->reject->isComplete()->values();
     }
 
+    /**
+     * Where news about this booking is sent: the account's address, else the one typed at booking.
+     *
+     * One definition because two things must agree on it. The notifier writes to this address, and
+     * a calendar invite names the same address as its attendee — an invite addressed to somebody
+     * other than its recipient is one a calendar will not file.
+     */
+    public function recipientEmail(): ?string
+    {
+        return $this->joiner?->email ?: $this->contact_email;
+    }
+
     public function displayName(): string
     {
         return $this->contactName()
