@@ -45,7 +45,7 @@ it('tells a joiner why a payment was rejected', function () {
         && $m->reason === 'Reference not found');
 });
 
-it('does not email a joiner who cancelled their own booking', function () {
+it('does not email a joiner who cancelled a request the host had not confirmed', function () {
     // They are looking at the page that did it. An email would be telling them what they just did.
     Mail::fake();
     $r = notifiableBooking();
@@ -53,6 +53,20 @@ it('does not email a joiner who cancelled their own booking', function () {
     app(ReservationService::class)->cancel($r, 'Cancelled by joiner');
 
     Mail::assertNothingSent();
+});
+
+it('does email a joiner who cancels a seat they were given, so the calendar can let go of it', function () {
+    // The page says it is cancelled, but the confirmation put an event in their calendar and only a
+    // cancellation delivered to their mailbox takes it out again.
+    Mail::fake();
+    $r = notifiableBooking(['status' => 'confirmed', 'confirmed_at' => now()]);
+
+    app(ReservationService::class)->cancel($r, 'Cancelled by joiner');
+
+    // No reason attached: "Cancelled by joiner" would be the joiner being told what they just did.
+    Mail::assertSent(BookingMail::class, fn ($m) => $m->kind === 'cancelled'
+        && $m->hasTo('ada@example.com')
+        && $m->reason === null);
 });
 
 it('emails a joiner whose hold expired out from under them', function () {

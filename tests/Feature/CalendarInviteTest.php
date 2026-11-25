@@ -6,6 +6,7 @@ use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
+use App\Services\ReservationService;
 use App\Support\Ics;
 use Illuminate\Support\Facades\Mail;
 use Symfony\Component\Mime\Email;
@@ -98,6 +99,31 @@ it('takes the trip back out of the calendar when a confirmed booking is cancelle
         // The same event, so the calendar removes what the confirmation added.
         ->and($part->getBody())->toContain('UID:booking-'.$r->public_token.'@terra');
 });
+
+it('sends the cancellation when the joiner cancels a confirmed booking themselves', function () {
+    $r = inviteBooking();
+
+    app(ReservationService::class)->cancel($r, 'Cancelled by joiner');
+
+    $part = lastSent()->getAttachments()[0];
+
+    expect($part->getPreparedHeaders()->toString())->toMatch('/method=CANCEL/i')
+        ->and($part->getBody())->toContain('METHOD:CANCEL')
+        ->and($part->getBody())->toContain('UID:booking-'.$r->public_token.'@terra');
+});
+
+it('tells a joiner who cancelled a fully paid booking that money is owed back', function (string $kind) {
+    // The refund line used to read what the booking holds *now*, and a cancelled booking holds
+    // nothing — so the one joiner owed the most was the one the email said nothing to.
+    $r = inviteBooking();
+    $service = app(ReservationService::class);
+
+    $service->markFullyPaid($r->fresh(), $r->departure->trip->host);
+    $service->cancel($r->fresh(), 'Cancelled by joiner');
+
+    expect($r->fresh()->refund_due)->toBeGreaterThan(0)
+        ->and((new BookingMail($r->fresh(), $kind))->render())->toContain('arrange the refund');
+})->with(['cancelled', 'departure_cancelled']);
 
 it('does the same when the whole departure is cancelled', function () {
     $r = inviteBooking(['status' => 'cancelled', 'cancelled_at' => now()]);

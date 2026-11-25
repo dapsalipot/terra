@@ -348,8 +348,15 @@ class ReservationService
         // Not for a joiner cancelling their own booking — they were just told by the page they
         // did it on. This is for the ones done to them: an expired hold, a host removing them,
         // a departure called off.
+        //
+        // The exception is a seat they had already been granted. The confirmation put an event in
+        // their calendar, and the page cannot take it out; only a cancellation delivered to their
+        // mailbox can. No reason goes with it — "Cancelled by joiner" would be the joiner being
+        // told what they just did.
         if ($reason !== 'Cancelled by joiner') {
             $this->notifier->send($reservation, 'cancelled', $reason);
+        } elseif ($reservation->confirmed_at !== null) {
+            $this->notifier->send($reservation, 'cancelled');
         }
 
         return $reservation;

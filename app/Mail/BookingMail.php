@@ -40,6 +40,10 @@ class BookingMail extends Mailable
         $trip = $this->reservation->departure->trip;
         $host = $trip->host;
         $money = $this->reservation->money();
+
+        // A cancelled booking holds nothing, so money() reads zero for it. What it is owed back is
+        // what cancel() set aside at the moment it let go of the seat.
+        $paid = $this->reservation->status === 'cancelled' ? (float) $this->reservation->refund_due : $money['paid'];
         $currency = $host->hostProfile?->currency ?? 'PHP';
         $fmt = fn (float $n) => $currency.' '.number_format($n);
 
@@ -58,7 +62,7 @@ class BookingMail extends Mailable
                 'when' => $this->reservation->departure->starts_at->format('D, j M Y'),
                 'meetup' => $trip->meetup_point,
                 'due' => $money['due'] > 0 ? $fmt($money['due']) : 0,
-                'paid' => $money['paid'] > 0 ? $fmt($money['paid']) : 0,
+                'paid' => $paid > 0 ? $fmt($paid) : 0,
                 'reason' => $this->reason,
                 'remaining' => $this->reservation->expires_at
                     ? $this->reservation->expires_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE, 'parts' => 1])
