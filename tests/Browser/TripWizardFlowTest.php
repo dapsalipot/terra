@@ -49,6 +49,9 @@ class TripWizardFlowTest extends DuskTestCase
                 ->waitForText('Review')
                 ->waitFor('@wizard-publish')
                 ->click('@wizard-publish')
+                // The title is on the wizard's own review step too, so it cannot say the publish went
+                // through. The publish button only goes when the trip page replaces the wizard.
+                ->waitUntilMissing('@wizard-publish')
                 ->waitForText('Dusk Traverse');
         });
 
@@ -96,8 +99,10 @@ class TripWizardFlowTest extends DuskTestCase
                 ->waitForText('Review')
                 ->waitFor('@wizard-publish')
                 ->click('@wizard-publish')
-                ->waitForText('Graded Traverse')
-                ->assertSee('The trail')
+                ->waitUntilMissing('@wizard-publish')
+                // The trail section only exists on the trip page, which is what we are waiting for.
+                ->waitForText('The trail')
+                ->assertSee('Graded Traverse')
                 ->assertSee('2,922 m')
                 ->assertSee('Major climb')
                 ->assertSee('Monkey trail');
