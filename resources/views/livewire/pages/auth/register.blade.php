@@ -7,15 +7,25 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Volt\Component;
 
 new #[Layout('layouts.guest')] class extends Component
 {
     public string $name = '';
     public string $email = '';
+    #[Url]
     public string $role = 'joiner';
     public string $password = '';
     public string $password_confirmation = '';
+
+    /** A shared link can ask for either role (the landing page links organisers here); anything else means joining. */
+    public function mount(): void
+    {
+        if (! in_array($this->role, ['joiner', 'host'], true)) {
+            $this->role = 'joiner';
+        }
+    }
 
     /**
      * Handle an incoming registration request. Role is chosen at signup and
@@ -91,7 +101,7 @@ new #[Layout('layouts.guest')] class extends Component
                        :class="{ 'border-moss ring-1 ring-moss': $wire.role === 'host' }">
                     <input type="radio" wire:model.live="role" value="host" class="mt-1 text-moss focus:ring-moss">
                     <span><span class="block font-semibold text-sm">Host trips</span>
-                        <span class="block text-xs text-gray-500">Post trips and get paid</span></span>
+                        <span class="block text-xs text-gray-500">Post trips free, get paid directly</span></span>
                 </label>
             </div>
             <p class="mt-1 text-xs text-gray-500">You can't switch later, so pick the one that fits.</p>

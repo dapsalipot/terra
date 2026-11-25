@@ -365,3 +365,73 @@ body {
 @media (prefers-reduced-motion: reduce) {
     [data-sheet] { transition: none; }
 }
+
+/* ── mobile tab bar (components/tabbar.blade.php) ─────────────────────────────
+   Below `md` only. The bar pads for the home indicator, and `.has-tabbar` on the body keeps the
+   last of the page from sitting underneath it. */
+:root { --tabbar-h: 60px; }
+
+.tabbar {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    transition: transform .28s cubic-bezier(.2, .7, .2, 1);
+    -webkit-tap-highlight-color: transparent;
+}
+.tabbar.is-away { transform: translateY(100%); }
+
+.tabbar[data-tone="light"] {
+    --tab-on: #2C3826; --tab-off: rgba(31, 28, 21, .65); --tab-pill: rgba(44, 56, 38, .12);
+    background: rgba(251, 249, 244, .9);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border-top: 1px solid rgba(31, 28, 21, .08);
+}
+.tabbar[data-tone="dark"] {
+    --tab-on: #F7F4EC; --tab-off: rgba(247, 244, 236, .72); --tab-pill: rgba(247, 244, 236, .16);
+    background: rgba(44, 56, 38, .92);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(22px) saturate(160%);
+    border-top: 1px solid rgba(247, 244, 236, .1);
+}
+@media (prefers-reduced-transparency: reduce) {
+    .tabbar[data-tone="light"] { background: #FBF9F4; -webkit-backdrop-filter: none; backdrop-filter: none; }
+    .tabbar[data-tone="dark"] { background: #2C3826; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+.tab {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    gap: 2px; padding-top: 7px; color: var(--tab-off);
+    font-size: 11px; line-height: 1; font-weight: 500; transition: color .2s ease;
+}
+.tab.is-active { color: var(--tab-on); font-weight: 600; }
+.tab-icon { display: grid; place-items: center; width: 60px; height: 30px; transition: transform .18s cubic-bezier(.2, .7, .2, 1); }
+.tab-icon svg { width: 23px; height: 23px; transition: stroke-width .2s ease; }
+.tab.is-active .tab-icon svg { stroke-width: 2.1; }
+.tab:active .tab-icon { transform: scale(.84); }
+.tab.is-active .tab-icon { animation: tab-pop .55s cubic-bezier(.3, 1.5, .5, 1) .12s both; }
+.tab-label { margin-top: 1px; }
+@keyframes tab-pop { 0% { transform: scale(.78); } 55% { transform: scale(1.14); } 100% { transform: scale(1); } }
+
+/* the raised primary action: a disc that breaks the top edge of the bar */
+.tab.is-action { color: var(--tab-on); }
+.tab.is-action .tab-icon {
+    width: 48px; height: 48px; margin-top: -15px; border-radius: 9999px; background: #BC4B26; color: #F7F4EC;
+    box-shadow: 0 10px 20px -10px rgba(188, 75, 38, .85), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+.tab.is-action .tab-icon svg { width: 24px; height: 24px; stroke-width: 2.2; }
+.tab.is-action.is-active .tab-icon { animation: none; }
+
+/* the indicator that slides between tabs */
+.tabbar-pill { position: absolute; top: 7px; left: 0; height: 30px; width: calc(100% / var(--n)); transform: translateX(calc(var(--at) * 100%)); display: flex; justify-content: center; pointer-events: none; }
+.tabbar-pill::before { content: ''; width: 60px; height: 100%; border-radius: 9999px; background: var(--tab-pill); }
+.tabbar-pill.is-ready { transition: transform .5s cubic-bezier(.3, 1.35, .5, 1), opacity .2s ease; }
+.tabbar-pill.is-none { opacity: 0; }
+
+.has-tabbar { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) { .has-tabbar { padding-bottom: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .tab.is-active .tab-icon { animation: none; }
+    .tabbar-pill.is-ready, .tabbar { transition: none; }
+}

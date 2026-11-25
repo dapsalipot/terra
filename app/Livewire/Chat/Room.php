@@ -66,6 +66,6 @@ class Room extends Component
             'messages' => $messages,
             'pinned' => $pinned,
             'readOnly' => app(ChatGate::class)->isReadOnly($this->departure),
-        ])->layout('components.layouts.site');
+        ])->layout('components.layouts.site', ['tabbar' => false]);
     }
 }

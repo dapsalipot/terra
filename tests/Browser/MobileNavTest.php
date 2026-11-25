@@ -4,6 +4,7 @@ namespace Tests\Browser;
 
 use App\Models\HostProfile;
 use App\Models\Place;
+use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Laravel\Dusk\Browser;
@@ -23,21 +24,83 @@ class MobileNavTest extends DuskTestCase
                 ->resize(390, 844)
                 ->visit('/host')
                 ->waitForText('Host dashboard')
-                // the drawer is the only route to the rest of the console on a phone
+                // the tab bar carries the pages a host lives in; the rest sit behind More
+                ->assertVisible('@tab-dashboard')
+                ->assertVisible('@tab-new')
                 ->assertDontSee('Meetup points')
-                ->click('@mobile-menu')
+                ->click('@tab-more')
+                ->waitFor('@more-sheet')
                 ->waitForText('Meetup points')
-                ->assertSee('Your page')
                 ->assertSee('Settings')
                 ->assertSee('Log out')
-                ->click('@mobile-nav-close')
-                ->pause(400)
+                ->keys('', '{escape}')
+                ->waitUntilMissing('@more-sheet')
                 ->assertDontSee('Meetup points')
                 // and it actually navigates
-                ->click('@mobile-menu')
+                ->click('@tab-more')
                 ->waitForText('Meetup points')
                 ->clickLink('Meetup points')
                 ->waitForText('Save the spots you use often');
+        });
+    }
+
+    public function test_a_joiner_moves_between_tabs_and_logs_out_from_their_account(): void
+    {
+        $joiner = User::factory()->create(['role' => 'joiner']);
+
+        $this->browse(function (Browser $browser) use ($joiner) {
+            $browser->loginAs($joiner)
+                ->resize(390, 844)
+                ->visit('/')
+                ->waitFor('@tab-explore')
+                ->click('@tab-explore')
+                ->waitForLocation('/trips')
+                ->waitFor('@tab-explore')
+                ->assertAttribute('@tab-explore', 'aria-current', 'page')
+                ->click('@tab-account')
+                ->waitForLocation('/profile')
+                // the top bar no longer carries Log out on a phone, so the account page has to
+                ->waitFor('@account-logout')
+                ->click('@account-logout')
+                ->waitForLocation('/')
+                ->waitFor('@tab-login');
+        });
+    }
+
+    public function test_a_guest_is_invited_to_host_and_lands_on_the_host_card(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->resize(390, 844)
+                ->visit('/trips')
+                ->waitFor('@nav-host')
+                ->click('@nav-host')
+                ->waitForLocation('/register')
+                ->waitFor('input[value=host]')
+                ->assertScript("return document.querySelector('input[value=host]').checked", true);
+        });
+    }
+
+    public function test_the_tab_bar_is_phone_only_and_steps_aside_on_the_booking_page(): void
+    {
+        $host = User::factory()->create(['role' => 'host', 'handle' => 'trailco']);
+        HostProfile::factory()->for($host)->create();
+        $trip = Trip::factory()->published()->create(['host_id' => $host->id]);
+
+        $this->browse(function (Browser $browser) use ($trip) {
+            $browser->resize(1440, 900)
+                ->visit('/')
+                ->waitFor('@nav-host')
+                ->assertMissing('@tab-home')
+                ->resize(390, 844)
+                ->visit('/')
+                ->waitFor('@tab-home')
+                ->assertVisible('@tab-home')
+                // the trip page has its own reserve bar, and two bars at the bottom is one too many
+                ->visit('/t/'.$trip->slug)
+                ->pause(500)
+                ->assertMissing('@tab-home');
+
+            $browser->resize(1920, 1080);
         });
     }
 

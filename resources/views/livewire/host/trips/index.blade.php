@@ -4,8 +4,9 @@
             <h1 class="tracking-tight font-semibold text-3xl mb-1">My trips</h1>
             <p class="text-ink/65">Each date is its own schedule, so you can price and run them differently.</p>
         </div>
+        {{-- On a phone the tab bar's raised "New trip" disc is this same action. --}}
         <a href="{{ route('host.trips.create') }}" wire:navigate
-           class="inline-flex items-center gap-2 rounded-full bg-pine text-cream px-6 min-h-[48px] font-semibold hover:bg-pine/90 transition-colors">
+           class="max-md:hidden inline-flex items-center gap-2 rounded-full bg-pine text-cream px-6 min-h-[48px] font-semibold hover:bg-pine/90 transition-colors">
             <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             New trip
         </a>

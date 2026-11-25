@@ -333,6 +333,6 @@ class Show extends Component
 
     public function render()
     {
-        return view('livewire.reservations.show')->layout('components.layouts.site');
+        return view('livewire.reservations.show')->layout('components.layouts.site', ['tabbar' => false]);
     }
 }

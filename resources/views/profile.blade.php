@@ -16,6 +16,11 @@
                 </div>
             </section>
 
+            <form method="POST" action="{{ route('logout') }}" class="md:hidden">
+                @csrf
+                <button class="w-full rounded-2xl border border-ink/10 bg-surface min-h-[52px] font-semibold text-ink hover:bg-ink/[.03] active:scale-[.99] transition" dusk="account-logout">Log out</button>
+            </form>
+
             <section class="rounded-2xl border border-terra/20 bg-terra/[.03] p-6 sm:p-8">
                 <div class="max-w-xl">
                     <livewire:profile.delete-user-form />

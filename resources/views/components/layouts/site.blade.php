@@ -9,7 +9,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="min-h-full font-sans antialiased bg-canvas text-ink">
+@php($showTabbar = $tabbar ?? true)
+<body class="min-h-full font-sans antialiased bg-canvas text-ink {{ $showTabbar ? 'has-tabbar' : '' }}">
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-3 focus:left-3 focus:rounded-full focus:bg-pine focus:text-cream focus:px-4 focus:py-2 focus:text-sm focus:font-semibold">Skip to content</a>
 
     {{-- Pages with a full-bleed photo hero opt into a transparent nav that turns solid on scroll. --}}
@@ -25,13 +26,16 @@
         <div class="ml-auto flex items-center gap-4">
             @auth
                 @if(auth()->user()->isHost())
-                    <a href="{{ route('host.dashboard') }}" class="inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold">Dashboard</a>
+                    <a href="{{ route('host.dashboard') }}" class="max-md:hidden inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold">Dashboard</a>
                 @else
-                    <a href="{{ route('my.trips') }}" class="inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold" dusk="nav-my-trips">Your trips</a>
+                    <a href="{{ route('my.trips') }}" class="max-md:hidden inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold" dusk="nav-my-trips">Your trips</a>
                 @endif
-                <form method="POST" action="{{ route('logout') }}">@csrf<button class="inline-flex items-center min-h-[44px] px-2 -mx-2 nav-link text-sm font-semibold transition-opacity">Log out</button></form>
+                <form method="POST" action="{{ route('logout') }}" class="max-md:hidden">@csrf<button class="inline-flex items-center min-h-[44px] px-2 -mx-2 nav-link text-sm font-semibold transition-opacity">Log out</button></form>
             @else
-                <a href="{{ route('login') }}" class="inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold">Log in</a>
+                {{-- Organisers do not know they can register and list for free, so the invitation lives in
+                     the nav on every page, on a phone included. --}}
+                <a href="{{ route('register', ['role' => 'host']) }}" class="inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold" dusk="nav-host">Host a trip</a>
+                <a href="{{ route('login') }}" class="max-md:hidden inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold">Log in</a>
                 <a href="{{ route('register') }}" class="nav-cta text-sm font-semibold text-cream bg-pine rounded-full px-4 py-2.5 transition-colors">Sign up</a>
             @endauth
         </div>
@@ -43,6 +47,26 @@
         <x-wordmark />
         <span>· conquering trails together</span>
     </footer>
+
+    @if($showTabbar)
+        @php($me = auth()->user())
+        @php($tabs = array_merge(
+            [
+                ['label' => 'Home', 'href' => route('home'), 'icon' => 'home', 'active' => request()->routeIs('home'), 'dusk' => 'tab-home'],
+                ['label' => 'Explore', 'href' => route('trips.index'), 'icon' => 'compass', 'active' => request()->routeIs('trips.*'), 'dusk' => 'tab-explore'],
+                ['label' => 'Hosts', 'href' => route('hosts.index'), 'icon' => 'users', 'active' => request()->routeIs('hosts.*'), 'dusk' => 'tab-hosts'],
+            ],
+            ! $me
+                ? [['label' => 'Log in', 'href' => route('login'), 'icon' => 'login', 'active' => false, 'dusk' => 'tab-login']]
+                : [
+                    $me->isHost()
+                        ? ['label' => 'Dashboard', 'href' => route('host.dashboard'), 'icon' => 'grid', 'active' => false, 'dusk' => 'tab-dashboard']
+                        : ['label' => 'Trips', 'href' => route('my.trips'), 'icon' => 'map', 'active' => request()->routeIs('my.trips', 'reservations.*', 'chat.*'), 'dusk' => 'tab-trips'],
+                    ['label' => 'Account', 'href' => route('profile'), 'icon' => 'user', 'active' => request()->routeIs('profile'), 'dusk' => 'tab-account'],
+                ],
+        ))
+        <x-tabbar :tabs="$tabs" tone="light" name="site" label="Main" />
+    @endif
 
     @livewireScripts
 </body>

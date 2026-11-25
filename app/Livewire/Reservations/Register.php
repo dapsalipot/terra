@@ -661,6 +661,6 @@ class Register extends Component
             'perSeat' => $this->trip->current_price,
             'total' => $this->trip->current_price * $seats,
             'payableNow' => $this->trip->payable_now * $seats,
-        ])->layout('components.layouts.site');
+        ])->layout('components.layouts.site', ['tabbar' => false]);
     }
 }

@@ -108,6 +108,6 @@ class Show extends Component
             ->get();
 
         return view('livewire.trips.show', ['reviews' => $reviews])
-            ->layout('components.layouts.site');
+            ->layout('components.layouts.site', ['tabbar' => false]);
     }
 }

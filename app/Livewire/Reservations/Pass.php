@@ -29,6 +29,6 @@ class Pass extends Component
     public function render()
     {
         return view('livewire.reservations.pass')
-            ->layout('components.layouts.site', ['title' => 'Terra · Check-in pass']);
+            ->layout('components.layouts.site', ['title' => 'Terra · Check-in pass', 'tabbar' => false]);
     }
 }

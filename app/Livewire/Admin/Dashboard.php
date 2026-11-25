@@ -116,6 +116,6 @@ class Dashboard extends Component
                 ->with('joiner')
                 ->latest()
                 ->paginate(25),
-        ])->layout('components.layouts.site', ['title' => 'Terra · Admin']);
+        ])->layout('components.layouts.site', ['title' => 'Terra · Admin', 'tabbar' => false]);
     }
 }
