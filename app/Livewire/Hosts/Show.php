@@ -111,8 +111,11 @@ class Show extends Component
 
     public function render()
     {
+        // What a listing would show this viewer, except on a host's own page, where they see every trip they have published.
+        $visible = fn ($q) => $this->isOwner ? $q->published() : $q->listedFor(Auth::user());
+
         $trips = Trip::collapseSchedules(
-            $this->user->trips()->published()->with(['place', 'host.hostProfile', 'departures', 'openDepartures', 'inclusionItems'])->latest()->get()
+            $visible($this->user->trips())->with(['place', 'host.hostProfile', 'departures', 'openDepartures', 'inclusionItems'])->latest()->get()
         );
         $posts = $this->user->posts()->with(['trip', 'images'])->latest()->get();
 
@@ -130,7 +133,7 @@ class Show extends Component
         // What is coming up across every one of their trips, soonest first: on Facebook this is the post people scroll for.
         $upcoming = TripDeparture::query()
             ->with('trip.place')
-            ->whereHas('trip', fn ($t) => $t->published()->where('host_id', $this->user->id))
+            ->whereHas('trip', fn ($t) => $visible($t)->where('host_id', $this->user->id))
             ->where('status', 'open')
             ->where('starts_at', '>', now())
             ->orderBy('starts_at')

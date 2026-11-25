@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Support\HostCards;
 use App\Support\PlaceCategories;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -73,6 +72,8 @@ class Index extends Component
 
     public function render()
     {
+        $viewer = Auth::user();
+
         /*
          * Sorting reads host_profiles columns, so the profile is joined rather than eager-loaded
          * for ordering. leftJoin, not join: a host who has not filled in a profile yet still
@@ -84,7 +85,7 @@ class Index extends Component
             ->where('users.role', 'host')
             ->whereNotNull('users.handle')
             ->with('hostProfile')
-            ->withCount(['trips as published_trips' => fn ($t) => $t->where('status', 'published')]);
+            ->withCount(['trips as published_trips' => fn ($t) => $t->listedFor($viewer)]);
 
         if ($this->search !== '') {
             $term = '%'.str_replace('%', '\%', $this->search).'%';
@@ -99,12 +100,8 @@ class Index extends Component
         }
 
         if (isset(PlaceCategories::CATALOG[$this->category])) {
-            $query->whereExists(fn ($q) => $q->select(DB::raw(1))
-                ->from('trips')
-                ->join('places', 'places.id', '=', 'trips.place_id')
-                ->whereColumn('trips.host_id', 'users.id')
-                ->where('trips.status', 'published')
-                ->where('places.category', $this->category));
+            $query->whereHas('trips', fn ($t) => $t->listedFor($viewer)
+                ->whereHas('place', fn ($p) => $p->where('category', $this->category)));
         }
 
         /*
@@ -132,16 +129,15 @@ class Index extends Component
          */
         $ids = $hosts->pluck('id');
 
-        $categoriesByHost = Trip::query()
+        $categoriesByHost = Trip::listedFor($viewer)
             ->join('places', 'places.id', '=', 'trips.place_id')
             ->whereIn('trips.host_id', $ids)
-            ->where('trips.status', 'published')
             ->get(['trips.host_id', 'places.category'])
             ->groupBy('host_id')
             ->map(fn ($rows) => PlaceCategories::resolve($rows->pluck('category')));
 
         // The next departure, review count and follow state each card shows, in one query apiece.
-        $hostExtras = HostCards::extras($ids, Auth::user());
+        $hostExtras = HostCards::extras($ids, $viewer);
 
         return view('livewire.hosts.index', [
             'hosts' => $hosts,

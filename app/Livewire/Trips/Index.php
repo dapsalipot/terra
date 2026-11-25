@@ -6,6 +6,7 @@ use App\Models\Place;
 use App\Models\Trip;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -48,7 +49,7 @@ class Index extends Component
 
     public function render()
     {
-        $trips = Trip::published()
+        $trips = Trip::listedFor(Auth::user())
             ->with(['place', 'host.hostProfile', 'inclusionItems'])
             ->when($this->search, fn ($q) => $q->where(fn ($w) => $w
                 ->where('title', 'like', "%{$this->search}%")

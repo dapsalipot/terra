@@ -29,10 +29,10 @@ class HostCards
             return ['next' => [], 'reviews' => [], 'following' => []];
         }
 
-        // The soonest open departure each host has, with the trip it belongs to.
+        // The soonest open departure each host has that this viewer can find, with the trip it belongs to.
         $next = TripDeparture::query()
             ->with('trip.place')
-            ->whereHas('trip', fn ($t) => $t->published()->whereIn('host_id', $ids))
+            ->whereHas('trip', fn ($t) => $t->listedFor($viewer)->whereIn('trips.host_id', $ids))
             ->where('status', 'open')
             ->where('starts_at', '>', now())
             ->orderBy('starts_at')

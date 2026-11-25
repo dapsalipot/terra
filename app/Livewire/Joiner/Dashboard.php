@@ -432,7 +432,7 @@ class Dashboard extends Component
          * costs a real query and shows nobody anything.
          */
         $recommended = $reservations->isEmpty()
-            ? Trip::published()
+            ? Trip::listedFor($user)
                 ->whereHas('place', fn ($p) => $p->whereIn('category', function ($q) use ($user) {
                     $q->select('category')->from('places')
                         ->join('trip_destinations', 'places.id', '=', 'trip_destinations.place_id')
