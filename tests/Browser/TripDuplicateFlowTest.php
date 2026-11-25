@@ -38,7 +38,9 @@ class TripDuplicateFlowTest extends DuskTestCase
                 ->waitForText('Where are you going?')
                 ->assertSee('Mount Pulag')
                 ->click('@wizard-next')->waitForText('The trip')
+                ->waitFor('@wizard-next')
                 ->click('@wizard-next')->waitForText('Everything a joiner gets')
+                ->waitFor('@wizard-next')
                 ->click('@wizard-next')->waitForText('Logistics')
                 ->pause(500);
 
