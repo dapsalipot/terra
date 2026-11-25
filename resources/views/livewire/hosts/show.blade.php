@@ -278,7 +278,7 @@
                                 <x-carousel :images="$post->images->map(fn($i) => ['url' => $i->url, 'alt' => ''])" ratio="aspect-[4/3]" />
                             @endif
 
-                            @if($post->trip)
+                            @if($post->trip && in_array($post->trip_id, $visibleTripIds))
                                 <a href="{{ route('trips.show', $post->trip) }}"
                                    class="flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-t border-ink/6 hover:bg-ink/[.02] transition-colors"
                                    style="color: var(--accent-text)">
@@ -320,7 +320,7 @@
                                     <span class="ml-auto text-amber text-sm tracking-widest">{{ str_repeat('★', $review->rating) }}</span>
                                 </div>
                                 <p class="mt-3 text-ink/80 leading-relaxed">{{ $review->body }}</p>
-                                @if($review->reviewable instanceof \App\Models\Trip)
+                                @if($review->reviewable instanceof \App\Models\Trip && in_array($review->reviewable_id, $visibleTripIds))
                                     <a href="{{ route('trips.show', $review->reviewable) }}" class="inline-block mt-3 text-xs font-semibold" style="color: var(--accent-text)">
                                         on {{ $review->reviewable->title }} →
                                     </a>

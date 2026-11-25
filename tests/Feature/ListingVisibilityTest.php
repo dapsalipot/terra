@@ -7,6 +7,8 @@ use App\Livewire\Joiner\Dashboard as JoinerDashboard;
 use App\Livewire\Trips\Index as TripsIndex;
 use App\Models\HostProfile;
 use App\Models\Place;
+use App\Models\Post;
+use App\Models\Review;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
@@ -54,6 +56,18 @@ function visibilityFollower(User $host): User
     $follower->follow($host);
 
     return $follower;
+}
+
+/** Assert which trips a rendered host page names, by title and by link, and which it keeps to itself. */
+function visibilityAssertNames($page, array $named, array $unnamed): void
+{
+    foreach ($named as $trip) {
+        $page->assertSee($trip->title)->assertSee(route('trips.show', $trip));
+    }
+
+    foreach ($unnamed as $trip) {
+        $page->assertDontSee($trip->title)->assertDontSee(route('trips.show', $trip));
+    }
 }
 
 it('keeps link-only trips out of Explore and shows followers-first ones to followers only', function () {
@@ -200,6 +214,49 @@ it('lists a host\'s next departures by viewer too', function () {
     expect($guest)->toEqualCanonicalizing([$open->id])
         ->and($member)->toEqualCanonicalizing([$open->id, $early->id])
         ->and($owner)->toEqualCanonicalizing([$open->id, $early->id, $link->id]);
+});
+
+it('keeps an unlisted trip\'s name and link off a host\'s reviews while the review itself stays', function () {
+    $host = visibilityHost();
+    $open = visibilityTrip($host);
+    $early = visibilityTrip($host, 'followers');
+    $link = visibilityTrip($host, 'link');
+    $follower = visibilityFollower($host);
+    foreach ([[$open, 'open'], [$early, 'early'], [$link, 'link']] as [$trip, $word]) {
+        Review::factory()->create(['reviewable_id' => $trip->id, 'body' => "Fine day out on the {$word} one."]);
+    }
+    // Every review is read by everyone; what differs is which trips it is allowed to name.
+    $page = fn () => Livewire::test(HostsShow::class, ['user' => $host])->set('tab', 'reviews')
+        ->assertSee('Fine day out on the open one.')->assertSee('Fine day out on the early one.')->assertSee('Fine day out on the link one.');
+
+    visibilityAssertNames($page(), [$open], [$early, $link]);
+    Livewire::actingAs(User::factory()->create());
+    visibilityAssertNames($page(), [$open], [$early, $link]);
+    Livewire::actingAs($follower);
+    visibilityAssertNames($page(), [$open, $early], [$link]);
+    Livewire::actingAs($host);
+    visibilityAssertNames($page(), [$open, $early, $link], []);
+});
+
+it('keeps an unlisted trip\'s name and link off a host\'s wall tags while the post itself stays', function () {
+    $host = visibilityHost();
+    $open = visibilityTrip($host);
+    $early = visibilityTrip($host, 'followers');
+    $link = visibilityTrip($host, 'link');
+    $follower = visibilityFollower($host);
+    foreach ([[$open, 'open'], [$early, 'early'], [$link, 'link']] as [$trip, $word]) {
+        Post::factory()->create(['host_id' => $host->id, 'trip_id' => $trip->id, 'body' => "Out on the {$word} one."]);
+    }
+    $page = fn () => Livewire::test(HostsShow::class, ['user' => $host])->set('tab', 'wall')
+        ->assertSee('Out on the open one.')->assertSee('Out on the early one.')->assertSee('Out on the link one.');
+
+    visibilityAssertNames($page(), [$open], [$early, $link]);
+    Livewire::actingAs(User::factory()->create());
+    visibilityAssertNames($page(), [$open], [$early, $link]);
+    Livewire::actingAs($follower);
+    visibilityAssertNames($page(), [$open, $early], [$link]);
+    Livewire::actingAs($host);
+    visibilityAssertNames($page(), [$open, $early, $link], []);
 });
 
 it('counts only the trips a joiner can find on the dashboard calendar', function () {

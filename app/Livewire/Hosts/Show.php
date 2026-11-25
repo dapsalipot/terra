@@ -114,9 +114,8 @@ class Show extends Component
         // What a listing would show this viewer, except on a host's own page, where they see every trip they have published.
         $visible = fn ($q) => $this->isOwner ? $q->published() : $q->listedFor(Auth::user());
 
-        $trips = Trip::collapseSchedules(
-            $visible($this->user->trips())->with(['place', 'host.hostProfile', 'departures', 'openDepartures', 'inclusionItems'])->latest()->get()
-        );
+        $visibleTrips = $visible($this->user->trips())->with(['place', 'host.hostProfile', 'departures', 'openDepartures', 'inclusionItems'])->latest()->get();
+        $trips = Trip::collapseSchedules($visibleTrips);
         $posts = $this->user->posts()->with(['trip', 'images'])->latest()->get();
 
         // Reviews of the host themselves, plus reviews left on any of their trips.
@@ -140,7 +139,11 @@ class Show extends Component
             ->limit(5)
             ->get();
 
-        return view('livewire.hosts.show', compact('trips', 'posts', 'reviews', 'upcoming'))
+        // A review or a wall post names its trip only if this viewer could find that trip. The review and the post stay
+        // either way, so a private group trip's name does not leak through what was said about it.
+        $visibleTripIds = $visibleTrips->modelKeys();
+
+        return view('livewire.hosts.show', compact('trips', 'posts', 'reviews', 'upcoming', 'visibleTripIds'))
             ->layout('components.layouts.site', ['title' => $this->user->name.' · Tarana']);
     }
 }
