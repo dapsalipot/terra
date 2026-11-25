@@ -66,7 +66,7 @@
                     Editing one schedule
                 </p>
             @endif
-            <h1 class="font-serif font-semibold text-3xl mb-1">Where are you going?</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mb-1">Where are you going?</h1>
             <p class="text-ink/65 mb-7">Add each stop, how long you spend there, and — for a hike — the trail itself.</p>
 
             @if($pastTrips->isNotEmpty() && ! count($destinations))
@@ -97,7 +97,7 @@
                         <header class="flex items-center gap-3 px-5 py-4 border-b border-ink/8 bg-cream/50">
                             <span class="grid place-items-center w-8 h-8 rounded-full bg-moss text-cream text-sm font-bold shrink-0">{{ $i + 1 }}</span>
                             <span class="flex-1 min-w-0">
-                                <span class="block font-serif font-semibold text-xl truncate">{{ $place?->name }}</span>
+                                <span class="block tracking-tight font-semibold text-xl truncate">{{ $place?->name }}</span>
                                 <span class="block text-sm text-ink/65 truncate">{{ $place?->country }} · {{ ucfirst($place?->category) }}</span>
                             </span>
                             <span class="flex items-center gap-0.5 shrink-0">
@@ -151,7 +151,7 @@
                                 <div class="mt-6 pt-6 border-t border-ink/10">
                                     <div class="flex items-center gap-2.5 mb-1">
                                         <svg viewBox="0 0 24 24" class="w-5 h-5 text-moss shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 20l7-13 4 7 3-5 4 11z"/></svg>
-                                        <h3 class="font-serif font-semibold text-lg">The trail</h3>
+                                        <h3 class="font-semibold text-lg">The trail</h3>
                                         <span class="text-sm text-ink/65">— optional</span>
                                     </div>
                                     <p class="text-sm text-ink/65 mb-5">What hikers want to know about {{ $place?->name }} before they commit.</p>
@@ -302,7 +302,7 @@
             <button wire:click="next" dusk="wizard-next"
                     class="mt-7 w-full rounded-full bg-pine text-cream py-4 font-semibold text-lg hover:bg-pine/90 transition-colors">Continue</button>
         @elseif($step === 2)
-            <h1 class="font-serif font-semibold text-3xl mb-1">The trip</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mb-1">The trip</h1>
             <p class="text-ink/65 mb-7">How it reads and what it costs.</p>
 
             <div class="space-y-6">
@@ -313,7 +313,7 @@
                             <x-prefill-tag :on="in_array('title', $prefilled, true)" />
                         </span>
                         <input wire:model.live="title" type="text" dusk="trip-title" placeholder="Mount Pulag Sunrise Traverse"
-                               class="field font-serif text-xl py-4">
+                               class="field tracking-tight text-xl py-4">
                         @error('title')<p class="text-terra text-sm mt-2">{{ $message }}</p>@enderror
                     </label>
 
@@ -326,7 +326,7 @@
                 </section>
 
                 <section class="rounded-2xl border border-ink/12 bg-surface p-5">
-                    <h2 class="font-serif font-semibold text-xl mb-4">Photos</h2>
+                    <h2 class="tracking-tight font-semibold text-xl mb-4">Photos</h2>
                     <x-upload wire:model="cover" label="Cover photo" :multiple="false" :max="1" dusk="cover"
                               hint="The single image used on cards and the trip hero." />
                     @error('cover')<p class="text-terra text-sm mt-2">{{ $message }}</p>@enderror
@@ -339,7 +339,7 @@
                 </section>
 
                 <section class="rounded-2xl border border-ink/12 bg-surface p-5">
-                    <h2 class="font-serif font-semibold text-xl mb-4">Price</h2>
+                    <h2 class="tracking-tight font-semibold text-xl mb-4">Price</h2>
                     <x-money-input wire:model.live="price" :currency="$currency" dusk="trip-price" />
                     @error('price')<p class="text-terra text-sm mt-2">{{ $message }}</p>@enderror
                     <p class="text-sm text-ink/65 mt-3">Per person. Joiners pay you directly — Terra never holds the money.</p>
@@ -449,7 +449,7 @@
                     down payment is "are you serious", the balance is "are we going".
                 --}}
                 <section class="rounded-2xl border border-ink/10 bg-surface p-5 sm:p-6">
-                    <h2 class="font-serif font-semibold text-xl">Payment deadlines</h2>
+                    <h2 class="tracking-tight font-semibold text-xl">Payment deadlines</h2>
                     <p class="text-ink/65 text-sm mt-1 mb-5">
                         Optional. Nobody is cancelled automatically — a late booking is flagged on your roster
                         and you decide what to do about it.
@@ -508,7 +508,7 @@
                 <button wire:click="next" dusk="wizard-next" class="flex-1 rounded-full bg-pine text-cream py-4 font-semibold text-lg hover:bg-pine/90 transition-colors">Continue</button>
             </div>
         @elseif($step === 3)
-            <h1 class="font-serif font-semibold text-3xl mb-1">What's included</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mb-1">What's included</h1>
             <p class="text-ink/65 text-sm mb-7">Everything a joiner gets for the price. A photo sells it better than a word.</p>
 
             <div class="space-y-3">
@@ -549,7 +549,7 @@
                 page can render it the same way every time, and it can be searched on later.
             --}}
             <div class="mt-10 pt-8 border-t border-ink/10">
-                <h2 class="font-serif font-semibold text-2xl mb-1">What to bring</h2>
+                <h2 class="tracking-tight font-semibold text-2xl mb-1">What to bring</h2>
                 <p class="text-ink/65 mb-6">
                     Tap everything a joiner needs to pack. This shows on the trip page and on their booking.
                 </p>
@@ -608,7 +608,7 @@
             </div>
 
         @elseif($step === 4)
-            <h1 class="font-serif font-semibold text-3xl mb-1">Logistics</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mb-1">Logistics</h1>
             <p class="text-ink/65 mb-7">When you leave, where you pick people up, and where you drop them back.</p>
 
             <div class="space-y-3">
@@ -831,7 +831,7 @@
                 <button wire:click="next" dusk="wizard-next" class="flex-1 rounded-full bg-pine text-cream py-4 font-semibold text-lg hover:bg-pine/90 transition-colors">Review</button>
             </div>
         @else
-            <h1 class="font-serif font-semibold text-3xl mb-1">{{ $this->isEditing ? 'Review &amp; save' : 'Review &amp; publish' }}</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mb-1">{{ $this->isEditing ? 'Review &amp; save' : 'Review &amp; publish' }}</h1>
             <p class="text-ink/65 mb-7">
                 Everything you've entered, by section. Edit any of it without losing the rest.
                 @if($this->isEditing)<span class="block mt-1">Only this schedule changes — the other dates keep their own details.</span>@endif
@@ -879,12 +879,12 @@
 
                 {{-- ── 2 · The trip ── --}}
                 <x-review-section title="The trip" :step="2" :label="$steps[2]">
-                    <p class="font-serif font-semibold text-xl">{{ $title ?: 'Untitled' }}</p>
+                    <p class="tracking-tight font-semibold text-xl">{{ $title ?: 'Untitled' }}</p>
                     <p class="text-sm text-ink/70 mt-1">{{ $description ?: 'No description yet.' }}</p>
                     <dl class="flex flex-wrap gap-x-8 gap-y-2 mt-4">
                         <div>
                             <dt class="marker text-[10px] font-semibold text-ink/65">Price</dt>
-                            <dd class="font-serif font-bold text-lg">{{ $currency }} {{ $price !== '' ? number_format((float) $price) : '—' }}</dd>
+                            <dd class="font-bold text-lg">{{ $currency }} {{ $price !== '' ? number_format((float) $price) : '—' }}</dd>
                         </div>
                         <div>
                             <dt class="marker text-[10px] font-semibold text-ink/65">Cover</dt>

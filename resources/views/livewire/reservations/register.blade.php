@@ -22,7 +22,7 @@
 @if($closed)
     <div class="max-w-2xl mx-auto px-5 py-16">
         <a href="{{ route('trips.show', $trip) }}" wire:navigate class="inline-flex items-center py-1.5 -my-1.5 text-sm text-ink/65 hover:text-ink">← {{ $trip->title }}</a>
-        <h1 class="font-serif font-semibold text-3xl mt-2 mb-6">Join this trip</h1>
+        <h1 class="tracking-tight font-semibold text-3xl mt-2 mb-6">Join this trip</h1>
         <div class="rounded-2xl border-2 border-dashed border-ink/15 px-6 py-12 text-center">
             <p class="font-semibold mb-1">{{ $closedReason }}</p>
             <p class="text-ink/65 text-sm mb-5">This departure is no longer taking registrations.</p>
@@ -41,14 +41,14 @@
                 <span class="inline-grid place-items-center w-14 h-14 rounded-full bg-moss/15 text-moss mb-4">
                     <x-icon.check class="w-7 h-7" />
                 </span>
-                <h1 class="font-serif font-semibold text-2xl">You're on the list</h1>
+                <h1 class="tracking-tight font-semibold text-2xl">You're on the list</h1>
                 <p class="text-ink/70 mt-2">
                     We'll email {{ $waitlistEmail }} the moment a seat opens on {{ $departure->starts_at->format('j M') }}.
                     Seats go to whoever books first, so be quick when it lands.
                 </p>
             </div>
         @else
-            <h1 class="font-serif font-semibold text-3xl mt-2">This departure is full</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mt-2">This departure is full</h1>
             <p class="text-ink/65 mt-2">
                 Seats open up often — an unpaid hold is released every few hours. Leave your details
                 and we'll tell you the moment one does.
@@ -108,7 +108,7 @@
     --}}
     <header class="px-4 sm:px-8 2xl:px-12 pt-6 sm:pt-8 xl:w-2/3">
         <a href="{{ route('trips.show', $trip) }}" wire:navigate class="inline-flex items-center py-1.5 -my-1.5 text-sm text-ink/65 hover:text-ink">← {{ $trip->title }}</a>
-        <h1 class="font-serif font-semibold text-3xl mt-2">Join this trip</h1>
+        <h1 class="tracking-tight font-semibold text-3xl mt-2">Join this trip</h1>
         <p class="text-ink/65">Takes about a minute. Nothing is charged here — you pay the host directly.</p>
     </header>
 
@@ -174,7 +174,7 @@
             @endif
 
             <div class="p-5 sm:flex-1 sm:min-w-0 xl:flex-none">
-                <h2 class="font-serif font-semibold text-xl leading-snug">{{ $trip->title }}</h2>
+                <h2 class="tracking-tight font-semibold text-xl leading-snug">{{ $trip->title }}</h2>
 
                 <dl class="mt-4 space-y-2.5 text-sm">
                     @if($trip->place)
@@ -219,7 +219,7 @@
                 <div class="mt-4 pt-4 border-t border-ink/8">
                     <div class="flex items-baseline justify-between gap-3 text-sm">
                         <span class="text-ink/65">{{ $money($perSeat) }} × {{ $seats }} {{ \Illuminate\Support\Str::plural('seat', $seats) }}</span>
-                        <span class="font-serif font-semibold text-xl">{{ $money($total) }}</span>
+                        <span class="tracking-tight font-semibold text-xl">{{ $money($total) }}</span>
                     </div>
 
                     @if($trip->takesDeposit())
@@ -292,7 +292,7 @@
         <div class="flex items-center justify-between gap-4 flex-wrap">
             <div class="flex items-center gap-3">
                 <span class="grid place-items-center w-6 h-6 rounded-full bg-pine text-cream text-xs font-bold shrink-0">1</span>
-                <h2 class="font-serif font-semibold text-lg">How many seats?</h2>
+                <h2 class="font-semibold text-lg">How many seats?</h2>
             </div>
 
             {{--
@@ -362,7 +362,7 @@
         <div class="flex items-baseline gap-3">
             <span class="grid place-items-center w-6 h-6 rounded-full bg-pine text-cream text-xs font-bold shrink-0">2</span>
             <div>
-                <h2 class="font-serif font-semibold text-lg">Your details</h2>
+                <h2 class="font-semibold text-lg">Your details</h2>
                 <p class="text-sm text-ink/65">Where the host reaches you about this booking.</p>
             </div>
         </div>
@@ -477,7 +477,7 @@
         <div class="flex items-baseline gap-3">
             <span class="grid place-items-center w-6 h-6 rounded-full bg-pine text-cream text-xs font-bold shrink-0">3</span>
             <div>
-                <h2 class="font-serif font-semibold text-lg">Who's going?</h2>
+                <h2 class="font-semibold text-lg">Who's going?</h2>
                 <p class="text-sm text-ink/65">The host needs a name and an email for every seat.</p>
             </div>
         </div>
@@ -834,7 +834,7 @@
                 <div class="flex items-start gap-3 p-5 sm:p-6 pb-4 shrink-0">
                     <div class="min-w-0 flex-1">
                         <p class="marker text-[10px] font-semibold text-moss">Check before booking</p>
-                        <h2 id="review-title" class="font-serif font-semibold text-xl leading-snug mt-1">{{ $trip->title }}</h2>
+                        <h2 id="review-title" class="tracking-tight font-semibold text-xl leading-snug mt-1">{{ $trip->title }}</h2>
                         <p class="text-sm text-ink/65 mt-1">
                             {{ $departure->starts_at->format('D, j M Y') }}@if($departure->ends_at && ! $departure->ends_at->isSameDay($departure->starts_at)) → {{ $departure->ends_at->format('j M') }}@endif
                             @if($trip->place) · {{ $trip->place->name }} @endif
@@ -873,7 +873,7 @@
                         </div>
                         <div class="flex items-baseline justify-between gap-3 mt-2.5 pt-2.5 border-t border-ink/10">
                             <span class="font-semibold">Total</span>
-                            <span class="font-serif font-semibold text-xl tabular-nums">{{ $money($total) }}</span>
+                            <span class="tracking-tight font-semibold text-xl tabular-nums">{{ $money($total) }}</span>
                         </div>
                         @if($trip->takesDeposit())
                             <div class="flex items-baseline justify-between gap-3 mt-2.5 pt-2.5 border-t border-dashed border-ink/15 text-sm">

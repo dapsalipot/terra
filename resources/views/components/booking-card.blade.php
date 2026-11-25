@@ -25,7 +25,7 @@
             {{-- The date reads before the title: a trip is an event first. --}}
             <span class="absolute top-3 left-3 grid place-items-center rounded-xl bg-cream/95 px-2.5 py-1 text-center shadow-sm">
                 <span class="block text-[10px] font-bold uppercase tracking-wide text-terra leading-none">{{ $reservation->departure->starts_at->format('M') }}</span>
-                <span class="block font-serif font-bold text-lg text-ink leading-none mt-0.5">{{ $reservation->departure->starts_at->format('j') }}</span>
+                <span class="block font-bold text-lg text-ink leading-none mt-0.5">{{ $reservation->departure->starts_at->format('j') }}</span>
             </span>
             <span class="absolute top-3 right-3 rounded-full px-3 py-1 text-xs font-bold {{ $pill }}">{{ $status[0] }}</span>
         </a>

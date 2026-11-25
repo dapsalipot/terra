@@ -29,8 +29,9 @@ export default {
                 cream: '#F7F4EC',
             },
             fontFamily: {
-                serif: ['Fraunces', 'Georgia', 'serif'],
-                sans: ['"Avenir Next"', 'Avenir', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+                sans: ['Geist', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+                // Terra has no serif. The key stays so a stray font-serif lands on the sans, not on Georgia.
+                serif: ['Geist', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
                 mono: ['ui-monospace', 'Menlo', 'monospace'],
             },
         },

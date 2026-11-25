@@ -9,7 +9,7 @@
 
     {{-- ═══ HEADER + SEARCH ═══ --}}
     <div class="max-w-2xl">
-        <h1 class="font-serif font-semibold text-3xl sm:text-4xl">Hosts on Terra</h1>
+        <h1 class="tracking-tight font-semibold text-3xl sm:text-4xl">Hosts on Terra</h1>
         <p class="text-ink/65 mt-2">
             The people who plan the route, book the permits and get everyone to the trailhead.
             Follow the ones you want to travel with again.
@@ -136,7 +136,7 @@
                              64px hole in the card's own stretched link. --}}
                         <div class="relative pointer-events-none -mt-8 mb-3">
                             <span class="grid place-items-center w-16 h-16 rounded-2xl overflow-hidden bg-pine text-cream
-                                         font-serif font-semibold text-xl ring-4 ring-surface shadow-sm">
+                                         tracking-tight font-semibold text-xl ring-4 ring-surface shadow-sm">
                                 @if($host->avatar_url)
                                     <img src="{{ $host->avatar_url }}" alt="" class="w-full h-full object-cover">
                                 @else
@@ -145,7 +145,7 @@
                             </span>
                         </div>
 
-                        <h2 class="font-serif font-semibold text-lg leading-tight truncate">{{ $host->name }}</h2>
+                        <h2 class="font-semibold text-lg leading-tight truncate">{{ $host->name }}</h2>
                         <p class="text-sm text-moss font-semibold truncate">&commat;{{ $host->handle }}</p>
 
                         @if($profile?->tagline)
@@ -179,15 +179,15 @@
                         <dl class="grid grid-cols-3 gap-2 mt-auto pt-4 border-t border-ink/8">
                             <div>
                                 <dt class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold">Trips</dt>
-                                <dd class="font-serif font-semibold tabular-nums">{{ $host->published_trips }}</dd>
+                                <dd class="font-semibold tabular-nums">{{ $host->published_trips }}</dd>
                             </div>
                             <div>
                                 <dt class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold">Joiners</dt>
-                                <dd class="font-serif font-semibold tabular-nums">{{ number_format($profile?->guests_count ?? 0) }}</dd>
+                                <dd class="font-semibold tabular-nums">{{ number_format($profile?->guests_count ?? 0) }}</dd>
                             </div>
                             <div>
                                 <dt class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold">Rating</dt>
-                                <dd class="font-serif font-semibold tabular-nums">
+                                <dd class="font-semibold tabular-nums">
                                     @if($profile?->rating)
                                         <span class="text-amber" aria-hidden="true">★</span> {{ $profile->rating }}
                                     @else
@@ -214,7 +214,7 @@
             </span>
 
             @if($this->hasFilters())
-                <p class="font-serif font-semibold text-xl">No hosts match that</p>
+                <p class="tracking-tight font-semibold text-xl">No hosts match that</p>
                 <p class="text-ink/65 mt-1.5 max-w-sm mx-auto">
                     Try a different trip type, or search for a place instead of a name.
                 </p>
@@ -223,7 +223,7 @@
                     Clear filters
                 </button>
             @else
-                <p class="font-serif font-semibold text-xl">No hosts yet</p>
+                <p class="tracking-tight font-semibold text-xl">No hosts yet</p>
                 <p class="text-ink/65 mt-1.5 max-w-sm mx-auto">
                     Terra is new here. If you plan trips, this is a good moment to be the first.
                 </p>

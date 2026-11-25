@@ -29,7 +29,7 @@
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-cream/70">Terra check-in pass</p>
-                <p class="font-serif font-semibold text-2xl leading-tight mt-1 truncate">{{ $participant->fullName() }}</p>
+                <p class="tracking-tight font-semibold text-2xl leading-tight mt-1 truncate">{{ $participant->fullName() }}</p>
             </div>
             @if($participant->checked_in_at)
                 <span class="rounded-full bg-moss text-cream px-3 py-1 text-[11px] font-bold shrink-0"

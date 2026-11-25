@@ -1,7 +1,7 @@
 <div class="max-w-2xl mx-auto px-6 py-8" wire:poll.5s>
     <div class="flex items-center gap-3">
         <div>
-            <h1 class="font-serif font-semibold text-2xl">{{ $departure->trip->title }}</h1>
+            <h1 class="tracking-tight font-semibold text-2xl">{{ $departure->trip->title }}</h1>
             <p class="text-ink/65 text-sm">{{ $departure->starts_at->format('M j') }} · trip chat</p>
         </div>
         <a href="{{ route('trips.show', $departure->trip) }}" class="ml-auto text-sm text-ink/65">‹ Trip</a>

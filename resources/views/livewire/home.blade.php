@@ -47,7 +47,7 @@
                 <span class="h-px flex-1 bg-cream/15"></span>
             </div>
 
-            <h1 class="reveal display font-serif font-semibold mt-10 max-w-[60rem]" style="animation-delay:.12s">
+            <h1 class="reveal display tracking-tight font-semibold mt-10 max-w-[60rem]" style="animation-delay:.12s">
                 {{-- The break is deliberate from `sm` up, where the first clause fits one line and
                      the amber italic lands as its own beat. On a phone the same break strands
                      "done" alone on a line, so there it is dropped and the sentence just flows. --}}
@@ -68,7 +68,7 @@
             <dl class="reveal mt-12 flex flex-wrap gap-x-10 gap-y-5 max-w-xl" style="animation-delay:.36s">
                 @foreach([[$stats['departures'], 'Trips open'], [$stats['hosts'], 'Hosts']] as $stat)
                     <div class="relative pl-5 first:pl-0 before:absolute before:left-0 before:top-1 before:bottom-1 before:w-px before:bg-cream/25 first:before:hidden">
-                        <dd class="font-serif font-semibold text-4xl leading-none">{{ $stat[0] }}</dd>
+                        <dd class="tracking-tight font-semibold text-4xl leading-none">{{ $stat[0] }}</dd>
                         <dt class="marker text-xs font-semibold text-cream/60 mt-2">{{ $stat[1] }}</dt>
                     </div>
                 @endforeach
@@ -86,8 +86,8 @@
     ])
     <section class="max-w-6xl mx-auto px-6 mt-16 relative">
         <div class="flex items-baseline gap-4 mb-6" data-reveal>
-            <span class="font-serif italic text-terra text-xl leading-none">01</span>
-            <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">Browse by terrain</h2>
+            <span class="tracking-tight text-terra text-xl leading-none">01</span>
+            <h2 class="tracking-tight font-semibold text-2xl md:text-3xl leading-none">Browse by terrain</h2>
             <span class="hidden sm:block h-px flex-1 bg-ink/12 self-center"></span>
         </div>
         <div class="flex flex-wrap gap-3">
@@ -99,7 +99,7 @@
                         <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ $meta[1] }}"/></svg>
                     </span>
                     <span>
-                        <span class="block font-serif font-semibold leading-none">{{ $meta[0] }}</span>
+                        <span class="block font-semibold leading-none">{{ $meta[0] }}</span>
                         <span class="block text-xs text-ink/65 mt-1">{{ $count }} {{ Str::plural('trip', $count) }}</span>
                     </span>
                 </a>
@@ -129,8 +129,8 @@
     @php($digest = $trips->slice(1)->take(4))
     <section class="max-w-6xl mx-auto px-6 mt-20 relative">
         <div class="flex items-baseline gap-4 mb-8" data-reveal dusk="departing-soon">
-            <span class="font-serif italic text-terra text-xl leading-none">02</span>
-            <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">Departing soon</h2>
+            <span class="tracking-tight text-terra text-xl leading-none">02</span>
+            <h2 class="tracking-tight font-semibold text-2xl md:text-3xl leading-none">Departing soon</h2>
             <span class="hidden sm:block h-px flex-1 bg-ink/12 self-center"></span>
             <a href="{{ route('trips.index') }}" class="inline-flex items-center py-1.5 -my-1.5 text-sm font-semibold text-terra whitespace-nowrap">Browse all →</a>
         </div>
@@ -149,9 +149,9 @@
                         @endif
                         <div class="absolute inset-x-0 bottom-0 p-6 md:p-8">
                             <span class="marker text-xs font-semibold text-cream/70">Lead departure</span>
-                            <h3 class="font-serif font-semibold text-3xl md:text-4xl text-cream leading-tight mt-2 max-w-lg">{{ $featured->title }}</h3>
+                            <h3 class="tracking-tight font-semibold text-3xl md:text-4xl text-cream leading-tight mt-2 max-w-lg">{{ $featured->title }}</h3>
                             <p class="text-cream/80 mt-2">{{ $featured->place?->country }} · led by {{ $featured->host->name }}</p>
-                            <p class="mt-4 font-serif font-bold text-2xl text-cream">{{ $featured->host->hostProfile?->currency ?? 'PHP' }} {{ number_format($featured->price) }}<span class="text-sm font-sans font-normal text-cream/70"> / person</span></p>
+                            <p class="mt-4 tracking-tight font-bold text-2xl text-cream">{{ $featured->host->hostProfile?->currency ?? 'PHP' }} {{ number_format($featured->price) }}<span class="text-sm font-sans font-normal text-cream/70"> / person</span></p>
                         </div>
                     </div>
                 </a>
@@ -166,10 +166,10 @@
                                     <img src="{{ $t->cover_url }}" alt="{{ $t->title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                                 </div>
                                 <div class="min-w-0 flex-1">
-                                    <h4 class="font-serif font-semibold leading-snug truncate group-hover:text-pine transition-colors">{{ $t->title }}</h4>
+                                    <h4 class="font-semibold leading-snug truncate group-hover:text-pine transition-colors">{{ $t->title }}</h4>
                                     <p class="text-sm text-ink/65 truncate">{{ $t->place?->country }} · {{ $t->host->name }}</p>
                                 </div>
-                                <span class="font-serif font-bold whitespace-nowrap">{{ $t->host->hostProfile?->currency ?? 'PHP' }} {{ number_format($t->price) }}</span>
+                                <span class="font-bold whitespace-nowrap">{{ $t->host->hostProfile?->currency ?? 'PHP' }} {{ number_format($t->price) }}</span>
                             </a>
                         @endforeach
                     </div>
@@ -182,8 +182,8 @@
     {{-- ═══════════════════════════════ 03 · HOW TERRA WORKS ═══════════════════════════════ --}}
     <section class="max-w-6xl mx-auto px-6 mt-24">
         <div class="flex items-baseline gap-4 mb-10" data-reveal>
-            <span class="font-serif italic text-terra text-xl leading-none">03</span>
-            <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">How Terra works</h2>
+            <span class="tracking-tight text-terra text-xl leading-none">03</span>
+            <h2 class="tracking-tight font-semibold text-2xl md:text-3xl leading-none">How Terra works</h2>
             <span class="hidden sm:block h-px flex-1 bg-ink/12 self-center"></span>
         </div>
         <div class="relative grid md:grid-cols-3 gap-8">
@@ -195,8 +195,8 @@
             ])
             @foreach($steps as $i => $step)
                 <div class="relative text-center md:px-4" data-reveal style="--reveal-delay:{{ .12 * $i }}s">
-                    <span class="relative z-10 mx-auto grid place-items-center w-12 h-12 rounded-full bg-pine text-cream font-serif font-semibold">{{ $i + 1 }}</span>
-                    <h3 class="font-serif font-semibold text-lg mt-4">{!! $step[0] !!}</h3>
+                    <span class="relative z-10 mx-auto grid place-items-center w-12 h-12 rounded-full bg-pine text-cream font-semibold">{{ $i + 1 }}</span>
+                    <h3 class="font-semibold text-lg mt-4">{!! $step[0] !!}</h3>
                     <p class="text-sm text-ink/70 mt-2 leading-relaxed">{{ $step[1] }}</p>
                 </div>
             @endforeach
@@ -210,8 +210,8 @@
         <div class="grain-overlay" style="opacity:.35" aria-hidden="true"></div>
         <div class="relative max-w-6xl mx-auto px-6 py-16 md:py-20">
             <div class="flex items-baseline gap-4 mb-9" data-reveal>
-                <span class="font-serif italic text-[#E8C58C] text-xl leading-none">04</span>
-                <h2 class="font-serif font-semibold text-2xl md:text-3xl leading-none">Fresh off a trip</h2>
+                <span class="tracking-tight text-[#E8C58C] text-xl leading-none">04</span>
+                <h2 class="tracking-tight font-semibold text-2xl md:text-3xl leading-none">Fresh off a trip</h2>
                 <span class="hidden sm:block h-px flex-1 bg-cream/20 self-center"></span>
                 <a href="{{ route('hosts.index') }}" class="inline-flex items-center py-1.5 -my-1.5 text-sm font-semibold text-cream/75 hover:text-cream whitespace-nowrap">Meet the hosts →</a>
             </div>
@@ -220,7 +220,7 @@
                 <div class="grid md:grid-cols-3 gap-5">
                     @foreach($reviews as $r)
                         <figure class="rounded-2xl bg-cream/[.06] border border-cream/10 p-6 hover:bg-cream/[.09] transition-colors" data-reveal style="--reveal-delay:{{ .1 * $loop->index }}s">
-                            <div class="font-serif italic text-[#E8C58C] text-4xl leading-none">“</div>
+                            <div class="tracking-tight text-[#E8C58C] text-4xl leading-none">“</div>
                             <blockquote class="mt-1 text-cream/90 leading-relaxed">{{ $r->body }}</blockquote>
                             <figcaption class="mt-4 flex items-center justify-between text-sm">
                                 <span class="text-cream/60">{{ $r->joiner->name }} · {{ $r->reviewable?->title }}</span>
@@ -239,9 +239,9 @@
                     @foreach($hosts as $host)
                         <a href="{{ route('hosts.show', $host) }}" class="rounded-2xl bg-cream/[.06] border border-cream/10 p-5 hover:bg-cream/10 hover:-translate-y-0.5 transition-all" data-reveal style="--reveal-delay:{{ .07 * $loop->index }}s">
                             <div class="flex items-center gap-3">
-                                <span class="grid place-items-center w-11 h-11 rounded-full bg-cream/15 font-serif font-semibold shrink-0">{{ strtoupper(substr($host->name,0,1)) }}</span>
+                                <span class="grid place-items-center w-11 h-11 rounded-full bg-cream/15 font-semibold shrink-0">{{ strtoupper(substr($host->name,0,1)) }}</span>
                                 <div class="min-w-0">
-                                    <div class="font-serif font-semibold truncate">{{ $host->name }}</div>
+                                    <div class="font-semibold truncate">{{ $host->name }}</div>
                                     <div class="text-xs text-cream/65">{{ $host->hostProfile?->rating ?? '—' }} ★ · {{ $host->hostProfile?->trips_count }} trips</div>
                                 </div>
                             </div>
@@ -261,7 +261,7 @@
         <div class="grain-overlay" style="opacity:.35" aria-hidden="true"></div>
         <div class="relative max-w-4xl mx-auto px-6 py-28 md:py-36 text-center">
             <span class="marker text-xs font-semibold text-[#E8C58C]" data-reveal>Your next trip</span>
-            <h2 class="font-serif font-semibold text-4xl md:text-6xl leading-[1.02] mt-4" data-reveal style="--reveal-delay:.08s">Has a crew<br>already forming.</h2>
+            <h2 class="tracking-tight font-semibold text-4xl md:text-6xl leading-[1.02] mt-4" data-reveal style="--reveal-delay:.08s">Has a crew<br>already forming.</h2>
             <div class="mt-9 flex flex-wrap items-center justify-center gap-3" data-reveal style="--reveal-delay:.16s">
                 <a href="{{ route('trips.index') }}" class="rounded-full bg-cream text-pine px-7 py-3.5 font-semibold shadow-[0_18px_40px_-24px_rgba(0,0,0,.8)] hover:bg-surface hover:-translate-y-0.5 transition-all">Browse trips</a>
                 <a href="{{ route('register') }}" class="rounded-full border border-cream/40 bg-ink/20 backdrop-blur px-7 py-3.5 font-semibold text-cream hover:bg-ink/40 transition-colors">Host your own</a>

@@ -37,7 +37,7 @@
 
     @if($avatar)
         <span class="grid place-items-center {{ $box['box'] }} {{ $box['type'] }} rounded-full shrink-0 overflow-hidden
-                     font-serif font-semibold {{ $onDark ? 'bg-cream/15 text-cream' : 'bg-pine text-cream' }}
+                     font-semibold {{ $onDark ? 'bg-cream/15 text-cream' : 'bg-pine text-cream' }}
                      {{ $linked ? 'transition-transform group-hover/host:scale-105' : '' }}">
             @if($host?->avatar_url)
                 <img src="{{ $host->avatar_url }}" alt="" class="w-full h-full object-cover">

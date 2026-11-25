@@ -27,7 +27,7 @@
                 @if($trip->place->elevation_m)<span class="rounded-full glass-dark px-3 py-1 text-xs font-semibold text-cream">{{ number_format($trip->place->elevation_m) }} m</span>@endif
                 @if($trip->reviews_count)<span class="rounded-full glass-dark px-3 py-1 text-xs font-semibold text-cream"><span class="text-amber">★</span> {{ $trip->aggregate_rating }} ({{ $trip->reviews_count }})</span>@endif
             </div>
-            <h1 class="font-serif font-semibold text-4xl md:text-5xl text-cream leading-tight">{{ $trip->title }}</h1>
+            <h1 class="tracking-tight font-semibold text-4xl md:text-5xl text-cream leading-tight">{{ $trip->title }}</h1>
             <p class="text-cream/80 mt-2">{{ $trip->place->name }} · {{ $trip->place->country }}</p>
         </div>
     </div>
@@ -57,7 +57,7 @@
             @php($trailStops = $trip->destinations->filter(fn ($d) => $d->hikeDetail?->hasContent()))
             @foreach($trailStops as $stop)
                 @php($h = $stop->hikeDetail)
-                <h2 class="font-serif font-semibold text-xl mt-9 mb-4">
+                <h2 class="tracking-tight font-semibold text-xl mt-9 mb-4">
                     {{ $trailStops->count() > 1 ? $stop->place?->name : 'The trail' }}
                     @if($h->trail_name)<span class="text-ink/65 font-sans text-base font-normal">· {{ $h->trail_name }}</span>@endif
                 </h2>
@@ -76,7 +76,7 @@
                     <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                         @foreach($stats as [$label, $value])
                             <div class="rounded-2xl border border-ink/8 bg-surface px-4 py-3">
-                                <dd class="font-serif font-bold text-xl leading-none">{{ $value }}</dd>
+                                <dd class="tracking-tight font-bold text-xl leading-none">{{ $value }}</dd>
                                 <dt class="marker text-[10px] font-semibold text-ink/65 mt-1.5">{{ $label }}</dt>
                             </div>
                         @endforeach
@@ -151,7 +151,7 @@
             @php($hasItinerary = $trip->destinations->count() > 1
                 || $trip->destinations->contains(fn ($s) => collect($s->days ?? [])->filter()->isNotEmpty()))
             @if($hasItinerary)
-                <h2 class="font-serif font-semibold text-xl mt-9 mb-1">The route</h2>
+                <h2 class="tracking-tight font-semibold text-xl mt-9 mb-1">The route</h2>
                 @if($trip->day_count)
                     <p class="text-sm text-ink/65 mb-4">{{ $trip->day_count }} {{ \Illuminate\Support\Str::plural('day', $trip->day_count) }} across {{ $trip->destinations->count() }} {{ \Illuminate\Support\Str::plural('stop', $trip->destinations->count()) }}</p>
                 @endif
@@ -189,14 +189,14 @@
 
             {{-- ═══ PHOTO CAROUSEL ═══ --}}
             @if($trip->photos->isNotEmpty())
-                <h2 class="font-serif font-semibold text-xl mt-9 mb-4">Photos</h2>
+                <h2 class="tracking-tight font-semibold text-xl mt-9 mb-4">Photos</h2>
                 <x-carousel :images="$trip->photos->map(fn($p) => ['url' => $p->url, 'alt' => $trip->title])"
                             ratio="aspect-[16/10]" rounded="rounded-2xl" />
             @endif
 
             {{-- ═══ WHAT'S INCLUDED ═══ --}}
             @if($trip->inclusionItems->isNotEmpty())
-                <h2 class="font-serif font-semibold text-xl mt-9 mb-4">What's included</h2>
+                <h2 class="tracking-tight font-semibold text-xl mt-9 mb-4">What's included</h2>
 
                 @php($withPhotos = $trip->inclusionItems->filter->image)
                 @if($withPhotos->isNotEmpty())
@@ -239,7 +239,7 @@
             --}}
             @php($packing = \App\Support\PackingItems::resolve($trip->packing_items))
             @if($packing)
-                <h2 class="font-serif font-semibold text-xl mt-9 mb-4">What to bring</h2>
+                <h2 class="tracking-tight font-semibold text-xl mt-9 mb-4">What to bring</h2>
                 <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2" dusk="trip-packing">
                     @foreach($packing as $item)
                         <div class="flex items-start gap-3 rounded-xl border border-ink/8 bg-surface px-4 py-3">
@@ -257,7 +257,7 @@
             {{-- Pickups and drop-offs render identically; only the heading differs. --}}
             @foreach([['Pickup', 'Pickup points', $trip->meetups], ['Drop-off', 'Drop-off points', $trip->dropoffs]] as [$one, $many, $spots])
             @if($spots->isNotEmpty())
-                <h2 class="font-serif font-semibold text-xl mt-9 mb-4">
+                <h2 class="tracking-tight font-semibold text-xl mt-9 mb-4">
                     {{ $spots->count() > 1 ? $many : $one }}
                 </h2>
 
@@ -274,7 +274,7 @@
                                         @endif
                                     </div>
                                     @if($spot->address)<p class="text-sm text-ink/65 mt-0.5">{{ $spot->address }}</p>@endif
-                                    @if($spot->note)<p class="text-sm text-ink/70 mt-1.5 italic">{{ $spot->note }}</p>@endif
+                                    @if($spot->note)<p class="text-sm text-ink/70 mt-1.5">{{ $spot->note }}</p>@endif
                                 </div>
                                 @if($spot->map_link)
                                     <a href="{{ $spot->map_link }}" target="_blank" rel="noopener noreferrer"
@@ -304,7 +304,7 @@
             {{-- Reviews --}}
             <div class="mt-10 pt-8 border-t border-ink/8">
                 <div class="flex items-center justify-between">
-                    <h2 class="font-serif font-semibold text-xl">Reviews @if($trip->reviews_count)<span class="text-ink/65 font-sans text-base font-normal">· {{ $trip->aggregate_rating }} ★ ({{ $trip->reviews_count }})</span>@endif</h2>
+                    <h2 class="tracking-tight font-semibold text-xl">Reviews @if($trip->reviews_count)<span class="text-ink/65 font-sans text-base font-normal">· {{ $trip->aggregate_rating }} ★ ({{ $trip->reviews_count }})</span>@endif</h2>
                     @if($this->canReview && ! $showReview)
                         <button wire:click="$set('showReview', true)" dusk="rate-trip" class="rounded-full border border-pine text-pine px-5 py-2 text-sm font-semibold">Rate this trip</button>
                     @endif
@@ -401,7 +401,7 @@
                 @php($cur = $trip->host->hostProfile?->currency ?? 'PHP')
                 <div class="flex items-center justify-between gap-4">
                     <div>
-                        <div class="font-serif font-bold text-2xl">
+                        <div class="tracking-tight font-bold text-2xl">
                             {{ $cur }} {{ number_format($trip->current_price) }}
                             <span class="text-sm font-sans font-normal text-ink/70">/ person</span>
                         </div>

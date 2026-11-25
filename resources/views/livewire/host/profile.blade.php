@@ -1,7 +1,7 @@
 <div class="max-w-4xl" x-data>
     <div class="flex items-end justify-between mb-6">
         <div>
-            <h1 class="font-serif font-semibold text-3xl">Your page</h1>
+            <h1 class="tracking-tight font-semibold text-3xl">Your page</h1>
             <p class="text-ink/65 mt-1 text-sm">Everything here is public at
                 {{-- &commat; not a literal @, which Blade would read as the start of a directive --}}
                 <a href="{{ $user->handle ? route('hosts.show', $user) : '#' }}" class="font-semibold underline decoration-ink/25">terra/&commat;{{ $handle ?: 'your-handle' }}</a>.
@@ -30,7 +30,7 @@
              over this block. Only the avatar overlaps the cover — all text sits below it, so it
              stays legible whatever the host uploads. --}}
         <div class="relative px-6 pb-6">
-            <span class="relative -mt-10 grid place-items-center w-20 h-20 rounded-2xl ring-4 ring-surface overflow-hidden bg-pine text-cream font-serif font-semibold text-2xl shrink-0">
+            <span class="relative -mt-10 grid place-items-center w-20 h-20 rounded-2xl ring-4 ring-surface overflow-hidden bg-pine text-cream tracking-tight font-semibold text-2xl shrink-0">
                 @if($avatar)
                     <img src="{{ $avatar->temporaryUrl() }}" alt="" class="absolute inset-0 w-full h-full object-cover">
                 @elseif($user->avatar_url)
@@ -41,13 +41,13 @@
             </span>
 
             <div class="mt-3 min-w-0">
-                <div class="font-serif font-semibold text-xl truncate">{{ $name ?: 'Your name' }}</div>
+                <div class="tracking-tight font-semibold text-xl truncate">{{ $name ?: 'Your name' }}</div>
                 <div class="text-sm text-ink/65 truncate">
                     &commat;{{ $handle ?: 'handle' }}@if($location) · {{ $location }}@endif
                 </div>
             </div>
             @if($tagline)
-                <p class="mt-3 font-serif italic text-lg" style="color:{{ \App\Support\Accents::hex($accent) }}">{{ $tagline }}</p>
+                <p class="mt-3 text-lg" style="color:{{ \App\Support\Accents::hex($accent) }}">{{ $tagline }}</p>
             @endif
             @if($bio)<p class="mt-2 text-sm text-ink/70 leading-relaxed">{{ $bio }}</p>@endif
         </div>
@@ -56,7 +56,7 @@
     <form wire:submit="save" class="space-y-8">
         {{-- ══════════ IDENTITY ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
-            <h2 class="font-serif font-semibold text-lg mb-5">Identity</h2>
+            <h2 class="font-semibold text-lg mb-5">Identity</h2>
             <div class="grid sm:grid-cols-2 gap-5">
                 <label class="block">
                     <span class="block text-sm font-semibold text-ink/70 mb-1.5">Display name</span>
@@ -91,7 +91,7 @@
 
         {{-- ══════════ LOOK ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
-            <h2 class="font-serif font-semibold text-lg">Look</h2>
+            <h2 class="font-semibold text-lg">Look</h2>
             <p class="text-sm text-ink/65 mt-1 mb-5">Your accent tints your cover, tabs and highlights.</p>
 
             <span class="block text-sm font-semibold text-ink/70 mb-2">Accent</span>
@@ -123,7 +123,7 @@
 
         {{-- ══════════ LINKS ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
-            <h2 class="font-serif font-semibold text-lg mb-5">Links</h2>
+            <h2 class="font-semibold text-lg mb-5">Links</h2>
             <div class="grid sm:grid-cols-3 gap-5">
                 @foreach(['instagram' => 'Instagram', 'facebook' => 'Facebook', 'website' => 'Website'] as $k => $label)
                     <label class="block">
@@ -136,7 +136,7 @@
 
         {{-- ══════════ GETTING PAID ══════════ --}}
         <section class="rounded-2xl border border-ink/10 bg-surface p-6">
-            <h2 class="font-serif font-semibold text-lg">Getting paid</h2>
+            <h2 class="font-semibold text-lg">Getting paid</h2>
             <p class="text-sm text-ink/65 mt-1 mb-5">Joiners pay you directly — Terra never holds your money.</p>
 
             <label class="block max-w-[10rem] mb-5">

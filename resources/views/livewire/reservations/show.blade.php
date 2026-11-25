@@ -57,7 +57,7 @@
            x-data
            x-on:click="if (window.history.length > 1) { $event.preventDefault(); window.history.back(); }"
            class="inline-flex items-center py-1.5 -my-1.5 text-sm text-ink/65 hover:text-ink">← Back</a>
-        <h1 class="font-serif font-semibold text-3xl mt-2">{{ $heading }}</h1>
+        <h1 class="tracking-tight font-semibold text-3xl mt-2">{{ $heading }}</h1>
         <p class="text-ink/65">
             @if($state === 'confirmed' && $due > 0 && $nextDue)
                 {{-- The one line that matters on a granted seat: what happens next, and by when. --}}
@@ -101,7 +101,7 @@
             @endif
 
             <div class="p-5 sm:flex-1 sm:min-w-0 xl:flex-none">
-                <h2 class="font-serif font-semibold text-xl leading-snug">{{ $trip->title }}</h2>
+                <h2 class="tracking-tight font-semibold text-xl leading-snug">{{ $trip->title }}</h2>
 
                 <dl class="mt-4 space-y-2.5 text-sm">
                     @if($trip->place)
@@ -142,7 +142,7 @@
                 <div class="mt-4 pt-4 border-t border-ink/8">
                     <div class="flex items-baseline justify-between gap-3 text-sm">
                         <span class="text-ink/65">{{ $money($perHead) }} × {{ $reservation->party_size }} {{ Str::plural('seat', $reservation->party_size) }}</span>
-                        <span class="font-serif font-semibold text-xl">{{ $money($perHead * $reservation->party_size) }}</span>
+                        <span class="tracking-tight font-semibold text-xl">{{ $money($perHead * $reservation->party_size) }}</span>
                     </div>
                     {{-- Always, not only on deposit trips. Whether money is outstanding is a fact
                          about this booking, not about how the host priced the trip — hiding it on
@@ -173,7 +173,7 @@
         @if($reservation->refund_due > 0)
             <div class="rounded-2xl border p-4 sm:p-6 {{ $reservation->refunded_at ? 'bg-moss/10 border-moss/25' : 'bg-terra/[.07] border-terra/25' }}"
                  dusk="refund-notice">
-                <p class="font-serif font-semibold text-lg">
+                <p class="font-semibold text-lg">
                     @if($reservation->refunded_at)
                         {{ $host->name }} has refunded {{ $money((float) $reservation->refund_due) }}
                     @else
@@ -237,7 +237,7 @@
                     <div class="lg:hidden sticky -top-4 -mt-4 pt-3 pb-3 mb-4 bg-surface z-10 border-b border-ink/8">
                         <span class="block w-10 h-1 rounded-full bg-ink/15 mx-auto mb-3" aria-hidden="true"></span>
                         <div class="flex items-center justify-between gap-3">
-                            <p class="font-serif font-semibold text-lg leading-tight">What you sent</p>
+                            <p class="font-semibold text-lg leading-tight">What you sent</p>
                             <button type="button" x-on:click="proof = false" dusk="close-proof" aria-label="Close"
                                     class="grid place-items-center w-10 h-10 rounded-full text-ink/65 hover:bg-ink/5 hover:text-ink transition-colors">
                                 <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -245,7 +245,7 @@
                         </div>
                     </div>
 
-                    <p class="hidden lg:block font-serif font-semibold text-lg" dusk="proof-sent">Proof sent — waiting on {{ $host->name }}</p>
+                    <p class="hidden lg:block font-semibold text-lg" dusk="proof-sent">Proof sent — waiting on {{ $host->name }}</p>
 
                     <dl class="divide-y divide-ink/8 lg:mt-2">
                         <div class="pb-3">
@@ -305,7 +305,7 @@
         --}}
         <div class="rounded-2xl border border-ink/10 bg-surface p-4 sm:p-6">
             <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-4">
-                <h2 class="font-serif font-semibold text-lg">Who's going</h2>
+                <h2 class="font-semibold text-lg">Who's going</h2>
                 <p class="text-sm text-ink/65">
                     {{ $reservation->party_size }} {{ Str::plural('seat', $reservation->party_size) }}
                     @unless($reservation->bookerIsTraveling()) · you are booking for others @endunless
@@ -343,7 +343,7 @@
                                             @if($p->is_booker)<span class="ml-1.5 align-middle rounded-full bg-moss/12 text-moss text-[11px] font-semibold px-2 py-0.5">you</span>@endif
                                         </p>
                                     @else
-                                        <p class="font-semibold leading-tight text-ink/65 italic">Details still needed</p>
+                                        <p class="font-semibold leading-tight text-ink/65">Details still needed</p>
                                     @endif
 
                                     <dl class="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
@@ -457,7 +457,7 @@
                         <div class="flex items-center justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.09em] text-ink/65">Paying</p>
-                                <p class="font-serif font-semibold text-lg leading-tight">{{ $money(min($amount, $due)) }}</p>
+                                <p class="font-semibold text-lg leading-tight">{{ $money(min($amount, $due)) }}</p>
                             </div>
                             <button type="button" x-on:click="pay = false" dusk="close-pay" aria-label="Close"
                                     class="grid place-items-center w-10 h-10 rounded-full text-ink/65 hover:bg-ink/5 hover:text-ink transition-colors">
@@ -473,7 +473,7 @@
 
                 <div class="flex flex-wrap items-baseline justify-between gap-4">
                     <div>
-                        <h2 class="font-serif font-semibold text-lg">Send {{ $money(min($amount, $due)) }}</h2>
+                        <h2 class="font-semibold text-lg">Send {{ $money(min($amount, $due)) }}</h2>
                         <p class="text-sm text-ink/65">{{ $departure->starts_at->format('j M') }} · {{ $reservation->party_size }} {{ Str::plural('guest', $reservation->party_size) }}</p>
                     </div>
                     @if($trip->takesDeposit())
@@ -660,7 +660,7 @@
                         @endif
                         <div class="flex items-baseline justify-between gap-3 pt-1.5 border-t border-dashed border-ink/10">
                             <dt class="font-semibold">Sending now</dt>
-                            <dd class="font-serif font-bold text-xl tabular-nums">{{ $money(min($amount, $due)) }}</dd>
+                            <dd class="tracking-tight font-bold text-xl tabular-nums">{{ $money(min($amount, $due)) }}</dd>
                         </div>
                     </dl>
 
@@ -836,7 +836,7 @@
                         flex flex-col overflow-hidden">
                 <div class="flex items-center justify-between gap-4 px-5 sm:px-7 py-4 border-b border-ink/8 shrink-0">
                     <div class="min-w-0">
-                        <h3 class="font-serif font-semibold text-lg leading-tight">Edit traveller</h3>
+                        <h3 class="font-semibold text-lg leading-tight">Edit traveller</h3>
                         <p class="text-sm text-ink/65">Your host needs the name and birthday exactly as they appear on an ID.</p>
                     </div>
                     <button type="button" wire:click="closeModal" class="text-ink/65 hover:text-ink/70 p-2 -m-2 rounded-lg hover:bg-ink/5 transition-colors shrink-0" aria-label="Close">
@@ -963,7 +963,7 @@
                             <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                         </div>
                         <div>
-                            <h3 class="font-serif font-semibold text-base">Remove traveller</h3>
+                            <h3 class="font-semibold text-base">Remove traveller</h3>
                             <p class="text-sm text-ink/65">This action cannot be undone.</p>
                         </div>
                     </div>

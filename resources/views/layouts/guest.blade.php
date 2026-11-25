@@ -3,6 +3,8 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#FBF9F4">
+    <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ config('app.name', 'Terra') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -23,10 +25,10 @@
                         <span class="grid place-items-center w-8 h-8 rounded-full bg-cream/15">
                             <svg viewBox="0 0 24 24" class="w-4 h-4 fill-cream"><path d="M3 19.5l6.4-9.7 3.7 5.1 3.2-4.7 6.3 9.3z"/></svg>
                         </span>
-                        <span class="font-serif font-semibold text-2xl text-cream">Terra</span>
+                        <span class="tracking-tight font-semibold text-2xl text-cream">Terra</span>
                     </a>
                     <div class="mt-auto">
-                        <h1 class="font-serif font-semibold text-4xl text-cream leading-tight">Conquering trails<br class="hidden sm:inline"> together.</h1>
+                        <h1 class="tracking-tight font-semibold text-4xl text-cream leading-tight">Conquering trails<br class="hidden sm:inline"> together.</h1>
                         <p class="text-cream/60 mt-3 max-w-sm">Group trips — hikes, islands, and everywhere between — hosted by people who know the way.</p>
                     </div>
                 </div>
@@ -38,7 +40,7 @@
                     <span class="grid place-items-center w-8 h-8 rounded-full bg-pine">
                         <svg viewBox="0 0 24 24" class="w-4 h-4 fill-cream"><path d="M3 19.5l6.4-9.7 3.7 5.1 3.2-4.7 6.3 9.3z"/></svg>
                     </span>
-                    <span class="font-serif font-semibold text-2xl">Terra</span>
+                    <span class="tracking-tight font-semibold text-2xl">Terra</span>
                 </a>
                 <div class="w-full max-w-sm">
                     {{ $slot }}

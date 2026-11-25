@@ -1,7 +1,7 @@
 <div>
     <div class="flex flex-wrap items-end justify-between gap-4 mb-7">
         <div>
-            <h1 class="font-serif font-semibold text-3xl mb-1">Host dashboard</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mb-1">Host dashboard</h1>
             <p class="text-ink/65">Welcome back, {{ $host->name }}.</p>
         </div>
         <a href="{{ route('host.trips.create') }}" wire:navigate
@@ -16,19 +16,19 @@
         <a href="{{ route('host.trips.index') }}" wire:navigate
            class="glass-card glass-interactive px-5 py-4">
             <div class="marker text-[10px] font-semibold text-ink/65">Confirmed guests</div>
-            <div class="font-serif font-bold text-3xl leading-none mt-1.5 tabular-nums">{{ $confirmedGuests }}</div>
+            <div class="tracking-tight font-bold text-3xl leading-none mt-1.5 tabular-nums">{{ $confirmedGuests }}</div>
             <div class="text-sm text-ink/65 mt-1">across all schedules</div>
         </a>
 
         <div class="{{ $toConfirm ? 'glass-terra rounded-2xl' : 'glass-card' }} px-5 py-4">
             <div class="marker text-[10px] font-semibold {{ $toConfirm ? 'text-ink/75' : 'text-ink/65' }}">Payments to confirm</div>
-            <div class="font-serif font-bold text-3xl leading-none mt-1.5 tabular-nums">{{ $toConfirm }}</div>
+            <div class="tracking-tight font-bold text-3xl leading-none mt-1.5 tabular-nums">{{ $toConfirm }}</div>
             <div class="text-sm text-ink/65 mt-1">{{ $toConfirm ? 'joiners waiting on you' : 'nothing waiting' }}</div>
         </div>
 
         <div class="glass-card px-5 py-4 col-span-2 lg:col-span-1">
             <div class="marker text-[10px] font-semibold text-ink/65">Holds awaiting payment</div>
-            <div class="font-serif font-bold text-3xl leading-none mt-1.5 tabular-nums">{{ $awaitingPayment }}</div>
+            <div class="tracking-tight font-bold text-3xl leading-none mt-1.5 tabular-nums">{{ $awaitingPayment }}</div>
             <div class="text-sm text-ink/65 mt-1">places reserved but unpaid</div>
         </div>
     </div>
@@ -38,7 +38,7 @@
         {{-- Stacked on a phone: the month, the toggle and the pager cannot share a 375px
              row without the title wrapping a word per line. --}}
         <header class="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 border-b border-ink/8">
-            <h2 class="font-serif font-semibold text-xl sm:flex-1 sm:min-w-0">
+            <h2 class="tracking-tight font-semibold text-xl sm:flex-1 sm:min-w-0">
                 {{ $cursor->format('F Y') }}
                 <span class="font-sans font-normal text-base text-ink/65">
                     · {{ $monthDepartures->count() }} {{ \Illuminate\Support\Str::plural('trip', $monthDepartures->count()) }}
@@ -198,7 +198,7 @@
                    class="flex flex-wrap items-center gap-4 px-5 py-4 hover:bg-ink/[.02] transition-colors">
                     <div class="text-center shrink-0 w-12">
                         <div class="marker text-[10px] font-semibold text-ink/65">{{ $dep->starts_at->format('M') }}</div>
-                        <div class="font-serif font-bold text-2xl leading-none tabular-nums">{{ $dep->starts_at->format('j') }}</div>
+                        <div class="tracking-tight font-bold text-2xl leading-none tabular-nums">{{ $dep->starts_at->format('j') }}</div>
                     </div>
 
                     <div class="min-w-0 flex-1">
@@ -233,13 +233,13 @@
 
     {{-- ═══ NEXT UP ═══ --}}
     @if($nextUp->isNotEmpty())
-        <h2 class="font-serif font-semibold text-xl mt-8 mb-3">Next up</h2>
+        <h2 class="tracking-tight font-semibold text-xl mt-8 mb-3">Next up</h2>
         <div class="grid sm:grid-cols-3 gap-3">
             @foreach($nextUp as $dep)
                 <a href="{{ route('host.roster', $dep) }}" wire:navigate
                    class="glass-card glass-interactive p-5">
                     <div class="marker text-[10px] font-semibold text-ink/65">{{ $dep->starts_at->diffForHumans() }}</div>
-                    <div class="font-serif font-semibold text-lg leading-tight mt-1">{{ $dep->trip->title }}</div>
+                    <div class="font-semibold text-lg leading-tight mt-1">{{ $dep->trip->title }}</div>
                     <div class="text-sm text-ink/65 mt-1">{{ $dep->starts_at->format('D j M Y') }}</div>
                     <div class="flex items-center gap-2 mt-3">
                         <div class="flex-1 h-1.5 rounded-full bg-ink/10 overflow-hidden">

@@ -19,7 +19,7 @@
     @foreach($tiles as $tile)
         <div class="min-w-0">
             <dt class="text-[10px] uppercase tracking-[0.09em] font-semibold {{ $label }}">{{ $tile['label'] }}</dt>
-            <dd class="{{ $compact ? 'text-lg' : 'text-2xl' }} font-serif font-semibold {{ $accent }} tabular-nums leading-tight mt-0.5">
+            <dd class="{{ $compact ? 'text-lg' : 'text-2xl' }} tracking-tight font-semibold {{ $accent }} tabular-nums leading-tight mt-0.5">
                 {{ $tile['value'] }}
             </dd>
             @if($tile['sub'])

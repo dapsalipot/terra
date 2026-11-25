@@ -2,9 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* One family for everything. Geist is a variable font, so every weight Terra uses is this one file
+   (latin subset; names with n-tilde and the like are inside it, anything rarer falls back). */
 @font-face {
-    font-family: 'Fraunces';
-    src: url('/fonts/fraunces.woff2') format('woff2');
+    font-family: 'Geist';
+    src: url('/fonts/geist.woff2') format('woff2');
     font-weight: 100 900;
     font-display: swap;
 }
@@ -252,28 +254,16 @@ body {
 }
 
 /* ── HOST CONSOLE ─────────────────────────────────────────────────────────────
-   Two decisions live here.
-
-   1. No display serif. Fraunces is the brand's voice for marketing surfaces; inside a
-      working tool it reads as decoration and slows scanning. Rather than strip
-      `font-serif` from a hundred call sites, the console re-points that one family to
-      the sans stack — the class keeps its semantic meaning ("display"), the face changes.
-
-   2. Glass needs something behind it. The note further up this file is right that glass
-      over flat canvas is decoration pretending to be material, so the console gets a soft
-      ambient wash for its cards to actually refract. Fixed attachment keeps the wash
-      still while content scrolls, which is what sells the depth. */
+   Glass needs something behind it. The note further up this file is right that glass
+   over flat canvas is decoration pretending to be material, so the console gets a soft
+   ambient wash for its cards to actually refract. Fixed attachment keeps the wash
+   still while content scrolls, which is what sells the depth. */
 .host-ui {
     background-image:
         radial-gradient(58rem 38rem at 10% -12%, rgba(94, 107, 68, .11), transparent 62%),
         radial-gradient(48rem 34rem at 102% -4%, rgba(168, 118, 31, .09), transparent 58%),
         radial-gradient(40rem 30rem at 50% 108%, rgba(44, 56, 38, .06), transparent 60%);
     background-attachment: fixed;
-}
-
-.host-ui .font-serif {
-    font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
-    letter-spacing: -0.015em;   /* the sans runs wider than Fraunces at display sizes */
 }
 
 @layer components {

@@ -27,7 +27,7 @@
         <div class="min-w-0">
             <a href="{{ route('host.dashboard') }}" wire:navigate
                class="inline-flex items-center min-h-[44px] -my-2 text-sm text-ink/70 hover:text-ink">← Dashboard</a>
-            <h1 class="font-serif font-semibold text-2xl sm:text-3xl leading-tight mt-1">{{ $trip->title }}</h1>
+            <h1 class="tracking-tight font-semibold text-2xl sm:text-3xl leading-tight mt-1">{{ $trip->title }}</h1>
             <p class="text-sm text-ink/70">
                 {{ $departure->starts_at->format('D j M Y') }}
                 @if($departure->isMultiDay()) → {{ $departure->ends_at->format('j M') }} @endif

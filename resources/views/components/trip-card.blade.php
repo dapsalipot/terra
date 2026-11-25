@@ -54,7 +54,7 @@
                     @endif
                 </span>
             @endif
-            <h3 class="font-serif font-semibold text-xl leading-tight text-cream">{{ $trip->title }}</h3>
+            <h3 class="tracking-tight font-semibold text-xl leading-tight text-cream">{{ $trip->title }}</h3>
             <p class="flex items-center gap-1.5 text-sm text-cream/80 mt-1">
                 <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 21s7-6.4 7-11a7 7 0 1 0-14 0c0 4.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
                 {{ $trip->place?->name }}<span class="text-cream/70" aria-hidden="true">·</span>{{ $trip->place?->country }}

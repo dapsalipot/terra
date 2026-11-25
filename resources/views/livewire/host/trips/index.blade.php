@@ -1,7 +1,7 @@
 <div>
     <div class="flex flex-wrap items-end justify-between gap-4 mb-7">
         <div>
-            <h1 class="font-serif font-semibold text-3xl mb-1">My trips</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mb-1">My trips</h1>
             <p class="text-ink/65">Each date is its own schedule, so you can price and run them differently.</p>
         </div>
         <a href="{{ route('host.trips.create') }}" wire:navigate
@@ -32,7 +32,7 @@
                 <img src="{{ $first->cover_url }}" alt="" loading="lazy"
                      class="w-24 h-[3.75rem] sm:w-40 sm:h-24 rounded-2xl object-cover shrink-0 shadow-sm">
                 <div class="flex-1 min-w-0">
-                    <h2 class="font-serif font-semibold text-xl sm:text-2xl leading-tight truncate">{{ $first->title }}</h2>
+                    <h2 class="tracking-tight font-semibold text-xl sm:text-2xl leading-tight truncate">{{ $first->title }}</h2>
                     <p class="flex items-center gap-1.5 text-sm text-ink/65 mt-1 min-w-0">
                         <x-icon.pin class="w-4 h-4 shrink-0 text-moss" />
                         <span class="truncate">{{ $first->destinations->map(fn ($d) => $d->place?->name)->filter()->join(' · ') ?: $first->place?->name }}</span>
@@ -80,7 +80,7 @@
 
                         <div class="min-w-0">
                             <p class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold mb-0.5">Price</p>
-                            <p class="font-serif font-semibold text-lg tabular-nums">
+                            <p class="font-semibold text-lg tabular-nums">
                                 {{ $trip->host->hostProfile?->currency ?? 'PHP' }} {{ number_format((float) $trip->price) }}
                             </p>
                             <p class="text-sm text-ink/65">per person</p>

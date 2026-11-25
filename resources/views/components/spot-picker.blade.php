@@ -22,7 +22,7 @@
             <div x-show="open" x-transition
                  class="relative w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-ink/12 bg-surface shadow-2xl">
                 <header class="flex items-center gap-3 px-5 py-4 border-b border-ink/8 sticky top-0 bg-surface">
-                    <h3 id="{{ $id }}-title" class="flex-1 font-serif font-semibold text-xl">{{ $label }}</h3>
+                    <h3 id="{{ $id }}-title" class="flex-1 tracking-tight font-semibold text-xl">{{ $label }}</h3>
                     <button type="button" x-on:click="open = false" aria-label="Close"
                             class="grid place-items-center w-11 h-11 rounded-lg text-ink/65 hover:text-ink hover:bg-ink/5">
                         <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>

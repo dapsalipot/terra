@@ -7,7 +7,7 @@
     discard anyway.
 --}}
 <div style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color:#1F1C15; line-height:1.55; max-width:560px; margin:0 auto; padding:24px;">
-    <p style="font-family: Georgia, 'Times New Roman', serif; font-size:20px; font-weight:600; color:#2C3826; margin:0 0 24px;">Terra</p>
+    <p style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.02em; color:#2C3826; margin:0 0 24px;">Terra</p>
 
     {{ $slot }}
 

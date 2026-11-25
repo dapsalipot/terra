@@ -38,7 +38,7 @@
         @else
             <div class="flex items-start justify-between gap-3 p-4 border-b border-ink/8">
                 <div class="min-w-0">
-                    <p class="font-serif font-semibold text-lg leading-tight truncate">{{ $r->participants->first()?->fullName() ?: $r->displayName() }}</p>
+                    <p class="font-semibold text-lg leading-tight truncate">{{ $r->participants->first()?->fullName() ?: $r->displayName() }}</p>
                     <p class="text-xs text-ink/70">
                         {{ $r->party_size }} {{ \Illuminate\Support\Str::plural('seat', $r->party_size) }}
                         @if($r->confirmed_at) · Confirmed {{ $r->confirmed_at->format('j M Y') }} @endif

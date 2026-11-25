@@ -48,7 +48,7 @@
          else — and stops the controls squeezing the heading to two lines on a phone. --}}
     <div class="mb-6">
         <div>
-            <h1 class="font-serif font-semibold text-3xl mb-1">Your trips</h1>
+            <h1 class="tracking-tight font-semibold text-3xl mb-1">Your trips</h1>
             <p class="text-ink/65">Everything you have booked, and anything still waiting on you.</p>
         </div>
     </div>
@@ -136,7 +136,7 @@
                         {{-- month bar --}}
                         <div class="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-ink/8">
                             <div class="min-w-0">
-                                <p class="font-serif font-semibold text-lg leading-tight">{{ $cursor->format('F Y') }}</p>
+                                <p class="font-semibold text-lg leading-tight">{{ $cursor->format('F Y') }}</p>
                                 <p class="text-xs text-ink/70">
                                     {{ $monthCount }} {{ \Illuminate\Support\Str::plural('trip', $monthCount) }} this month
                                 </p>
@@ -430,7 +430,7 @@
                     @foreach($byMonth as $monthLabel => $monthBookings)
                         <div class="mb-8 last:mb-0">
                             <div class="flex items-center gap-3 mb-3">
-                                <h3 class="font-serif font-semibold text-lg">{{ $monthLabel }}</h3>
+                                <h3 class="font-semibold text-lg">{{ $monthLabel }}</h3>
                                 <span class="h-px flex-1 bg-ink/10"></span>
                                 <span class="text-xs text-ink/65 font-semibold">{{ $monthBookings->count() }}</span>
                             </div>
@@ -521,7 +521,7 @@
                                  fact about a month; the same number spread over a year says nothing. --}}
                             <div class="px-4 sm:px-5 py-4 border-b border-ink/8 bg-cream/40">
                                 <div class="flex items-baseline justify-between gap-3 mb-3">
-                                    <p class="font-serif font-semibold text-lg leading-tight">{{ $month }}</p>
+                                    <p class="font-semibold text-lg leading-tight">{{ $month }}</p>
                                     <span class="text-xs text-ink/65 font-medium shrink-0">
                                         {{ $group['stats']['trips'] }} {{ \Illuminate\Support\Str::plural('trip', $group['stats']['trips']) }}
                                     </span>
@@ -661,7 +661,7 @@
                         </span>
 
                         <span class="absolute inset-x-0 bottom-0 p-5">
-                            <span class="block font-serif font-semibold text-2xl text-cream leading-tight">{{ $nextTrip->title }}</span>
+                            <span class="block tracking-tight font-semibold text-2xl text-cream leading-tight">{{ $nextTrip->title }}</span>
                             @if($nextTrip->place)
                                 <span class="flex items-center gap-1.5 text-sm text-cream/80 mt-1">
                                     <x-icon.pin class="w-3.5 h-3.5 shrink-0" />
@@ -811,7 +811,7 @@
                                     </p>
                                 </div>
                                 <div class="text-right shrink-0">
-                                    <p class="font-serif font-semibold text-lg tabular-nums">
+                                    <p class="font-semibold text-lg tabular-nums">
                                         {{ $r->departure->trip->host->hostProfile?->currency ?? 'PHP' }} {{ number_format($money['due']) }}
                                     </p>
                                     <p class="text-[11px] text-ink/65">due</p>
@@ -976,7 +976,7 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-moss mb-1">
                         {{ $availableTotal > 0 ? ($availableContinuing > 0 ? 'Trips available' : 'Trips leaving') : 'Nothing leaving' }}
                     </p>
-                    <h2 id="day-sheet-title" class="font-serif font-semibold text-2xl leading-tight">
+                    <h2 id="day-sheet-title" class="tracking-tight font-semibold text-2xl leading-tight">
                         {{ $sheetDate->format('l j F') }}
                     </h2>
                     <div class="flex flex-wrap items-center gap-1.5 mt-2">
@@ -1055,7 +1055,7 @@
                                     <span class="min-w-0 text-xs text-ink/70 truncate">
                                         {{ $dep->trip->host->name }}@if($dep->trip->place) · {{ $dep->trip->place->name }}@endif
                                     </span>
-                                    <span class="shrink-0 text-sm font-serif font-semibold">
+                                    <span class="shrink-0 text-sm font-semibold">
                                         {{ $cur($dep->trip) }} {{ number_format($dep->trip->current_price) }}
                                     </span>
                                 </span>

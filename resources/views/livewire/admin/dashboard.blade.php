@@ -1,6 +1,6 @@
 <div class="w-full px-5 sm:px-8 2xl:px-12 py-8">
     <div class="mb-7">
-        <h1 class="font-serif font-semibold text-3xl">Admin</h1>
+        <h1 class="tracking-tight font-semibold text-3xl">Admin</h1>
         <p class="text-ink/65">Moderation. Everything here is reversible — nothing is deleted.</p>
     </div>
 
@@ -16,7 +16,7 @@
         ] as [$label, $value, $tone])
             <div class="rounded-2xl border border-ink/10 bg-surface p-4">
                 <p class="text-[10px] uppercase tracking-[0.09em] text-ink/65 font-semibold">{{ $label }}</p>
-                <p class="font-serif font-bold text-2xl tabular-nums mt-1 {{ $tone === 'terra' ? 'text-terra' : ($tone === 'amber' ? 'text-amber' : '') }}">{{ number_format($value) }}</p>
+                <p class="tracking-tight font-bold text-2xl tabular-nums mt-1 {{ $tone === 'terra' ? 'text-terra' : ($tone === 'amber' ? 'text-amber' : '') }}">{{ number_format($value) }}</p>
             </div>
         @endforeach
     </div>

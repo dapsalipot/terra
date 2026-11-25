@@ -1,6 +1,6 @@
 <div class="max-w-6xl mx-auto px-6 py-10">
     <div class="max-w-2xl">
-        <h1 class="font-serif font-semibold text-4xl">Explore trips</h1>
+        <h1 class="tracking-tight font-semibold text-4xl">Explore trips</h1>
         <p class="text-ink/70 mt-2">Group departures led by hosts who know the route. Filter to your pace and pick a date.</p>
     </div>
 
@@ -41,7 +41,7 @@
             <x-trip-card :$trip />
         @empty
             <div class="col-span-full text-center py-16">
-                <p class="font-serif text-xl text-ink/70">No trips match yet.</p>
+                <p class="tracking-tight text-xl text-ink/70">No trips match yet.</p>
                 <p class="text-ink/65 mt-1">Try widening your filters.</p>
             </div>
         @endforelse

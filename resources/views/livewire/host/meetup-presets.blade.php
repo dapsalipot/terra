@@ -1,7 +1,7 @@
 <div class="max-w-3xl">
     <div class="flex items-end justify-between mb-6">
         <div>
-            <h1 class="font-serif font-semibold text-3xl">Meetup points</h1>
+            <h1 class="tracking-tight font-semibold text-3xl">Meetup points</h1>
             <p class="text-ink/65 mt-1 text-sm">Save the spots you use often, then pick them when you post a trip.</p>
         </div>
         @if($saved)
@@ -10,7 +10,7 @@
     </div>
 
     <form wire:submit="save" class="rounded-2xl border border-ink/10 bg-surface p-6 mb-8">
-        <h2 class="font-serif font-semibold text-lg mb-4">{{ $editingId ? 'Edit spot' : 'Add a spot' }}</h2>
+        <h2 class="font-semibold text-lg mb-4">{{ $editingId ? 'Edit spot' : 'Add a spot' }}</h2>
 
         <label class="block mb-4">
             <span class="block text-sm font-semibold text-ink/70 mb-1.5">Name</span>
@@ -73,7 +73,7 @@
                 <div class="min-w-0 flex-1">
                     <div class="font-semibold">{{ $preset->label }}</div>
                     @if($preset->address)<p class="text-sm text-ink/65 mt-0.5">{{ $preset->address }}</p>@endif
-                    @if($preset->note)<p class="text-sm text-ink/70 mt-1 italic">{{ $preset->note }}</p>@endif
+                    @if($preset->note)<p class="text-sm text-ink/70 mt-1">{{ $preset->note }}</p>@endif
                     @if($preset->lat && $preset->lng)
                         <p class="text-xs text-ink/65 mt-1.5">Pinned · {{ $preset->lat }}, {{ $preset->lng }}</p>
                     @endif
@@ -93,7 +93,7 @@
             </div>
         @empty
             <div class="text-center py-12 rounded-2xl border border-dashed border-ink/15">
-                <p class="font-serif text-lg text-ink/70">No saved spots yet.</p>
+                <p class="text-lg text-ink/70">No saved spots yet.</p>
                 <p class="text-ink/65 text-sm mt-1">Add the terminal or trailhead you use most.</p>
             </div>
         @endforelse

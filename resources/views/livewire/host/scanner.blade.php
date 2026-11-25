@@ -51,13 +51,13 @@
 
     <div class="mb-6">
         <a href="{{ route('host.roster', $departure) }}" wire:navigate class="inline-flex items-center py-1.5 -my-1.5 text-sm text-ink/65 hover:text-ink">← Roster</a>
-        <h1 class="font-serif font-semibold text-3xl mt-2">Check-in</h1>
+        <h1 class="tracking-tight font-semibold text-3xl mt-2">Check-in</h1>
         <p class="text-ink/65">{{ $trip->title }} · {{ $departure->starts_at->format('D, j M Y') }}</p>
     </div>
 
     <div class="rounded-2xl border border-ink/10 bg-surface p-5 mb-5">
         <div class="flex items-baseline justify-between gap-4 mb-4">
-            <p class="font-serif font-semibold text-2xl tabular-nums">{{ $inCount }} <span class="text-ink/65 font-normal">of {{ $participants->count() }}</span></p>
+            <p class="tracking-tight font-semibold text-2xl tabular-nums">{{ $inCount }} <span class="text-ink/65 font-normal">of {{ $participants->count() }}</span></p>
             <p class="text-sm text-ink/65">checked in</p>
         </div>
 

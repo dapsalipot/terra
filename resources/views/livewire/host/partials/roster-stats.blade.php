@@ -23,7 +23,7 @@
     ] as [$label, $value, $sub, $warn])
         <div class="rounded-2xl p-4 {{ $warn ? 'bg-terra/10' : 'bg-ink/[.03]' }}">
             <p class="text-[10px] uppercase tracking-[0.09em] font-semibold {{ $warn ? 'text-terra-deep' : 'text-ink/70' }}">{{ $label }}</p>
-            <p class="font-serif font-semibold text-2xl leading-tight mt-1 tabular-nums {{ $warn ? 'text-terra-deep' : 'text-ink' }}">{{ $value }}</p>
+            <p class="tracking-tight font-semibold text-2xl leading-tight mt-1 tabular-nums {{ $warn ? 'text-terra-deep' : 'text-ink' }}">{{ $value }}</p>
             @if($sub)<p class="text-xs text-ink/70">{{ $sub }}</p>@endif
         </div>
     @endforeach

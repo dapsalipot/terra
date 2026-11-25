@@ -19,7 +19,7 @@
          always legible regardless of what the host uploaded behind it. --}}
     <div class="max-w-5xl mx-auto px-6">
         <div class="flex flex-wrap items-end gap-5 -mt-16 md:-mt-20 relative">
-            <span class="relative grid place-items-center w-32 h-32 md:w-40 md:h-40 rounded-[2rem] ring-[6px] ring-canvas overflow-hidden bg-pine text-cream font-serif font-semibold text-5xl shrink-0 shadow-[0_18px_40px_-18px_rgba(31,28,21,.6)]">
+            <span class="relative grid place-items-center w-32 h-32 md:w-40 md:h-40 rounded-[2rem] ring-[6px] ring-canvas overflow-hidden bg-pine text-cream tracking-tight font-semibold text-5xl shrink-0 shadow-[0_18px_40px_-18px_rgba(31,28,21,.6)]">
                 @if($user->avatar_url)
                     <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="absolute inset-0 w-full h-full object-cover">
                 @else
@@ -60,7 +60,7 @@
 
         {{-- name block, fully on canvas --}}
         <div class="mt-5">
-            <h1 class="font-serif font-semibold text-4xl md:text-5xl leading-none">{{ $user->name }}</h1>
+            <h1 class="tracking-tight font-semibold text-4xl md:text-5xl leading-none">{{ $user->name }}</h1>
             <p class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-ink/70 mt-2.5">
                 <span class="font-semibold">&commat;{{ $user->handle }}</span>
                 @if($p?->location)
@@ -73,7 +73,7 @@
             </p>
 
             @if($p?->tagline)
-                <p class="font-serif italic text-2xl mt-4" style="color: var(--accent)">{{ $p->tagline }}</p>
+                <p class="tracking-tight text-2xl mt-4" style="color: var(--accent)">{{ $p->tagline }}</p>
             @endif
             @if($p?->bio)
                 <p class="text-ink/75 leading-relaxed mt-3 max-w-2xl">{{ $p->bio }}</p>
@@ -89,7 +89,7 @@
                 [$p?->rating ?? '—', 'Rating'],
             ] as [$value, $label])
                 <div>
-                    <dd class="font-serif font-semibold text-3xl leading-none">{{ $value }}</dd>
+                    <dd class="tracking-tight font-semibold text-3xl leading-none">{{ $value }}</dd>
                     <dt class="marker text-[11px] font-semibold text-ink/65 mt-2">{{ $label }}</dt>
                 </div>
             @endforeach
@@ -141,7 +141,7 @@
                 </div>
             @else
                 <div class="text-center py-16">
-                    <p class="font-serif text-xl text-ink/70">No published trips yet.</p>
+                    <p class="tracking-tight text-xl text-ink/70">No published trips yet.</p>
                     @if($this->isOwner)
                         <a href="{{ route('host.trips.create') }}" class="inline-block mt-4 rounded-full bg-pine text-cream px-6 py-3 font-semibold text-sm">Post your first trip</a>
                     @else
@@ -192,7 +192,7 @@
                     @forelse($posts as $post)
                         <article class="rounded-2xl border border-ink/8 bg-surface overflow-hidden shadow-sm">
                             <div class="flex items-center gap-3 p-5 pb-3">
-                                <span class="relative grid place-items-center w-10 h-10 rounded-full overflow-hidden bg-pine text-cream font-serif font-semibold text-sm shrink-0">
+                                <span class="relative grid place-items-center w-10 h-10 rounded-full overflow-hidden bg-pine text-cream font-semibold text-sm shrink-0">
                                     @if($user->avatar_url)
                                         <img src="{{ $user->avatar_url }}" alt="" class="absolute inset-0 w-full h-full object-cover">
                                     @else{{ $user->initials }}@endif
@@ -235,7 +235,7 @@
                         </article>
                     @empty
                         <div class="text-center py-16">
-                            <p class="font-serif text-xl text-ink/70">Nothing posted yet.</p>
+                            <p class="tracking-tight text-xl text-ink/70">Nothing posted yet.</p>
                             <p class="text-ink/65 mt-1">{{ $this->isOwner ? 'Share a photo or an update to start your wall.' : 'Check back after their next trip.' }}</p>
                         </div>
                     @endforelse
@@ -248,7 +248,7 @@
             <div class="max-w-2xl mx-auto">
                 @if($reviews->isNotEmpty())
                     <div class="flex items-baseline gap-3 mb-6">
-                        <span class="font-serif font-semibold text-4xl">{{ $p?->rating ?? '—' }}</span>
+                        <span class="tracking-tight font-semibold text-4xl">{{ $p?->rating ?? '—' }}</span>
                         <span class="text-amber text-lg tracking-widest">{{ str_repeat('★', (int) round($p?->rating ?? 0)) }}</span>
                         <span class="text-ink/65 text-sm">{{ $reviews->count() }} {{ Str::plural('review', $reviews->count()) }}</span>
                     </div>
@@ -257,7 +257,7 @@
                         @foreach($reviews as $review)
                             <article class="rounded-2xl border border-ink/8 bg-surface p-5">
                                 <div class="flex items-center gap-3">
-                                    <span class="grid place-items-center w-9 h-9 rounded-full bg-moss/15 text-pine font-serif font-semibold text-sm shrink-0">
+                                    <span class="grid place-items-center w-9 h-9 rounded-full bg-moss/15 text-pine font-semibold text-sm shrink-0">
                                         {{ $review->joiner->initials }}
                                     </span>
                                     <div class="min-w-0">
@@ -277,7 +277,7 @@
                     </div>
                 @else
                     <div class="text-center py-16">
-                        <p class="font-serif text-xl text-ink/70">No reviews yet.</p>
+                        <p class="tracking-tight text-xl text-ink/70">No reviews yet.</p>
                         <p class="text-ink/65 mt-1">Reviews appear here once joiners finish a trip.</p>
                     </div>
                 @endif
@@ -288,7 +288,7 @@
         @if($tab === 'about')
             <div class="max-w-2xl grid gap-5">
                 <section class="rounded-2xl border border-ink/10 bg-surface p-6">
-                    <h2 class="font-serif font-semibold text-lg mb-2">About {{ $user->name }}</h2>
+                    <h2 class="font-semibold text-lg mb-2">About {{ $user->name }}</h2>
                     <p class="text-ink/75 leading-relaxed">{{ $p?->bio ?: 'This host hasn’t written a bio yet.' }}</p>
                     @if($p?->location)
                         <p class="text-sm text-ink/65 mt-4">Based in <b class="text-ink/80">{{ $p->location }}</b></p>
@@ -297,7 +297,7 @@
 
                 @if($p?->payment_methods)
                     <section class="rounded-2xl border border-ink/10 bg-surface p-6">
-                        <h2 class="font-serif font-semibold text-lg mb-1">How you pay</h2>
+                        <h2 class="font-semibold text-lg mb-1">How you pay</h2>
                         <p class="text-sm text-ink/65 mb-4">You pay {{ $user->name }} directly — Terra never holds your money.</p>
                         <div class="grid sm:grid-cols-2 gap-3">
                             @foreach($p->payment_methods as $m)

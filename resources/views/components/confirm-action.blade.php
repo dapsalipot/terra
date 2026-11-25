@@ -71,7 +71,7 @@
                         <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $iconPath !!}</svg>
                     </span>
                     <div class="min-w-0">
-                        <h3 id="{{ $labelId }}" class="font-serif font-semibold text-base leading-snug">{{ $title }}</h3>
+                        <h3 id="{{ $labelId }}" class="font-semibold text-base leading-snug">{{ $title }}</h3>
                         @if($body)
                             <p class="text-sm text-ink/70 mt-1.5 leading-relaxed">{{ $body }}</p>
                         @endif
