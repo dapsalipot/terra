@@ -237,7 +237,7 @@ class SystemAuditTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($w) {
             $browser->resize(1440, 900);
 
-            $this->sweep($browser, '/', 'home', 'Conquering trails');
+            $this->sweep($browser, '/', 'home', 'Find your next group trip');
             $browser->scrollIntoView('@departing-soon')->pause(self::BEAT);
 
             $this->sweep($browser, '/trips', 'discovery', 'Mount Pulag Sunrise Traverse');
@@ -468,7 +468,7 @@ class SystemAuditTest extends DuskTestCase
             $browser->resize(375, 812);       // iPhone-class viewport
 
             $pages = [
-                '/' => ['home', 'Conquering trails'],
+                '/' => ['home', 'Find your next group trip'],
                 '/trips' => ['discovery', 'Mount Pulag'],
                 '/t/'.$w['trip']->slug => ['trip detail', 'Mount Pulag'],
                 '/t/'.$w['trip']->slug.'/join' => ['registration form', 'Where the host reaches you'],

@@ -1,30 +1,32 @@
 import './bootstrap';
 
-// Scroll-triggered reveals: elements with [data-reveal] fade/rise in when they enter the viewport.
-const revealObserver = new IntersectionObserver(
-    (entries) => entries.forEach((e) => {
-        if (e.isIntersecting) {
-            e.target.classList.add('in-view');
-            revealObserver.unobserve(e.target);
-        }
-    }),
-    { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
-);
+// Numbers that count up the first time they scroll into view. Without JS the real figure is already in the markup.
+const countUp = (el) => {
+    const target = Number(el.dataset.count);
+    if (! Number.isFinite(target) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-const observeReveals = () => document.querySelectorAll('[data-reveal]:not(.in-view)').forEach((el) => revealObserver.observe(el));
+    const start = performance.now();
+    const tick = (now) => {
+        const t = Math.min((now - start) / 1300, 1);
+        el.textContent = Math.round(target * (1 - Math.pow(1 - t, 4))).toLocaleString();
+        if (t < 1) requestAnimationFrame(tick);
+    };
 
-observeReveals();
-document.addEventListener('livewire:navigated', observeReveals);
-
-// Transparent nav (photo-hero pages) turns solid once the hero starts scrolling away.
-const bindNavScroll = () => {
-    const nav = document.querySelector('.site-nav[data-nav="transparent"]');
-    if (! nav) return;
-
-    const sync = () => nav.classList.toggle('nav-solid', window.scrollY > 60);
-    sync();
-    window.addEventListener('scroll', sync, { passive: true });
+    el.textContent = '0';
+    requestAnimationFrame(tick);
 };
 
-bindNavScroll();
-document.addEventListener('livewire:navigated', bindNavScroll);
+const countObserver = new IntersectionObserver(
+    (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) {
+            countUp(e.target);
+            countObserver.unobserve(e.target);
+        }
+    }),
+    { threshold: 0.6 },
+);
+
+const observeCounts = () => document.querySelectorAll('[data-count]').forEach((el) => countObserver.observe(el));
+
+observeCounts();
+document.addEventListener('livewire:navigated', observeCounts);

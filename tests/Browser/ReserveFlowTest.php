@@ -28,12 +28,14 @@ class ReserveFlowTest extends DuskTestCase
         return TripDeparture::factory()->for($trip)->create(['capacity' => 10, 'starts_at' => now()->addWeek()]);
     }
 
-    public function test_home_hero_renders(): void
+    public function test_the_home_page_opens_on_a_search_and_the_trips_row(): void
     {
+        $this->publishedDeparture();
+
         $this->browse(function (Browser $browser) {
             $browser->visit('/')
-                ->waitForText('Conquering trails')
-                // "Departing soon" is scroll-revealed (opacity 0 until in view), so scroll like a user would
+                ->waitForText('Find your next group trip')
+                ->assertPresent('@home-search')
                 ->scrollIntoView('@departing-soon')
                 ->waitForText('Departing soon');
         });

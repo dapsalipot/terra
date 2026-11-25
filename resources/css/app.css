@@ -32,28 +32,8 @@ body {
     to { background-position: -200% 0; }
 }
 
-@keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-.reveal { animation: reveal .7s cubic-bezier(.2,.7,.2,1) both; }
-
-/* the trail line drawing itself across the ridge — a brand signature */
-@keyframes trail-draw { to { stroke-dashoffset: 0; } }
-.trail-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: trail-draw 2.6s cubic-bezier(.4,.6,.2,1) .45s forwards; }
-
-/* Mountain divider band. It is full-bleed, so neutralise the reveal slide/fade — but keep
-   [data-reveal] on it purely so the observer's .in-view starts the trail wipe in frame. */
-.trail-band[data-reveal] { opacity: 1; transform: none; transition: none; }
-
-/* The divider's trail is a broken line, so it is revealed by wiping a clip rect across it
-   rather than by stroke-dashoffset (which the dash pattern already occupies). */
-@keyframes trail-wipe { to { transform: scaleX(1); } }
-.trail-wipe { transform: scaleX(0); transform-box: fill-box; transform-origin: left center; }
-.trail-band.in-view .trail-wipe { animation: trail-wipe 2.4s cubic-bezier(.35,.6,.2,1) .15s forwards; }
-
 /* editorial small-caps marker label */
 .marker { font-feature-settings: "smcp" 1; letter-spacing: .22em; text-transform: uppercase; }
-
-/* fluid display type for the masthead — scales with the viewport */
-.display { font-size: clamp(3.1rem, 9.2vw, 8rem); line-height: .92; letter-spacing: -0.02em; }
 
 /* film grain — tactile texture so surfaces read photographic, not vector */
 .grain-overlay {
@@ -65,79 +45,9 @@ body {
     mix-blend-mode: soft-light;
 }
 
-/* ── cinematic hero atmosphere ─────────────────────────────── */
-
-/* drifting mist bands — huge blurred ellipses crossing the hero on long loops */
-@keyframes mist-a { from { transform: translateX(-12%); } 50% { transform: translateX(9%); } to { transform: translateX(-12%); } }
-@keyframes mist-b { from { transform: translateX(10%); } 50% { transform: translateX(-8%); } to { transform: translateX(10%); } }
-.mist { position: absolute; pointer-events: none; filter: blur(60px); will-change: transform; }
-.mist-a { animation: mist-a 38s ease-in-out infinite; }
-.mist-b { animation: mist-b 52s ease-in-out infinite; }
-
-/* dawn glow that slowly breathes */
-@keyframes glow-breathe { from { opacity: .55; transform: scale(1); } 50% { opacity: .8; transform: scale(1.06); } to { opacity: .55; transform: scale(1); } }
-.glow-breathe { animation: glow-breathe 9s ease-in-out infinite; transform-origin: center; will-change: transform, opacity; }
-
-/* slow drifting stars/embers in the hero sky */
-@keyframes ember { from { transform: translateY(0); opacity: 0; } 12% { opacity: .9; } 88% { opacity: .5; } to { transform: translateY(-46px); opacity: 0; } }
-.ember { animation: ember 7s linear infinite; }
-
-/* ── destination marquee ───────────────────────────────────── */
-@keyframes marquee { to { transform: translateX(-50%); } }
-.marquee-track { display: flex; width: max-content; animation: marquee 36s linear infinite; }
-.marquee:hover .marquee-track { animation-play-state: paused; }
-
-/* ── scroll-triggered reveals (IntersectionObserver adds .in-view) ── */
-[data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); transition-delay: var(--reveal-delay, 0s); }
-[data-reveal].in-view { opacity: 1; transform: none; }
-
-/* card hover physics — a touch of lift + tilt on the featured card */
-.lift { transition: transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s cubic-bezier(.2,.7,.2,1); }
-.lift:hover { transform: translateY(-6px); }
-
-/* ── site nav: transparent over a photo hero, solid once scrolled ── */
-.site-nav { transition: background-color .35s ease, color .35s ease, border-color .35s ease; }
+/* ── site nav ── */
 .nav-link { opacity: .72; }
 .nav-link:hover, .nav-link.is-current { opacity: 1; }
-
-.site-nav[data-nav="transparent"] {
-    color: #F7F4EC;
-    background: transparent;
-    border-bottom: 1px solid transparent;
-    /* no scrim — legibility comes from a soft shadow on the glyphs themselves */
-    text-shadow: 0 1px 12px rgba(12, 16, 8, .45);
-}
-.site-nav[data-nav="transparent"] .wordmark-badge { background: rgba(247,244,236,.2); }
-.site-nav[data-nav="transparent"] .nav-cta { background: #F7F4EC; color: #2C3826; }
-
-.site-nav[data-nav="transparent"].nav-solid {
-    color: #1F1C15;
-    /* glass rather than a flat panel: the hero photo keeps refracting through as it scrolls */
-    background: rgba(247, 244, 236, .72);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
-    border-bottom-color: rgba(255, 255, 255, .45);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 4px 24px -12px rgba(31, 28, 21, .3);
-    text-shadow: none;
-}
-
-@media (prefers-reduced-transparency: reduce) {
-    .site-nav[data-nav="transparent"].nav-solid {
-        background: #FBF9F4;
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-    }
-}
-.site-nav[data-nav="transparent"].nav-solid .wordmark-badge { background: #2C3826; }
-.site-nav[data-nav="transparent"].nav-solid .nav-cta { background: #2C3826; color: #F7F4EC; }
-
-@media (prefers-reduced-motion: reduce) {
-    .reveal { animation: none; }
-    .trail-draw { animation: none; stroke-dashoffset: 0; }
-    .trail-wipe, .trail-band.in-view .trail-wipe { animation: none; transform: scaleX(1); }
-    .mist-a, .mist-b, .glow-breathe, .ember, .marquee-track { animation: none; }
-    [data-reveal] { opacity: 1; transform: none; transition: none; }
-}
 
 [x-cloak] { display: none !important; }
 
@@ -434,4 +344,40 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .tab.is-active .tab-icon { animation: none; }
     .tabbar-pill.is-ready, .tabbar { transition: none; }
+}
+
+/* ══ MOTION ═══════════════════════════════════════════════════════════════════
+   Small and purposeful: a list arrives in a quick cascade, and a pill gives a little under the thumb.
+   All of it is transform and opacity, and all of it stands down under prefers-reduced-motion. */
+
+/* lists: each tile lifts in a beat after the one before. Only the start is specified, and only `backwards`
+   fill, so the tile is back to its own styles afterwards and its hover still works. */
+.stagger-in { animation: stagger-in .55s cubic-bezier(.2, .7, .2, 1) backwards; animation-delay: calc(var(--i, 0) * 45ms); }
+@keyframes stagger-in { from { opacity: .01; transform: translateY(14px); } }
+
+/* a pill CTA gives a little under the thumb (the individual `scale` property composes with any transform) */
+@media (hover: none) {
+    a.rounded-full:active, button.rounded-full:active { scale: .97; }
+}
+
+/* ── the trail ─────────────────────────────────────────────────────────────────
+   One dashed route, waypoint to waypoint, winding down the whole landing page behind the content. The
+   tile is drawn so the route leaves its bottom edge exactly where it entered the top, so it repeats into
+   a single unbroken trail however tall the page gets. It is a pseudo-element, never a background on a real
+   element: the contrast audit reads any element with a background-image as a photograph and skips the
+   text over it, and a muted pattern must not change how text reads. Under 960px wide the tile stops
+   shrinking, so on a phone the route is cropped rather than squeezed into a scribble. */
+.trail-bg { position: relative; isolation: isolate; }
+.trail-bg::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: url('/images/patterns/trail.svg') center top / max(100%, 960px) auto repeat-y;
+    opacity: .55;
+}
+
+/* a row that scrolls sideways without drawing a scrollbar */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .stagger-in { animation: none; }
 }

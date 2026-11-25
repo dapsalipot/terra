@@ -13,17 +13,13 @@
 <body class="min-h-full font-sans antialiased bg-canvas text-ink {{ $showTabbar ? 'has-tabbar' : '' }}">
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-3 focus:left-3 focus:rounded-full focus:bg-pine focus:text-cream focus:px-4 focus:py-2 focus:text-sm focus:font-semibold">Skip to content</a>
 
-    {{-- Pages with a full-bleed photo hero opt into a transparent nav that turns solid on scroll. --}}
-    @php($transparent = $transparentNav ?? false)
-    <nav data-nav="{{ $transparent ? 'transparent' : 'solid' }}"
-         class="site-nav h-[68px] z-30 flex items-center gap-7 px-6 md:px-10
-                {{ $transparent ? 'fixed inset-x-0 top-0' : 'sticky top-0 bg-canvas/90 backdrop-blur border-b border-ink/5 text-ink' }}">
+    <nav class="site-nav sticky top-0 z-30 flex h-[68px] items-center gap-3 border-b border-ink/5 bg-canvas/90 px-6 text-ink backdrop-blur md:gap-7 md:px-10">
         <a href="{{ route('home') }}"><x-wordmark /></a>
         <div class="hidden md:flex gap-6 ml-3 text-sm font-semibold">
             <a href="{{ route('trips.index') }}" @class(['inline-flex items-center min-h-[44px] px-2 -mx-2 nav-link transition-opacity', 'is-current' => request()->routeIs('trips.*')]) @if(request()->routeIs('trips.*')) aria-current="page" @endif>Explore</a>
             <a href="{{ route('hosts.index') }}" @class(['inline-flex items-center min-h-[44px] px-2 -mx-2 nav-link transition-opacity', 'is-current' => request()->routeIs('hosts.*')]) @if(request()->routeIs('hosts.*')) aria-current="page" @endif>Hosts</a>
         </div>
-        <div class="ml-auto flex items-center gap-4">
+        <div class="ml-auto flex items-center gap-2 md:gap-4">
             @auth
                 @if(auth()->user()->isHost())
                     <a href="{{ route('host.dashboard') }}" class="max-md:hidden inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold">Dashboard</a>
@@ -34,7 +30,7 @@
             @else
                 {{-- Organisers do not know they can register and list for free, so the invitation lives in
                      the nav on every page, on a phone included. --}}
-                <a href="{{ route('register', ['role' => 'host']) }}" class="inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold" dusk="nav-host">Host a trip</a>
+                <a href="{{ route('register', ['role' => 'host']) }}" class="inline-flex items-center whitespace-nowrap min-h-[44px] px-2 -mx-2 text-sm font-semibold" dusk="nav-host">Host your Trips</a>
                 <a href="{{ route('login') }}" class="max-md:hidden inline-flex items-center min-h-[44px] px-2 -mx-2 text-sm font-semibold">Log in</a>
                 <a href="{{ route('register') }}" class="nav-cta text-sm font-semibold text-cream bg-pine rounded-full px-4 py-2.5 transition-colors">Sign up</a>
             @endauth
@@ -43,9 +39,57 @@
 
     <main id="main">{{ $slot }}</main>
 
-    <footer class="mt-24 border-t border-ink/5 px-6 md:px-10 py-10 flex items-center gap-3 text-sm text-ink/65">
-        <x-wordmark />
-        <span>· conquering trails together</span>
+    <footer class="mt-20 border-t border-ink/10 bg-sand/60">
+        <div class="mx-auto grid max-w-7xl gap-10 px-6 py-12 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+                <a href="{{ route('home') }}"><x-wordmark /></a>
+                <p class="mt-3 max-w-xs text-ink/65">Group trips led by local hosts. Hikes, islands and everywhere in between.</p>
+            </div>
+
+            <nav aria-label="Explore">
+                <h2 class="font-semibold">Explore</h2>
+                <ul class="mt-3 space-y-2 text-ink/70">
+                    <li><a href="{{ route('trips.index') }}" class="hover:text-ink hover:underline underline-offset-4">All trips</a></li>
+                    @foreach(\App\Support\PlaceCategories::CATALOG as $key => $category)
+                        <li><a href="{{ route('trips.index', ['category' => $key]) }}" class="hover:text-ink hover:underline underline-offset-4">{{ $category[0] }} trips</a></li>
+                    @endforeach
+                </ul>
+            </nav>
+
+            <nav aria-label="Hosting">
+                <h2 class="font-semibold">Hosting</h2>
+                <ul class="mt-3 space-y-2 text-ink/70">
+                    @auth
+                        @if(auth()->user()->isHost())
+                            <li><a href="{{ route('host.dashboard') }}" class="hover:text-ink hover:underline underline-offset-4">Dashboard</a></li>
+                            <li><a href="{{ route('host.trips.create') }}" class="hover:text-ink hover:underline underline-offset-4">Post a trip</a></li>
+                        @endif
+                    @else
+                        <li><a href="{{ route('register', ['role' => 'host']) }}" class="hover:text-ink hover:underline underline-offset-4">Host your Trips</a></li>
+                    @endauth
+                    <li><a href="{{ route('hosts.index') }}" class="hover:text-ink hover:underline underline-offset-4">All hosts</a></li>
+                </ul>
+            </nav>
+
+            <nav aria-label="Account">
+                <h2 class="font-semibold">Account</h2>
+                <ul class="mt-3 space-y-2 text-ink/70">
+                    @auth
+                        @unless(auth()->user()->isHost())
+                            <li><a href="{{ route('my.trips') }}" class="hover:text-ink hover:underline underline-offset-4">Your trips</a></li>
+                        @endunless
+                        <li><a href="{{ route('profile') }}" class="hover:text-ink hover:underline underline-offset-4">Settings</a></li>
+                    @else
+                        <li><a href="{{ route('login') }}" class="hover:text-ink hover:underline underline-offset-4">Log in</a></li>
+                        <li><a href="{{ route('register') }}" class="hover:text-ink hover:underline underline-offset-4">Sign up</a></li>
+                    @endauth
+                </ul>
+            </nav>
+        </div>
+
+        <div class="border-t border-ink/10">
+            <p class="mx-auto max-w-7xl px-6 py-5 text-sm text-ink/65">&copy; {{ date('Y') }} Terra</p>
+        </div>
     </footer>
 
     @if($showTabbar)

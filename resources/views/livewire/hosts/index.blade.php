@@ -101,7 +101,8 @@
                 {{-- Same stretched-link shape as the trip card: a container with an absolutely
                      positioned anchor, so the "Follow"-adjacent bits below can be links too
                      without nesting anchors inside anchors. --}}
-                <div class="group relative flex flex-col rounded-3xl border border-ink/8 bg-surface overflow-hidden
+                <div class="stagger-in" style="--i:{{ min($loop->index, 8) }}">
+                <div class="group relative flex flex-col h-full rounded-3xl border border-ink/8 bg-surface overflow-hidden
                             shadow-[0_10px_30px_-20px_rgba(31,28,21,.35)]
                             hover:shadow-[0_24px_44px_-24px_rgba(31,28,21,.45)] hover:-translate-y-1
                             transition-all duration-300 focus-within:ring-2 focus-within:ring-moss focus-within:ring-offset-2"
@@ -197,6 +198,7 @@
                             </div>
                         </dl>
                     </div>
+                </div>
                 </div>
             @endforeach
         </div>

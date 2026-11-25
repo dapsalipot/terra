@@ -38,7 +38,8 @@
 
     <div class="grid sm:grid-cols-2 gap-8 transition-opacity" wire:loading.class="opacity-40" wire:target="search,category,country,difficulty">
         @forelse($trips as $trip)
-            <x-trip-card :$trip />
+            {{-- Each card lifts in a beat after the one before, so a new result set arrives rather than snaps in. --}}
+            <div class="stagger-in" style="--i:{{ min($loop->index, 8) }}"><x-trip-card :$trip /></div>
         @empty
             <div class="col-span-full text-center py-16">
                 <p class="tracking-tight text-xl text-ink/70">No trips match yet.</p>

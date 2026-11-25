@@ -146,13 +146,6 @@ JS;
             foreach ($pages as $label => $url) {
                 $browser->visit($url)->pause(700);
 
-                // Scroll-reveal sections sit at opacity 0 until they enter the viewport, and the probe
-                // (rightly) ignores anything mid-fade. Reveal them the way scrolling would, or the
-                // home page — nearly all of it revealed on scroll — is measured as two lines of text.
-                if ($browser->script("const r = document.querySelectorAll('[data-reveal]'); r.forEach(e => e.classList.add('in-view')); return r.length;")[0] > 0) {
-                    $browser->pause(1000);
-                }
-
                 foreach ($browser->script(self::PROBE)[0] as $f) {
                     $failures[] = sprintf('%s @%d  %.2f:1 (needs %s)  "%s"  [%s]', $label, $w, $f['ratio'], $f['need'], $f['text'], $f['cls']);
                 }
