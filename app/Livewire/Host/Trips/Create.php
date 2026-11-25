@@ -10,6 +10,7 @@ use App\Support\HikeGrades;
 use App\Support\PackingItems;
 use App\Support\PaymentTerms;
 use App\Support\TrailFeatures;
+use App\Support\Visibility;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -121,6 +122,18 @@ class Create extends Component
     public string $fullDueHours = '';
 
     public string $fullDueDate = '';
+
+    // Step 5 — publish: who can find the trip in a listing. Listing control only; its link opens for anyone.
+    public string $visibility = Visibility::PUBLIC;
+
+    /** A Visibility::WINDOWS key, or 'keep' to leave the opening date an edited followers-first schedule already has. */
+    public string $followersWindow = self::DEFAULT_WINDOW;
+
+    /** When the schedule being edited opens to everyone, as the host reads it ("5 Dec, 6:00 pm"). Labels the 'keep' option and nothing else. */
+    public ?string $currentOpensAt = null;
+
+    /** The window a followers-first trip gets unless the host picks another. */
+    private const DEFAULT_WINDOW = '3d';
 
     /**
      * Canonical shape for a pickup / drop-off row.
@@ -597,6 +610,15 @@ class Create extends Component
         ]);
     }
 
+    /** Step 5 — who can find the trip. `required` too: an empty string would slip past `in`. */
+    protected function validateListing(): void
+    {
+        $this->validate([
+            'visibility' => ['required', Rule::in(Visibility::keys())],
+            'followersWindow' => ['required', Rule::in([...array_keys(Visibility::WINDOWS), 'keep'])],
+        ]);
+    }
+
     /**
      * Validate the current step and advance. Steps validate themselves, so inserting or
      * reordering a step never renames a method the views and tests depend on.
@@ -647,6 +669,7 @@ class Create extends Component
         $this->validateTrip();
         $this->validateInclusions();
         $this->validateLogistics();
+        $this->validateListing();
 
         $inclusions = array_values(array_filter($this->inclusions, fn ($c) => filled($c['label'] ?? null)));
         $meetups = array_values(array_filter($this->meetups, fn ($m) => filled($m['label'] ?? null)));
@@ -662,10 +685,12 @@ class Create extends Component
             if ($this->isEditing) {
                 $trip = Trip::where('host_id', Auth::id())->findOrFail($this->editingId);
 
-                return $this->applyTo($trip, $this->departures[0], $inclusions, $meetups, $dropoffs, saveToLibrary: true);
+                return $this->applyTo($trip, $this->departures[0], $inclusions, $meetups, $dropoffs, saveToLibrary: true, listing: $this->listingAttributes($trip));
             }
 
             $group = (string) Str::uuid();
+            // once for the lot: dates published together share one choice and one opening date
+            $listing = $this->listingAttributes(null);
             $built = [];
 
             foreach ($this->departures as $departure) {
@@ -674,7 +699,7 @@ class Create extends Component
 
                 // library saves only on the first schedule: three dates should not put
                 // three copies of the same pickup point in the host's library
-                $built[] = $this->applyTo($trip, $departure, $inclusions, $meetups, $dropoffs, saveToLibrary: $built === []);
+                $built[] = $this->applyTo($trip, $departure, $inclusions, $meetups, $dropoffs, saveToLibrary: $built === [], listing: $listing);
             }
 
             return $built[0];
@@ -692,7 +717,7 @@ class Create extends Component
      * convention; the departure is updated rather than replaced so its reservations
      * survive an edit.
      */
-    private function applyTo(Trip $trip, array $departure, array $inclusions, array $meetups, array $dropoffs, bool $saveToLibrary): Trip
+    private function applyTo(Trip $trip, array $departure, array $inclusions, array $meetups, array $dropoffs, bool $saveToLibrary, array $listing): Trip
     {
 
         $trip->fill([
@@ -713,6 +738,7 @@ class Create extends Component
             'packing_items' => array_values(array_intersect($this->packing, PackingItems::keys())) ?: null,
             'requires_id' => $this->requiresId,
             'status' => 'published',
+            ...$listing,
         ]);
 
         // keep the stored cover when the host did not touch it
@@ -850,6 +876,29 @@ class Create extends Component
 
     }
 
+    /**
+     * The listing columns every schedule of one publish shares.
+     *
+     * Only followers first has an opening date. "keep" leaves the one an edited schedule already has; where
+     * there is none to leave (a new trip, or a schedule that was not followers first) it means the default window.
+     *
+     * @return array{visibility: string, public_at: ?Carbon}
+     */
+    private function listingAttributes(?Trip $editing): array
+    {
+        if ($this->visibility !== Visibility::FOLLOWERS) {
+            return ['visibility' => $this->visibility, 'public_at' => null];
+        }
+
+        $keep = $this->followersWindow === 'keep';
+        $kept = ($keep && $editing?->visibility === Visibility::FOLLOWERS) ? $editing->public_at : null;
+
+        return [
+            'visibility' => Visibility::FOLLOWERS,
+            'public_at' => $kept ?? Visibility::opensAt($keep ? self::DEFAULT_WINDOW : $this->followersWindow),
+        ];
+    }
+
     // ── drafts ──────────────────────────────────────────────────────
     // Everything except the uploads, which are temporary files on disk and cannot be
     // meaningfully restored into a fresh browser session.
@@ -858,6 +907,7 @@ class Create extends Component
         'inclusions', 'packing', 'requiresId', 'hikes', 'meetups', 'dropoffs', 'departures', 'price', 'priceTiers', 'deposit',
         'downpaymentDueMode', 'downpaymentDueHours', 'downpaymentDueDate',
         'fullDueMode', 'fullDueHours', 'fullDueDate',
+        'visibility', 'followersWindow',
     ];
 
     public bool $draftRestored = false;
@@ -1006,6 +1056,16 @@ class Create extends Component
         ));
 
         $this->requiresId = (bool) $trip->requires_id;
+
+        // What listings do with the schedule right now, so a followers-first window that has already
+        // passed reads, and saves, as Everyone. Only an edit of a schedule still inside its window can
+        // keep that opening date; a copy starts its own (the default window).
+        $this->visibility = $trip->effectiveVisibility();
+
+        if ($editing && $this->visibility === Visibility::FOLLOWERS && $trip->public_at) {
+            $this->followersWindow = 'keep';
+            $this->currentOpensAt = $trip->public_at->format('j M, g:i a');
+        }
 
         // Photos come across as storage paths, not uploads. The upload component previews
         // them, and publish() copies the file rather than sharing it, so deleting one

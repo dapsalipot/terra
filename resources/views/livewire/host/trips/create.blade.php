@@ -958,6 +958,52 @@
                         @endif
                     @endforeach
                 </x-review-section>
+
+                {{-- ── Who can see this trip ── --}}
+                {{-- A control, not a summary, so no Edit button. Listing only: the trip's link opens for
+                     anyone whichever is picked, which is what the copy under each choice says. --}}
+                @php($blurbs = [
+                    \App\Support\Visibility::PUBLIC => 'Listed on Explore, Home and your page.',
+                    \App\Support\Visibility::FOLLOWERS => 'People who follow you see it first, then everyone once the window ends.',
+                    \App\Support\Visibility::LINK => 'Not listed anywhere. Only people with the link can open it.',
+                ])
+                <section class="rounded-2xl border border-ink/12 bg-surface overflow-hidden">
+                    <header class="px-5 py-3.5 border-b border-ink/8 bg-cream/50">
+                        <h2 id="visibility-heading" class="font-semibold text-lg">Who can see this trip</h2>
+                    </header>
+                    <div class="p-5">
+                        <div role="radiogroup" aria-labelledby="visibility-heading" class="space-y-2">
+                            @foreach(\App\Support\Visibility::CATALOG as $key => $label)
+                                <label class="flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors
+                                              {{ $visibility === $key ? 'border-moss ring-1 ring-moss' : 'border-ink/12 hover:border-ink/30' }}">
+                                    <input type="radio" name="visibility" value="{{ $key }}" wire:model.live="visibility"
+                                           dusk="visibility-{{ $key }}"
+                                           class="mt-1 w-4 h-4 shrink-0 text-moss border-ink/25 focus:ring-moss">
+                                    <span class="min-w-0">
+                                        <span class="block font-semibold">{{ $label }}</span>
+                                        <span class="block text-sm text-ink/70">{{ $blurbs[$key] }}</span>
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('visibility')<p class="text-terra text-sm mt-2">{{ $message }}</p>@enderror
+
+                        @if($visibility === \App\Support\Visibility::FOLLOWERS)
+                            <label class="block max-w-xs mt-4">
+                                <span class="field-label">Followers get it first for</span>
+                                <select wire:model="followersWindow" dusk="followers-window" class="field">
+                                    @if($currentOpensAt)
+                                        <option value="keep">Keep: opens {{ $currentOpensAt }}</option>
+                                    @endif
+                                    @foreach(\App\Support\Visibility::WINDOWS as $window => [, $windowLabel])
+                                        <option value="{{ $window }}">{{ $windowLabel }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            @error('followersWindow')<p class="text-terra text-sm mt-1">{{ $message }}</p>@enderror
+                        @endif
+                    </div>
+                </section>
             </div>
 
             <div class="flex gap-3 mt-7">
