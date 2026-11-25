@@ -56,6 +56,7 @@
                             @if($p->gender)<span class="font-normal text-ink/70">· {{ ucfirst($p->gender) }}</span>@endif
                             @unless($p->isComplete())<span class="font-normal text-amber">· Details still needed</span>@endunless
                         </span>
+                        @include('livewire.host.partials.roster-emergency', ['p' => $p])
                     @endforeach
                     <span class="block text-xs text-ink/70 truncate">Booked by {{ $r->displayName() }}</span>
                 @else
@@ -71,10 +72,15 @@
                         @if($lead && $lead->fullName() !== $r->displayName()) · Booked by {{ $r->displayName() }} @endif
                     @elseif($lead && $lead->fullName() !== $r->displayName())
                         Booked by {{ $r->displayName() }}
-                    @else
+                    @elseif($mode !== 'manifest')
+                        {{-- The manifest's right-hand cell already carries the email; saying it
+                             twice on one row is what pushed this line out. --}}
                         {{ $r->contact_email ?: $r->joiner?->email }}
                     @endif
                 </span>
+                @if($mode === 'manifest' && $lead)
+                    @include('livewire.host.partials.roster-emergency', ['p' => $lead])
+                @endif
                 @endif
             </span>
         </div>

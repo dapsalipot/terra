@@ -569,3 +569,57 @@ it('shows the roster the traveller own contact, not the booker s', function () {
         ->assertSee('dee@example.test')
         ->assertSee('09170001111');
 });
+
+// ─────────────────────────────────────────────────── emergency contact on the manifest
+
+it('shows each traveller their own emergency contact on the manifest row', function () {
+    $reservation = Reservation::factory()->create([
+        'trip_departure_id' => $this->departure->id, 'party_size' => 2, 'status' => 'confirmed',
+    ]);
+    ReservationParticipant::factory()->create([
+        'reservation_id' => $reservation->id, 'position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes',
+        'emergency_contact_name' => 'Rosa Reyes', 'emergency_contact_phone' => '09171112222',
+    ]);
+    ReservationParticipant::factory()->create([
+        'reservation_id' => $reservation->id, 'position' => 1, 'first_name' => 'Ben', 'last_name' => 'Cruz',
+        'emergency_contact_name' => 'Lito Cruz', 'emergency_contact_phone' => '09173334444',
+    ]);
+
+    // Not the booker's: each person's own, because the one to ring is whoever is on the ground.
+    Livewire::actingAs($this->host)
+        ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
+        ->assertSee('Rosa Reyes')->assertSee('09171112222')
+        ->assertSee('Lito Cruz')->assertSee('09173334444');
+});
+
+it('says outright when a traveller has nobody to call', function () {
+    $reservation = Reservation::factory()->create([
+        'trip_departure_id' => $this->departure->id, 'party_size' => 1, 'status' => 'confirmed',
+    ]);
+    // A booking made before emergency contacts were asked for.
+    ReservationParticipant::factory()->withoutEmergencyContact()->create([
+        'reservation_id' => $reservation->id, 'position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes',
+    ]);
+
+    Livewire::actingAs($this->host)
+        ->test(Roster::class, ['departure' => $this->departure])
+        ->set('mode', 'manifest')
+        ->assertSee('No emergency contact');
+});
+
+it('keeps the emergency contact off the money rows so they stay one shape', function () {
+    $reservation = Reservation::factory()->create([
+        'trip_departure_id' => $this->departure->id, 'party_size' => 1, 'status' => 'confirmed',
+    ]);
+    ReservationParticipant::factory()->create([
+        'reservation_id' => $reservation->id, 'position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes',
+        'emergency_contact_name' => 'Rosa Reyes', 'emergency_contact_phone' => '09171112222',
+    ]);
+
+    // Money mode is the default. A row carrying a variable amount of text is what made the old
+    // page look like it had no grid.
+    Livewire::actingAs($this->host)
+        ->test(Roster::class, ['departure' => $this->departure])
+        ->assertDontSee('In an emergency');
+});
