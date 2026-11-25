@@ -495,6 +495,9 @@ class Dashboard extends Component
         /*
          * What is joinable on each visible day — a count and the cover photos to show for it.
          *
+         * Only trips this joiner could find in a listing (Trip::listedFor): a link-only trip is
+         * reached by its link, so it never turns up here as something to join.
+         *
          * Still one query for the whole grid, not one per day, and seats-held is still summed in
          * SQL: spotsLeft() queries per departure, so calling it in a loop would be an N+1 that
          * scales with how many trips exist rather than how many the joiner has.
@@ -507,7 +510,7 @@ class Dashboard extends Component
         $open = TripDeparture::query()
             ->overlapping($gridStart, $gridEnd)
             ->where('status', 'open')
-            ->whereHas('trip', fn ($t) => $t->where('status', 'published'))
+            ->whereHas('trip', fn ($t) => $t->listedFor($user))
             ->with(['trip:id,title,cover_photo,place_id', 'trip.place:id,slug,category'])
             ->withSum(
                 ['reservations as seats_held' => fn ($q) => $q->whereIn('status', Reservation::HOLDING)],
@@ -570,7 +573,7 @@ class Dashboard extends Component
 
         /*
          * What is on offer on the tapped day. Clicking an empty square should answer "could I go
-         * somewhere on this date?" rather than doing nothing.
+         * somewhere on this date?" rather than doing nothing. Listed trips only, as on the grid.
          */
         $availableOnDate = collect();
         $availableTotal = 0;
@@ -581,7 +584,7 @@ class Dashboard extends Component
                 // Overlapping the day, so tapping the middle of a multi-day trip offers it too.
                 ->overlapping($this->selectedDate, $this->selectedDate)
                 ->where('status', 'open')
-                ->whereHas('trip', fn ($t) => $t->where('status', 'published'))
+                ->whereHas('trip', fn ($t) => $t->listedFor($user))
                 /*
                  * place and priceTiers are loaded because the sheet shows a photo and a price:
                  * cover_url reads the place, current_price reads the tiers. Left lazy they would

@@ -3,6 +3,7 @@
 use App\Livewire\Home;
 use App\Livewire\Hosts\Index as HostsIndex;
 use App\Livewire\Hosts\Show as HostsShow;
+use App\Livewire\Joiner\Dashboard as JoinerDashboard;
 use App\Livewire\Trips\Index as TripsIndex;
 use App\Models\HostProfile;
 use App\Models\Place;
@@ -199,6 +200,48 @@ it('lists a host\'s next departures by viewer too', function () {
     expect($guest)->toEqualCanonicalizing([$open->id])
         ->and($member)->toEqualCanonicalizing([$open->id, $early->id])
         ->and($owner)->toEqualCanonicalizing([$open->id, $early->id, $link->id]);
+});
+
+it('counts only the trips a joiner can find on the dashboard calendar', function () {
+    $host = visibilityHost();
+    $day = now()->addMonth()->startOfMonth()->addDays(14);
+    foreach (['public', 'followers', 'link'] as $listing) {
+        TripDeparture::factory()->for(visibilityTrip($host, $listing))->create(['starts_at' => $day, 'capacity' => 8]);
+    }
+    $follower = visibilityFollower($host);
+    $stranger = User::factory()->create(['role' => 'joiner']);
+
+    $available = fn (User $joiner) => Livewire::actingAs($joiner)->test(JoinerDashboard::class)
+        ->set('month', $day->format('Y-m'))
+        ->viewData('weeks')->flatten(1)
+        ->firstWhere(fn ($d) => $d['date']->toDateString() === $day->toDateString())['available'];
+
+    // The public trip for everyone, the followers-first one as well for its host's follower, the link-only one never.
+    expect($available($stranger))->toBe(1)
+        ->and($available($follower))->toBe(2);
+});
+
+it('offers only the trips a joiner can find when they tap a free day', function () {
+    $host = visibilityHost();
+    $day = now()->addMonth()->startOfMonth()->addDays(14);
+    $open = visibilityTrip($host);
+    $early = visibilityTrip($host, 'followers');
+    $link = visibilityTrip($host, 'link');
+    foreach ([$open, $early, $link] as $trip) {
+        TripDeparture::factory()->for($trip)->create(['starts_at' => $day, 'capacity' => 8]);
+    }
+    $follower = visibilityFollower($host);
+    $stranger = User::factory()->create(['role' => 'joiner']);
+
+    $offered = fn (User $joiner) => Livewire::actingAs($joiner)->test(JoinerDashboard::class)
+        ->set('month', $day->format('Y-m'))
+        ->call('selectDate', $day->toDateString())
+        ->assertSeeHtml('dusk="cal-free-panel"')
+        ->assertSee($open->title)
+        ->viewData('availableOnDate')->pluck('trip_id')->all();
+
+    expect($offered($stranger))->toEqualCanonicalizing([$open->id])
+        ->and($offered($follower))->toEqualCanonicalizing([$open->id, $early->id]);
 });
 
 it('still opens a link-only trip by link', function () {
