@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#FBF9F4">
     <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+    <x-brand-head />
     <title>{{ $title ?? 'Tarana' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles

@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#FBF9F4">
     <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+    <x-brand-head />
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ config('app.name', 'Tarana') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -21,11 +22,8 @@
                     <circle cx="560" cy="120" r="46" fill="#E8C58C" opacity=".85"/>
                 </svg>
                 <div class="relative z-10 h-full flex flex-col p-12">
-                    <a href="{{ route('home') }}" class="inline-flex items-center gap-2">
-                        <span class="grid place-items-center w-8 h-8 rounded-full bg-cream/15">
-                            <svg viewBox="0 0 24 24" class="w-4 h-4 fill-cream"><path d="M3 19.5l6.4-9.7 3.7 5.1 3.2-4.7 6.3 9.3z"/></svg>
-                        </span>
-                        <span class="tracking-tight font-semibold text-2xl text-cream">Tarana</span>
+                    <a href="{{ route('home') }}" class="inline-flex items-center">
+                        <x-wordmark tone="dark" size="lg" />
                     </a>
                     <div class="mt-auto">
                         <h1 class="tracking-tight font-semibold text-4xl text-cream leading-tight">Tara na.</h1>
@@ -36,11 +34,8 @@
 
             {{-- Form panel --}}
             <div class="flex flex-col justify-center items-center px-6 py-12 bg-canvas">
-                <a href="{{ route('home') }}" class="lg:hidden mb-8 inline-flex items-center gap-2">
-                    <span class="grid place-items-center w-8 h-8 rounded-full bg-pine">
-                        <svg viewBox="0 0 24 24" class="w-4 h-4 fill-cream"><path d="M3 19.5l6.4-9.7 3.7 5.1 3.2-4.7 6.3 9.3z"/></svg>
-                    </span>
-                    <span class="tracking-tight font-semibold text-2xl">Tarana</span>
+                <a href="{{ route('home') }}" class="lg:hidden mb-8 inline-flex items-center">
+                    <x-wordmark size="lg" />
                 </a>
                 <div class="w-full max-w-sm">
                     {{ $slot }}

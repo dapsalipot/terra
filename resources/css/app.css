@@ -11,6 +11,14 @@
     font-display: swap;
 }
 
+/* The logo's word is the only text set in this one: Fredoka, variable weight, latin subset. */
+@font-face {
+    font-family: 'Fredoka';
+    src: url('/fonts/fredoka.woff2') format('woff2');
+    font-weight: 300 700;
+    font-display: swap;
+}
+
 /* The sticky site nav's height, so full-viewport panes can subtract it instead of each page
    hardcoding the same number. Kept in sync with .site-nav's h-[68px] in the layout. */
 :root {

@@ -3,11 +3,14 @@
 
     Deliberately plain HTML with inline styles: mail clients strip <style> blocks, ignore most of
     what a Tailwind build produces, and the app's CSS is not loaded here at all. The brand carries
-    through the wordmark and the two colours, not through a layout that half the inboxes will
+    through the icon, the wordmark and the two colours, not through a layout that half the inboxes will
     discard anyway.
 --}}
 <div style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color:#1F1C15; line-height:1.55; max-width:560px; margin:0 auto; padding:24px;">
-    <p style="font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.02em; color:#2C3826; margin:0 0 24px;">Tarana</p>
+    <p style="margin:0 0 24px;">
+        <img src="{{ url('/apple-touch-icon.png') }}" width="28" height="28" alt="" style="vertical-align:middle; border:0; border-radius:7px; margin-right:8px;">
+        <span style="vertical-align:middle; font-family: Fredoka, ui-rounded, 'SF Pro Rounded', Nunito, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size:22px; font-weight:600; letter-spacing:-0.01em; text-transform:lowercase; color:#2C3826;">Tarana</span>
+    </p>
 
     {{ $slot }}
 

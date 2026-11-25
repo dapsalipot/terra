@@ -32,6 +32,8 @@ export default {
                 sans: ['Geist', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
                 // Terra has no serif. The key stays so a stray font-serif lands on the sans, not on Georgia.
                 serif: ['Geist', 'ui-sans-serif', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+                // The logo's word only (lowercase Fredoka SemiBold beside the signpost). Everything else is Geist.
+                brand: ['Fredoka', 'Geist', 'ui-rounded', 'ui-sans-serif', 'system-ui', 'sans-serif'],
                 mono: ['ui-monospace', 'Menlo', 'monospace'],
             },
         },
