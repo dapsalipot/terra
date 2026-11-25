@@ -68,9 +68,13 @@
                         it, clears it, so the menu is back on its prompt and never claims to be the offering's state
                         (the chips say that), and puts focus back on the menu, because a button that has just turned
                         itself off cannot keep it.
+
+                        On a phone the select takes the whole row and Apply wraps under it. The closed select is the
+                        only place the host can read which window they are about to apply, and "Followers first for
+                        1 week" needs about 168px of text room, which Apply beside it leaves only to a 390px screen.
                     --}}
-                    <div x-data="{ choice: '' }" class="flex w-full items-center gap-2 sm:w-auto">
-                        <div class="relative min-w-0 flex-1 sm:flex-none">
+                    <div x-data="{ choice: '' }" class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                        <div class="relative min-w-0 w-full sm:w-auto sm:flex-none">
                             <select x-model="choice" x-ref="menu"
                                     dusk="visibility-{{ $groupKey }}"
                                     aria-label="Who can see it: {{ $first->title }}"
