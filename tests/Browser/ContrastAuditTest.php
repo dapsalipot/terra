@@ -239,6 +239,42 @@ JS;
         });
     }
 
+    /**
+     * The share panel, open on the host's own page.
+     *
+     * It only exists once its button is pressed, so no audit above ever draws it. The last step of each pass is a
+     * canary: spoil one of the panel's own labels and the audit has to say so, which it can only do if it is able to
+     * see the panel at all (text over a picture, or under a hidden or faded ancestor, is skipped rather than judged).
+     */
+    public function test_the_share_panel_reads_clearly(): void
+    {
+        $w = $this->world();
+
+        $this->browse(function (Browser $browser) use ($w) {
+            $browser->loginAs($w['host']);
+            $failures = [];
+
+            foreach (self::WIDTHS as [$width, $height]) {
+                $browser->resize($width, $height)
+                    ->visit('/@'.$w['host']->handle)
+                    ->waitFor('@share-toggle')
+                    ->click('@share-toggle')
+                    ->waitFor('@share-url')
+                    ->pause(500);
+
+                foreach ($browser->script(self::PROBE)[0] as $f) {
+                    $failures[] = sprintf('share panel @%d  %.2f:1 (needs %s)  "%s"  [%s]', $width, $f['ratio'], $f['need'], $f['text'], $f['cls']);
+                }
+
+                $browser->script("document.querySelector('label[for\$=\"-url\"]').style.color = 'rgba(31, 28, 21, .2)'");
+                $this->assertContains('Link', array_column($browser->script(self::PROBE)[0], 'text'), "The audit did not see the share panel's \"Link\" label at {$width}px, so it has not been checking it.");
+            }
+
+            $browser->resize(1920, 1080);
+            $this->assertClean($failures);
+        });
+    }
+
     public function test_the_roster_drawer_reads_clearly(): void
     {
         $w = $this->world();

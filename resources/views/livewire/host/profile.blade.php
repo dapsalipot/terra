@@ -6,6 +6,10 @@
                 {{-- &commat; not a literal @, which Blade would read as the start of a directive --}}
                 <a href="{{ $user->handle ? route('hosts.show', $user) : '#' }}" class="font-semibold underline decoration-ink/25">tarana/&commat;{{ $handle ?: 'your-handle' }}</a>.
             </p>
+            {{-- The saved handle, not the one being typed: until it is saved there is no page at that address to share. --}}
+            @if(filled($user->handle))
+                <x-share-panel class="mt-3" :url="route('hosts.handle', $user)" :title="$user->name" :qr="route('host.profile.qr')" />
+            @endif
         </div>
         @if($saved)
             <span class="rounded-full bg-moss/12 text-moss px-4 py-2 text-sm font-semibold">{{ $saved }}</span>

@@ -32,6 +32,20 @@
         </div>
     </div>
 
+    {{-- ═══ THE HOST'S OWN BAR ═══
+         Under the hero rather than over the photograph: the panel's text has to sit on a flat colour. It is the host's
+         and nobody else's, and straight after they publish it is already open, because getting the link out is the
+         next thing they came to do. --}}
+    @if(auth()->id() === $trip->host_id)
+        <div class="border-b border-ink/10 bg-surface">
+            <div class="max-w-[1600px] mx-auto px-6 lg:px-10 py-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                <p class="text-sm text-ink/70">You host this trip. Share it so your group can join.</p>
+                <x-share-panel :url="route('trips.show', $trip)" :title="$trip->title" :qr="route('host.trips.qr', $trip)"
+                               :open="session('just_published') === $trip->id" />
+            </div>
+        </div>
+    @endif
+
     {{--
         max-w-5xl left 352px of empty canvas down each side of a 1728px screen — 41% of the
         display — while squeezing the content column to 576px, which is what made the page run

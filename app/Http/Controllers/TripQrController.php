@@ -3,12 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Trip;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Color\Color;
-use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel;
-use Endroid\QrCode\RoundBlockSizeMode;
-use Endroid\QrCode\Writer\PngWriter;
+use App\Support\Qr;
 
 class TripQrController extends Controller
 {
@@ -16,19 +11,7 @@ class TripQrController extends Controller
     {
         abort_unless($trip->status === 'published', 404);
 
-        $result = new Builder(
-            writer: new PngWriter,
-            data: route('trips.show', $trip),
-            encoding: new Encoding('UTF-8'),
-            errorCorrectionLevel: ErrorCorrectionLevel::High,
-            size: 600,
-            margin: 24,
-            roundBlockSizeMode: RoundBlockSizeMode::Margin,
-            foregroundColor: new Color(44, 56, 38),   // pine
-            backgroundColor: new Color(255, 255, 255),
-        );
-
-        $png = $result->build();
+        $png = Qr::png(route('trips.show', $trip));
 
         return response($png->getString(), 200, [
             'Content-Type' => $png->getMimeType(),

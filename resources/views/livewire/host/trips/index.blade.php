@@ -29,11 +29,15 @@
 
     @forelse($groups as $groupKey => $group)
         @php($first = $group->first())
-        <section wire:key="offering-{{ $groupKey }}" class="glass-card overflow-hidden mb-4">
+        {{-- A schedule's share panel opens out of this card, so while one is open the card stops clipping and rises above
+             the cards after it (each is its own stacking context, and a later one would paint over the panel). The
+             header and footer round their own corners so the card looks the same either way. --}}
+        <section wire:key="offering-{{ $groupKey }}"
+                 class="glass-card relative overflow-hidden has-[[aria-expanded=true]]:overflow-visible has-[[aria-expanded=true]]:z-20 mb-4">
             {{-- The photo carries the identity of the offering, so it gets a real size rather
                  than a 64px chip. A 16/10 tile at the header height reads as the trip; a square
                  thumbnail that small read as an icon. --}}
-            <header class="flex flex-wrap items-center gap-x-4 gap-y-3 sm:gap-x-5 px-5 py-4 border-b border-ink/8 bg-cream/50">
+            <header class="flex flex-wrap items-center gap-x-4 gap-y-3 sm:gap-x-5 px-5 py-4 border-b border-ink/8 bg-cream/50 rounded-t-2xl">
                 <img src="{{ $first->cover_url }}" alt="" loading="lazy"
                      class="w-24 h-[3.75rem] sm:w-40 sm:h-24 rounded-2xl object-cover shrink-0 shadow-sm">
                 <div class="flex-1 min-w-[7rem] sm:min-w-[12rem]">
@@ -169,6 +173,7 @@
                                 <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-moss" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/></svg>
                                 Edit
                             </a>
+                            <x-share-panel :url="route('trips.show', $trip)" :title="$trip->title" :qr="route('host.trips.qr', $trip)" />
                             @if($dep)
                                 <a href="{{ route('host.roster', $dep) }}" wire:navigate
                                    class="rounded-full bg-pine text-cream px-4 min-h-[44px] inline-flex items-center text-sm font-semibold hover:bg-pine/90 transition-colors">Roster</a>
@@ -178,7 +183,7 @@
                 @endforeach
             </ul>
 
-            <div class="px-5 py-3 border-t border-ink/8 bg-cream/30">
+            <div class="px-5 py-3 border-t border-ink/8 bg-cream/30 rounded-b-2xl">
                 <a href="{{ route('host.trips.duplicate', $first) }}" wire:navigate
                    class="text-sm font-semibold text-moss hover:underline">＋ Add another schedule</a>
             </div>

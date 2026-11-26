@@ -77,6 +77,59 @@ class ListingControlFlowTest extends DuskTestCase
     }
 
     /**
+     * A trip nobody can find is a trip that is only ever sent, so the page a host lands on after publishing one
+     * has to be ready to send it: the share panel is already open, holding that trip's own address.
+     */
+    public function test_publishing_a_link_only_trip_opens_the_share_panel(): void
+    {
+        $host = User::factory()->create(['role' => 'host', 'handle' => 'trailco']);
+        HostProfile::factory()->for($host)->create(['currency' => 'PHP']);
+        $pulag = Place::factory()->create(['name' => 'Mount Pulag', 'country' => 'Philippines']);
+
+        $this->browse(function (Browser $browser) use ($host, $pulag) {
+            $browser->loginAs($host)
+                ->visit('/host/trips/create')
+                ->waitForText('New trip')
+                ->waitFor('@destination-search')
+                ->type('@destination-search', 'pulag')
+                ->waitFor('@place-option-'.$pulag->id)
+                ->click('@place-option-'.$pulag->id)
+                ->waitForText('Mount Pulag')
+                ->waitFor('@wizard-next')
+                ->click('@wizard-next')
+                ->waitForText('The trip')
+                ->waitFor('@trip-title')
+                ->type('@trip-title', 'Link Only Traverse')
+                ->type('@trip-price', '1500')
+                ->click('@wizard-next')
+                ->waitForText('Everything a joiner gets for the price.')
+                ->waitFor('@wizard-next')
+                ->click('@wizard-next')
+                ->waitForText('Logistics')
+                ->waitFor('@dep-0-start')
+                ->type('@dep-0-start', now()->addWeek()->format('Y-m-d'))
+                ->click('@wizard-next')
+                ->waitForText('Review')
+                ->waitFor('@visibility-link')
+                ->click('@visibility-link')
+                // The pick is a Livewire round trip, and the publish button is switched off for as long as one is out
+                // (clicking it then does nothing). The chosen option's card gets its ring only once the answer is back.
+                ->waitFor('label.ring-moss [dusk="visibility-link"]')
+                ->click('@wizard-publish')
+                // The publish button only goes when the trip page replaces the wizard, so that is what this waits for.
+                ->waitUntilMissing('@wizard-publish')
+                ->waitFor('@share-url')
+                ->assertVisible('@share-url')
+                ->assertAttribute('@share-toggle', 'aria-expanded', 'true');
+
+            // and it is that trip's address in the field, not just any
+            $trip = Trip::where('title', 'Link Only Traverse')->sole();
+            $this->assertSame(Visibility::LINK, $trip->visibility);
+            $this->assertStringEndsWith('/t/'.$trip->slug, $browser->value('@share-url'));
+        });
+    }
+
+    /**
      * The closed select is the only place a host reads which window they are about to apply, so every window's
      * label has to fit in it on a small phone, and Apply has to sit under it rather than squeeze it.
      */

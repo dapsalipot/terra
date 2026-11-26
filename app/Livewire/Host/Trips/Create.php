@@ -707,6 +707,12 @@ class Create extends Component
 
         TripDraft::where('host_id', Auth::id())->delete();
 
+        // The trip page this lands on is where a new trip gets sent out, so it opens its share panel for that trip.
+        // Saving a change to a trip that has been out for weeks is not a launch.
+        if (! $this->isEditing) {
+            session()->flash('just_published', $trip->id);
+        }
+
         return $this->redirectRoute('trips.show', ['trip' => $trip->slug], navigate: true);
     }
 

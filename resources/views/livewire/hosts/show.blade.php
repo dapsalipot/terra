@@ -30,7 +30,7 @@
             </span>
 
             {{-- actions sit on the cover side, clear of the name --}}
-            <div class="ml-auto mb-4 flex items-center gap-2.5">
+            <div class="ml-auto mb-4 flex flex-wrap items-center justify-end gap-2.5">
                 @if($this->isOwner)
                     <a href="{{ route('host.profile') }}"
                        class="inline-flex items-center gap-2 rounded-full bg-pine text-cream px-6 py-3 font-semibold text-sm shadow-sm hover:bg-pine/90 transition-colors">
@@ -42,6 +42,8 @@
                         <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>
                         New trip
                     </a>
+                    {{-- This page is addressed by the handle, so the host viewing it has one. --}}
+                    <x-share-panel :url="route('hosts.handle', $user)" :title="$user->name" :qr="route('host.profile.qr')" />
                 @else
                     @if($this->isFollowing)
                         <button wire:click="unfollow" dusk="follow-toggle"

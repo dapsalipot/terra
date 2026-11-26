@@ -116,6 +116,7 @@ Route::middleware(['auth', 'host'])->prefix('host')->group(function () {
     Route::get('/departures/{departure}/roster', \App\Livewire\Host\Roster::class)->name('host.roster');
     Route::get('/departures/{departure}/check-in', \App\Livewire\Host\Scanner::class)->name('host.checkin');
     Route::get('/trips/{trip:slug}/qr', \App\Http\Controllers\TripQrController::class)->name('host.trips.qr');
+    Route::get('/profile/qr', \App\Http\Controllers\HostPageQrController::class)->name('host.profile.qr');
     Route::get('/proof/{payment}', \App\Http\Controllers\ProofController::class)->name('host.proof');
 });
 
