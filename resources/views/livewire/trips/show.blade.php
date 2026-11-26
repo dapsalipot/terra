@@ -458,6 +458,20 @@
                     @endforelse
                 </div>
             </div>
+
+            {{-- ═══ MORE FROM THIS HOST ═══
+                 Only this host's own trips, so the page never sends a joiner off to a competitor; render() decides which.
+                 The scroller carries its own page padding (the column already has it, hence !px-0) and lets its row run
+                 24px past its edges, which on a phone shows the next tile peeking. Beside the booking card that would
+                 leave a sliver of a tile in the gap, so from lg the row stops at the column and the arrows take over. --}}
+            @if($more->isNotEmpty())
+                <x-scroller :title="'More from '.$host->name" :href="$hostUrl"
+                            class="mt-10 pt-8 border-t border-ink/8 !px-0 lg:[&>[role=region]]:mx-0 lg:[&>[role=region]]:px-0 lg:[&>[role=region]]:scroll-px-0">
+                    @foreach($more as $other)
+                        <div class="w-[72vw] shrink-0 snap-start sm:w-64"><x-trip-tile :trip="$other" /></div>
+                    @endforeach
+                </x-scroller>
+            @endif
         </div>
 
         {{-- RIGHT: sticky booking card --}}

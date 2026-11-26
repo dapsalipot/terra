@@ -118,7 +118,26 @@ class Show extends Component
         // What the link looks like when it is shared, and the tab's title with it.
         $meta = PageMeta::trip($this->trip);
 
-        return view('livewire.trips.show', ['reviews' => $reviews, 'hostExtras' => $hostExtras])
+        // More from this host: up to six of their other trips with something left to join, one tile per offering and
+        // never the offering on this page. They are listed to this viewer, except that the host sees everything they
+        // have published (each tile carries its chip). `departures` holds only the open ones, so a tile is dated and
+        // ordered by the next date a joiner could book. The tiles borrow this page's host, who is already loaded.
+        // Collapsed in PHP like Home and the host page: a host with hundreds of live schedules would want that in SQL.
+        $open = fn ($departures) => $departures->where('status', 'open')->where('starts_at', '>', now());
+        $more = Trip::collapseSchedules(
+            $this->trip->host->trips()->chaperone('host')
+                ->whereNotIn('trips.id', $this->trip->groupSiblings()->select('id'))
+                ->whereHas('departures', $open)
+                ->when(
+                    Auth::id() === $this->trip->host_id,
+                    fn ($trips) => $trips->published(),
+                    fn ($trips) => $trips->listedFor(Auth::user()),
+                )
+                ->with(['place', 'priceTiers', 'departures' => fn ($departures) => $open($departures)->orderBy('starts_at')])
+                ->get()
+        )->take(6);
+
+        return view('livewire.trips.show', ['reviews' => $reviews, 'hostExtras' => $hostExtras, 'more' => $more])
             ->layout('components.layouts.site', ['tabbar' => false, 'meta' => $meta, 'title' => $meta['title']]);
     }
 }
