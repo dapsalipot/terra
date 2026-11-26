@@ -6,7 +6,11 @@ use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -450,6 +454,75 @@ it('sends a joiner who already booked to their existing booking', function () {
     Livewire::actingAs($joiner)
         ->test(Register::class, ['trip' => $this->trip])
         ->assertRedirect(route('reservations.show', ['token' => $existing->public_token]));
+});
+
+/*
+ * mount() only knows what was true when the page opened. Two tabs can both be open before either
+ * books, so the rule has to be asked again when the booking is made.
+ */
+it('sends a second tab to the booking the first one made', function () {
+    Storage::fake('local');
+    $this->trip->update(['requires_id' => true]);
+    $joiner = User::factory()->create([
+        'role' => 'joiner', 'first_name' => 'Ada', 'last_name' => 'Reyes', 'phone' => '09171234567',
+    ]);
+
+    [$first, $second] = array_map(fn () => Livewire::actingAs($joiner)
+        ->test(Register::class, ['trip' => $this->trip])
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->set('ids.0', UploadedFile::fake()->image('licence.jpg')), [1, 2]);
+
+    $first->call('submit')->assertRedirect();
+    $booking = Reservation::sole();
+
+    $second->call('submit')
+        ->assertRedirect(route('reservations.show', ['token' => $booking->public_token]));
+
+    expect(Reservation::count())->toBe(1)
+        // Nothing more was counted against the booking limit, and no second copy of the ID was kept.
+        ->and(RateLimiter::attempts('booking:email:'.sha1(strtolower($joiner->email))))->toBe(1)
+        ->and(Storage::disk('local')->allFiles('ids'))->toHaveCount(1);
+});
+
+/*
+ * Two submits sent together can both get past the form's own look. DB::listen fires after a query
+ * has run and before its caller reads the result, so a rival planted here is one the form has
+ * just failed to see.
+ */
+it('opens the other booking when it appears while this one is being sent', function () {
+    $joiner = User::factory()->create([
+        'role' => 'joiner', 'first_name' => 'Ada', 'last_name' => 'Reyes', 'phone' => '09171234567',
+    ]);
+
+    $form = Livewire::actingAs($joiner)
+        ->test(Register::class, ['trip' => $this->trip])
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222');
+
+    $rival = null;
+    $planted = false;
+
+    DB::listen(function ($query) use ($joiner, &$rival, &$planted) {
+        if ($planted || ! str_starts_with($query->sql, 'select') || ! str_contains($query->sql, '"joiner_id" = ?')) {
+            return;
+        }
+
+        $planted = true;
+        $rival = Reservation::factory()->create([
+            'trip_departure_id' => $this->departure->id, 'joiner_id' => $joiner->id, 'status' => 'pending',
+        ]);
+    });
+
+    $form->call('submit');
+
+    expect($planted)->toBeTrue();
+
+    $form->assertRedirect(route('reservations.show', ['token' => $rival->public_token]));
+
+    expect(Reservation::count())->toBe(1)
+        // The place this attempt took in the booking limit is handed back.
+        ->and(RateLimiter::attempts('booking:email:'.sha1(strtolower($joiner->email))))->toBe(0);
 });
 
 it('does not divert a joiner whose previous booking was cancelled', function () {

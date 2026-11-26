@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Reservations;
 
+use App\Exceptions\AlreadyBookedException;
 use App\Exceptions\TripFullException;
 use App\Models\Reservation;
 use App\Models\Trip;
@@ -141,11 +142,7 @@ class Register extends Component
 
         // Someone already holding a live booking here wants that booking, not a second one.
         if ($existing = $this->existingReservation()) {
-            return $this->redirectRoute(
-                'reservations.show',
-                ['token' => $existing->public_token],
-                navigate: true,
-            );
+            return $this->openBooking($existing);
         }
 
         if ($user = Auth::user()) {
@@ -205,14 +202,12 @@ class Register extends Component
      */
     private function existingReservation(): ?Reservation
     {
-        if (! Auth::check()) {
-            return null;
-        }
+        return Auth::check() ? $this->departure->liveBookingFor(Auth::user()) : null;
+    }
 
-        return $this->departure->reservations()
-            ->where('joiner_id', Auth::id())
-            ->whereIn('status', Reservation::HOLDING)
-            ->first();
+    private function openBooking(Reservation $booking)
+    {
+        return $this->redirectRoute('reservations.show', ['token' => $booking->public_token], navigate: true);
     }
 
     /**
@@ -536,6 +531,12 @@ class Register extends Component
             return null;
         }
 
+        // Booked from another tab since this page opened. Asked first, so nothing is counted and no
+        // ID photo is stored. register() asks again under a lock, for submits that arrive together.
+        if ($existing = $this->existingReservation()) {
+            return $this->openBooking($existing);
+        }
+
         // Seat 1 is exempt from the name rules while it mirrors the contact block, so the mirror
         // has to be current before those rules are skipped. wire:model.blur means the last field
         // touched may not have synced when the button was clicked.
@@ -559,6 +560,10 @@ class Register extends Component
                 'create_account' => $this->isSignedIn ? false : $this->createAccount,
                 'actor' => Auth::user(),
             ]);
+        } catch (AlreadyBookedException $e) {
+            $this->releaseBooking();
+
+            return $this->openBooking($e->reservation);
         } catch (TripFullException $e) {
             // No seats were held, so this is not one of the visitor's bookings.
             $this->releaseBooking();
@@ -573,11 +578,7 @@ class Register extends Component
         // What happened, never the sign-in link: when the address already had an account, the link signs in to it.
         session()->flash('registration_outcome', $result->outcome->value);
 
-        return $this->redirectRoute(
-            'reservations.show',
-            ['token' => $result->reservation->public_token],
-            navigate: true,
-        );
+        return $this->openBooking($result->reservation);
     }
 
     /** @return array<string, int> limiter key => bookings it allows in a window */

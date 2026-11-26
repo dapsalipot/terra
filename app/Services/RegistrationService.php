@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\AlreadyBookedException;
 use App\Exceptions\HostCannotJoinException;
 use App\Mail\MagicLinkMail;
 use App\Models\Reservation;
@@ -37,6 +38,20 @@ class RegistrationService
         }
 
         return DB::transaction(function () use ($departure, $data, $actor) {
+            if ($actor) {
+                // One live booking per signed-in joiner. Of two submits sent together, the second
+                // waits at this lock until the first has committed, then finds its booking. The lock
+                // must come before any plain read: MySQL fixes the transaction's view at the first
+                // one, and neither this look nor reserve()'s seat count would see what was committed
+                // during the wait. And it comes before seats are counted, so whoever took the last
+                // seat hears about their booking, not that the trip is full.
+                TripDeparture::whereKey($departure->getKey())->lockForUpdate()->firstOrFail();
+
+                if ($held = $departure->liveBookingFor($actor)) {
+                    throw new AlreadyBookedException($held);
+                }
+            }
+
             // Seats first: reserve() holds a row lock on the departure and is the only thing
             // preventing an oversell. Nesting transactions is safe — Laravel uses savepoints.
             $reservation = $this->reservations->reserve($departure, [

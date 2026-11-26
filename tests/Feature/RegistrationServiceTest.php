@@ -1,8 +1,10 @@
 <?php
 
+use App\Exceptions\AlreadyBookedException;
 use App\Exceptions\HostCannotJoinException;
 use App\Exceptions\TripFullException;
 use App\Models\MagicLink;
+use App\Models\Reservation;
 use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\RegistrationService;
@@ -136,6 +138,23 @@ it('attaches directly for a signed-in joiner and fills only their blank profile 
 
     expect($actor->birthday->format('Y-m-d'))->toBe('1998-04-02')  // was blank, now filled
         ->and($actor->first_name)->toBe('Adelaida');               // already set, not overwritten
+});
+
+/*
+ * One seat in the departure, so this also pins the order: whoever took the last seat has to hear
+ * about their own booking, not that the trip is full.
+ */
+it('never gives a signed-in joiner a second live booking', function () {
+    $departure = TripDeparture::factory()->create(['capacity' => 1]);
+    $actor = User::factory()->create(['role' => 'joiner']);
+    $first = $this->svc->register($departure, regData(['actor' => $actor]))->reservation;
+
+    expect(fn () => $this->svc->register($departure, regData(['actor' => $actor])))
+        ->toThrow(function (AlreadyBookedException $e) use ($first) {
+            expect($e->reservation->is($first))->toBeTrue();
+        });
+
+    expect(Reservation::count())->toBe(1);
 });
 
 it('refuses a host account', function () {

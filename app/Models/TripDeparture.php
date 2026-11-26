@@ -33,6 +33,15 @@ class TripDeparture extends Model
         return $this->hasMany(Reservation::class);
     }
 
+    /** The booking this joiner holds here now, if any. A signed-in joiner gets one at a time. */
+    public function liveBookingFor(User $joiner): ?Reservation
+    {
+        return $this->reservations()
+            ->where('joiner_id', $joiner->id)
+            ->whereIn('status', Reservation::HOLDING)
+            ->first();
+    }
+
     /** Seats held against capacity: sum of party sizes in holding states. */
     public function heldCount(): int
     {
