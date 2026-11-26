@@ -284,6 +284,12 @@ class Trip extends Model
         return StockPhotos::cover($this);
     }
 
+    /** Moderation took it down. Only ModerationService archives a trip, and a host has no way to. */
+    public function isTakenDown(): bool
+    {
+        return $this->status === 'archived';
+    }
+
     public function scopePublished($q)
     {
         /*

@@ -108,7 +108,7 @@
                 </div>
             </header>
 
-            <ul class="divide-y divide-ink/8">
+            <ul class="divide-y divide-ink/8 lg:grid lg:grid-cols-[minmax(11rem,1.3fr)_minmax(7rem,.8fr)_minmax(9rem,1fr)_auto] lg:gap-x-5">
                 @foreach($group as $trip)
                     @php($dep = $trip->departure)
                     @php($held = (int) ($dep->seats_held ?? 0))
@@ -125,9 +125,11 @@
                         (176 + 112 + 144 of columns, the buttons, the gaps, and 368px of sidebar and
                         margins), so they start at `lg`. Started lower they overflow the card, which clips
                         the actions column and every action in it. Below `lg` a row stacks as it does on a phone.
+
+                        The list owns the columns and each row borrows them (subgrid). Rows do not all offer the same
+                        actions, and a row sizing its own columns would push its price and seats out of line.
                     --}}
-                    <li class="grid gap-x-5 gap-y-3 px-5 py-4
-                               lg:grid-cols-[minmax(11rem,1.3fr)_minmax(7rem,.8fr)_minmax(9rem,1fr)_auto] lg:items-center">
+                    <li class="grid gap-x-5 gap-y-3 px-5 py-4 lg:col-span-4 lg:grid-cols-subgrid lg:items-center">
                         <div class="min-w-0">
                             <p class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold mb-0.5">When</p>
                             <p class="font-semibold">
@@ -171,19 +173,28 @@
                         @endif
 
                         <div class="flex flex-wrap items-center gap-2 lg:justify-end">
-                            <a href="{{ route('trips.show', $trip) }}" wire:navigate
-                               class="rounded-full border border-ink/15 px-4 min-h-[44px] inline-flex items-center text-sm font-semibold hover:border-ink/30 transition-colors">View</a>
+                            {{-- A taken-down trip's page and QR code are 404s, so neither View nor Share is offered. --}}
+                            @unless($trip->isTakenDown())
+                                <a href="{{ route('trips.show', $trip) }}" wire:navigate
+                                   class="rounded-full border border-ink/15 px-4 min-h-[44px] inline-flex items-center text-sm font-semibold hover:border-ink/30 transition-colors">View</a>
+                            @endunless
                             <a href="{{ route('host.trips.edit', $trip) }}" wire:navigate dusk="edit-{{ $trip->id }}"
                                class="rounded-full border border-ink/15 px-4 min-h-[44px] inline-flex items-center gap-1.5 text-sm font-semibold hover:border-moss transition-colors">
                                 <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-moss" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/></svg>
                                 Edit
                             </a>
-                            <x-share-panel :url="route('trips.show', $trip)" :title="$trip->title" :qr="route('host.trips.qr', $trip)" />
+                            @unless($trip->isTakenDown())
+                                <x-share-panel :url="route('trips.show', $trip)" :title="$trip->title" :qr="route('host.trips.qr', $trip)" />
+                            @endunless
                             @if($dep)
                                 <a href="{{ route('host.roster', $dep) }}" wire:navigate
                                    class="rounded-full bg-pine text-cream px-4 min-h-[44px] inline-flex items-center text-sm font-semibold hover:bg-pine/90 transition-colors">Roster</a>
                             @endif
                         </div>
+
+                        @if($trip->isTakenDown())
+                            <x-taken-down-notice class="col-span-full" />
+                        @endif
                     </li>
                 @endforeach
             </ul>

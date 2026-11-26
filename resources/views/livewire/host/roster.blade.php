@@ -53,7 +53,9 @@
                      class="absolute right-0 top-full mt-1 w-52 rounded-xl border border-ink/10 bg-surface shadow-lg py-1 z-30">
                     <a href="{{ route('host.trips.edit', $trip) }}" wire:navigate class="block px-4 py-2.5 text-sm hover:bg-ink/5">Edit trip</a>
                     <a href="{{ route('chat.show', $departure) }}" wire:navigate class="block px-4 py-2.5 text-sm hover:bg-ink/5">Trip chat</a>
-                    <a href="{{ route('host.trips.qr', $trip) }}" class="block px-4 py-2.5 text-sm hover:bg-ink/5">Trip QR</a>
+                    @unless($trip->isTakenDown())
+                        <a href="{{ route('host.trips.qr', $trip) }}" class="block px-4 py-2.5 text-sm hover:bg-ink/5">Trip QR</a>
+                    @endunless
                     @if($departure->status !== 'cancelled')
                         <div class="border-t border-ink/8 my-1"></div>
                         <x-confirm-action
@@ -70,6 +72,10 @@
             </div>
         </div>
     </div>
+
+    @if($trip->isTakenDown())
+        <x-taken-down-notice class="mb-5" />
+    @endif
 
     @include('livewire.host.partials.roster-stats')
 

@@ -45,6 +45,10 @@
                 @endforeach
             </div>
         </div>
+        @if($takenDown)
+            <x-taken-down-notice class="mb-6" />
+        @endif
+
         {{-- Work is saved on every change, so say so — otherwise a host has no reason to
              trust the form with twenty minutes of typing. --}}
         @if($draftRestored)
