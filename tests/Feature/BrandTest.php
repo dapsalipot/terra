@@ -4,12 +4,12 @@ use App\Models\HostProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Blade;
 
-it('draws the logo as the signpost mark and the word', function () {
+it('draws the logo as the summit sign mark and the word', function () {
     $html = Blade::render('<x-wordmark />');
 
     expect($html)
         ->toContain('class="wordmark')
-        ->toContain('fill="#BC4B26"')   // the sign, which is terracotta on every surface
+        ->toContain('fill="#BC4B26"')   // the board, which is terracotta on every surface
         ->toContain('font-brand')
         ->toContain('lowercase')        // written "Tarana", shown lowercase
         ->toContain('text-pine')
