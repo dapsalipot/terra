@@ -8,6 +8,7 @@ use App\Models\Trip;
 use App\Services\ReviewGate;
 use App\Services\ReviewService;
 use App\Support\HostCards;
+use App\Support\PageMeta;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -114,7 +115,10 @@ class Show extends Component
         // How many reviews stand behind the host's rating, and whether this viewer already follows them.
         $hostExtras = HostCards::extras([$this->trip->host_id], Auth::user());
 
+        // What the link looks like when it is shared, and the tab's title with it.
+        $meta = PageMeta::trip($this->trip);
+
         return view('livewire.trips.show', ['reviews' => $reviews, 'hostExtras' => $hostExtras])
-            ->layout('components.layouts.site', ['tabbar' => false]);
+            ->layout('components.layouts.site', ['tabbar' => false, 'meta' => $meta, 'title' => $meta['title']]);
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Review;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
+use App\Support\PageMeta;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
@@ -143,7 +144,10 @@ class Show extends Component
         // either way, so a private group trip's name does not leak through what was said about it.
         $visibleTripIds = $visibleTrips->modelKeys();
 
+        // What the link looks like when it is shared, and the tab's title with it.
+        $meta = PageMeta::host($this->user);
+
         return view('livewire.hosts.show', compact('trips', 'posts', 'reviews', 'upcoming', 'visibleTripIds'))
-            ->layout('components.layouts.site', ['title' => $this->user->name.' · Tarana']);
+            ->layout('components.layouts.site', ['meta' => $meta, 'title' => $meta['title']]);
     }
 }
