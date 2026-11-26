@@ -43,6 +43,21 @@ function myTripsListing(string $group): array
     ];
 }
 
+/**
+ * An offering of two dates, the one that already ran and the one still to come, so that the Past tab shows one of
+ * them and Apply writes both. [the offering's group, the schedule the tab shows, the schedule it hides]
+ */
+function myTripsHalfHidden(User $host, string $title = 'Pulag Sunrise'): array
+{
+    $group = Str::uuid()->toString();
+    $ran = Trip::factory()->published()->create(['host_id' => $host->id, 'trip_group_id' => $group, 'title' => $title]);
+    TripDeparture::factory()->for($ran)->create(['starts_at' => now()->subWeek()]);
+    $coming = Trip::factory()->published()->create(['host_id' => $host->id, 'trip_group_id' => $group, 'title' => $title]);
+    TripDeparture::factory()->for($coming)->create(['starts_at' => now()->addWeek()]);
+
+    return [$group, $ran, $coming];
+}
+
 /** The rows of the "Next departures" list on a host's page, as html. The cards further down the page say the same things, so only this list is read. */
 function hostPageDepartureRows(string $html): array
 {
@@ -234,7 +249,7 @@ it('draws a chip on each schedule that is not public and a menu on each offering
         // one menu per offering, named for it, resting on its prompt and offering each choice once
         ->assertSeeHtml('dusk="visibility-'.$group.'"')
         ->assertSeeHtml('dusk="visibility-solo-'.$solo->id.'"')
-        ->assertSeeHtml('aria-label="Who can see it: Mount Pulag Traverse"')
+        ->assertSeeHtml('aria-label="Who can see all 2 schedules of Mount Pulag Traverse"')
         ->assertSeeHtml('<option value="" selected disabled>Who can see it</option>')
         ->assertSeeHtmlInOrder([
             '<option value="public">Everyone</option>',
@@ -259,7 +274,7 @@ it('holds a pick in the select and applies it only from the Apply button', funct
         // then clearing it so the menu is back on its prompt.
         ->assertSeeHtml('dusk="visibility-apply-'.$group.'"')
         ->assertSeeHtml('dusk="visibility-apply-solo-'.$solo->id.'"')
-        ->assertSeeHtml('aria-label="Apply to Mount Pulag Traverse"')
+        ->assertSeeHtml('aria-label="Apply to all 2 schedules of Mount Pulag Traverse"')
         ->assertSeeHtml('type="button"')
         ->assertSeeHtml(':disabled="choice === \'\'"')
         ->assertSeeHtml("\$wire.setVisibility('{$group}', choice); choice = ''")
@@ -281,14 +296,14 @@ it('announces the new setting for a screen reader', function () {
         ->assertSetStrict('announcement', '');
 
     $page->call('setVisibility', $group, 'link')
-        ->assertSet('announcement', 'Who can see Mount Pulag Traverse: Link only.')
-        ->assertSeeHtml('>Who can see Mount Pulag Traverse: Link only.</p>');
+        ->assertSet('announcement', 'Who can see all 2 schedules of Mount Pulag Traverse: Link only.')
+        ->assertSeeHtml('>Who can see all 2 schedules of Mount Pulag Traverse: Link only.</p>');
 
     $page->call('setVisibility', $group, 'followers:1w')
-        ->assertSet('announcement', 'Who can see Mount Pulag Traverse: Followers first until 3 Dec.');
+        ->assertSet('announcement', 'Who can see all 2 schedules of Mount Pulag Traverse: Followers first until 3 Dec.');
 
     $page->call('setVisibility', $group, 'public')
-        ->assertSet('announcement', 'Who can see Mount Pulag Traverse: Everyone.');
+        ->assertSet('announcement', 'Who can see all 2 schedules of Mount Pulag Traverse: Everyone.');
 });
 
 it('announces nothing when a choice changed nothing', function () {
@@ -297,6 +312,49 @@ it('announces nothing when a choice changed nothing', function () {
 
     Livewire::actingAs($host)->test(HostTripsIndex::class)->call('setVisibility', $group, 'bogus')->assertSetStrict('announcement', '');
     Livewire::actingAs(newWizardHost())->test(HostTripsIndex::class)->call('setVisibility', $group, 'link')->assertSetStrict('announcement', '');
+});
+
+it('names every schedule an offering\'s control reaches, the ones the tab hides included', function () {
+    $host = newWizardHost();
+    [$group] = myTripsHalfHidden($host);
+
+    $page = Livewire::actingAs($host)->test(HostTripsIndex::class)->set('filter', 'past');
+
+    // The header keeps counting what the tab shows, the one date, while Apply writes both: the control says so
+    // rather than the header's number. Read as words, since the control's names are in attributes.
+    expect(preg_replace('/\s+/', ' ', strip_tags($page->html())))->toContain('1 schedule')->not->toContain('2 schedules');
+
+    foreach (['past', 'upcoming'] as $tab) {
+        $page->set('filter', $tab)
+            ->assertSeeHtml('dusk="visibility-'.$group.'"')
+            ->assertSeeHtml('aria-label="Who can see all 2 schedules of Pulag Sunrise"')
+            ->assertSeeHtml('aria-label="Apply to all 2 schedules of Pulag Sunrise"');
+    }
+});
+
+it('announces every schedule a change reached, the ones the tab hides included', function () {
+    $host = newWizardHost();
+    [$group, $ran, $coming] = myTripsHalfHidden($host);
+
+    Livewire::actingAs($host)->test(HostTripsIndex::class)->set('filter', 'past')
+        ->call('setVisibility', $group, 'link')
+        ->assertSet('announcement', 'Who can see all 2 schedules of Pulag Sunrise: Link only.')
+        ->assertSeeHtml('>Who can see all 2 schedules of Pulag Sunrise: Link only.</p>');
+
+    // and it was true: the date the tab hid was written too
+    expect($ran->fresh()->visibility)->toBe('link')->and($coming->fresh()->visibility)->toBe('link');
+});
+
+it('says this schedule for an offering of one', function () {
+    $host = newWizardHost();
+    $solo = Trip::factory()->published()->create(['host_id' => $host->id, 'title' => 'Sagada Echo Valley']);
+    TripDeparture::factory()->for($solo)->create(['starts_at' => now()->addWeek()]);
+
+    Livewire::actingAs($host)->test(HostTripsIndex::class)
+        ->assertSeeHtml('aria-label="Who can see this schedule of Sagada Echo Valley"')
+        ->assertSeeHtml('aria-label="Apply to this schedule of Sagada Echo Valley"')
+        ->call('setVisibility', 'solo-'.$solo->id, 'link')
+        ->assertSet('announcement', 'Who can see this schedule of Sagada Echo Valley: Link only.');
 });
 
 it('changes the listing from the page', function () {

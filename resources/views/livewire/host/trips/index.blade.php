@@ -81,7 +81,7 @@
                         <div class="relative min-w-0 w-full sm:w-auto sm:flex-none">
                             <select x-model="choice" x-ref="menu"
                                     dusk="visibility-{{ $groupKey }}"
-                                    aria-label="Who can see it: {{ $first->title }}"
+                                    aria-label="Who can see {{ $reach[$groupKey] }}"
                                     class="appearance-none w-full rounded-full border border-ink/15 bg-surface pl-4 pr-10 min-h-[44px] text-sm font-semibold
                                            focus:border-moss focus:ring-2 focus:ring-moss/25 transition-colors cursor-pointer">
                                 <option value="" selected disabled>Who can see it</option>
@@ -97,7 +97,7 @@
                             </svg>
                         </div>
                         <button type="button" dusk="visibility-apply-{{ $groupKey }}"
-                                aria-label="Apply to {{ $first->title }}"
+                                aria-label="Apply to {{ $reach[$groupKey] }}"
                                 :disabled="choice === ''"
                                 @click="$wire.setVisibility('{{ $groupKey }}', choice); choice = ''; $refs.menu.focus()"
                                 class="shrink-0 rounded-full bg-pine text-cream px-4 min-h-[44px] text-sm font-semibold
