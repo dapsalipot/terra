@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', \App\Livewire\Home::class)->name('home');
 Route::get('/trips', \App\Livewire\Trips\Index::class)->name('trips.index');
 Route::get('/t/{trip:slug}', \App\Livewire\Trips\Show::class)->name('trips.show');
-// Throttled: reserve() holds a seat for hours, so an unthrottled endpoint lets one person
-// empty a departure with junk holds and leave it reading sold out until they expire.
+// This throttle covers loading the page and nothing else. Booking is a Livewire action, sent to
+// Livewire's update route, where it does not run. The limit on seat holds is in Register::submit().
 Route::get('/t/{trip:slug}/join', \App\Livewire\Reservations\Register::class)
     ->middleware('throttle:30,1')->name('trips.join');
 Route::get('/hosts', \App\Livewire\Hosts\Index::class)->name('hosts.index');

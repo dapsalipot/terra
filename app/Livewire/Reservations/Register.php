@@ -11,6 +11,8 @@ use App\Services\RegistrationService;
 use App\Services\WaitlistService;
 use App\Support\PageMeta;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -75,6 +77,21 @@ class Register extends Component
         'emergency_contact_name' => '', 'emergency_contact_phone' => '',
         'show_contact' => false,
     ];
+
+    /*
+     * How many bookings one source may make in a window. A booking holds its seats for a day
+     * before anything is paid (ReservationService::$holdHours), so the window is a day too.
+     * The window is fixed, not sliding: it opens at a source's first booking. Late holds from
+     * one window overlap the next, so almost twice these numbers can be alive at once.
+     *
+     * Bookings are counted, not seats: a real group is one booking of up to twenty. The address
+     * gets more room because a mobile carrier can put many people behind one.
+     */
+    private const BOOKINGS_PER_EMAIL = 3;
+
+    private const BOOKINGS_PER_ADDRESS = 10;
+
+    private const BOOKING_WINDOW_SECONDS = 86400;
 
     public function mount(Trip $trip)
     {
@@ -501,6 +518,7 @@ class Register extends Component
             return;
         }
 
+        $this->error = null;
         $this->mirrorBookerSeat();
         $this->validate();
 
@@ -523,7 +541,14 @@ class Register extends Component
         // touched may not have synced when the button was clicked.
         $this->mirrorBookerSeat();
 
+        $this->error = null;
         $this->validate();
+
+        // After validation, so a typo costs nothing. Before the call below, whose arguments
+        // include storing ID photos that a refused attempt must not leave behind.
+        if (! $this->claimBooking()) {
+            return null;
+        }
 
         try {
             $result = $service->register($this->departure, [
@@ -535,6 +560,8 @@ class Register extends Component
                 'actor' => Auth::user(),
             ]);
         } catch (TripFullException $e) {
+            // No seats were held, so this is not one of the visitor's bookings.
+            $this->releaseBooking();
             $this->error = $e->getMessage();
             $this->partySize = max(1, (int) $this->departure->fresh()->spotsLeft());
 
@@ -552,6 +579,55 @@ class Register extends Component
             ['token' => $result->reservation->public_token],
             navigate: true,
         );
+    }
+
+    /** @return array<string, int> limiter key => bookings it allows in a window */
+    private function bookingLimits(): array
+    {
+        return [
+            // ponytail: the exact address, so an IPv6 client can move around its /64. Group by /64 if that shows up.
+            'booking:ip:'.request()->ip() => self::BOOKINGS_PER_ADDRESS,
+            // Lowercased as it is stored. Hashed so that no email address sits in a cache key.
+            'booking:email:'.sha1(strtolower(trim($this->contact['email']))) => self::BOOKINGS_PER_EMAIL,
+        ];
+    }
+
+    /**
+     * Take one booking from the allowance of this address and this email, or refuse.
+     *
+     * Counted first and compared after: reading the count, booking and then counting would let a
+     * burst of requests sent together all find room. A refused attempt is handed straight back.
+     */
+    private function claimBooking(): bool
+    {
+        $wait = null;
+
+        foreach ($this->bookingLimits() as $key => $allowed) {
+            if (RateLimiter::hit($key, self::BOOKING_WINDOW_SECONDS) > $allowed) {
+                $wait = max($wait ?? 0, RateLimiter::availableIn($key));
+            }
+        }
+
+        if ($wait === null) {
+            return true;
+        }
+
+        $this->releaseBooking();
+
+        // Rounded up, so nobody is told to come back too early. The wording does not say which
+        // limit it was, so it does not report on what else an email address has been booking.
+        $hours = max(1, (int) ceil($wait / 3600));
+        $this->error = 'Nothing was booked: there have been too many new bookings from this email or connection. '
+            .'Your details are still filled in. Try again in '.$hours.' '.Str::plural('hour', $hours).'.';
+
+        return false;
+    }
+
+    private function releaseBooking(): void
+    {
+        foreach (array_keys($this->bookingLimits()) as $key) {
+            RateLimiter::decrement($key, self::BOOKING_WINDOW_SECONDS);
+        }
     }
 
     private function normalisedContact(): array

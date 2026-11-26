@@ -888,6 +888,12 @@
                         Nothing is charged here. You'll get {{ $trip->host->name }}'s payment details on the next screen.
                     </p>
 
+                    {{-- A booking refused from here has to say so here: the sheet covers the banner at the top of the form. --}}
+                    @if($error)
+                        <p role="alert" dusk="review-error"
+                           class="mt-4 rounded-xl bg-terra/10 text-terra-deep px-4 py-3 text-sm font-semibold">{{ $error }}</p>
+                    @endif
+
                     <div class="flex items-center gap-2 mt-5">
                         <button type="button" wire:click="closeReview"
                                 class="rounded-full border border-ink/20 px-5 min-h-[48px] text-sm font-semibold hover:border-ink/40 transition-colors">
