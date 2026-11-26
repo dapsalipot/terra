@@ -570,9 +570,8 @@ class Register extends Component
 
         session()->forget($this->draftKey());
 
-        // Carried in the session because the raw magic URL exists only on this request.
+        // What happened, never the sign-in link: when the address already had an account, the link signs in to it.
         session()->flash('registration_outcome', $result->outcome->value);
-        session()->flash('registration_magic_url', $result->magicUrl);
 
         return $this->redirectRoute(
             'reservations.show',

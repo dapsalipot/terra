@@ -1,10 +1,12 @@
 <?php
 
 use App\Livewire\Reservations\Register;
+use App\Mail\MagicLinkMail;
 use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -360,6 +362,29 @@ it('registers a guest and sends them to their booking', function () {
     expect($reservation->joiner_id)->toBeNull()
         ->and($reservation->contact_email)->toBe('ada@example.com')
         ->and($reservation->participants)->toHaveCount(1);
+});
+
+it('mails the sign-in link and keeps no copy where the person booking could reach it', function () {
+    Mail::fake();
+    // Someone else's account: the link mailed here signs in to it, and the person booking only typed the address.
+    User::factory()->create(['email' => 'ada@example.com']);
+
+    Livewire::test(Register::class, ['trip' => $this->trip])
+        ->set('contact.first_name', 'Ada')
+        ->set('contact.last_name', 'Reyes')
+        ->set('contact.email', 'ada@example.com')
+        ->set('contact.phone', '09171234567')
+        ->set('participants.0.birthday', '1998-04-02')
+        ->set('createAccount', true)
+
+        ->set('participants.0.emergency_contact_name', 'Rosa Reyes')
+        ->set('participants.0.emergency_contact_phone', '09171112222')
+        ->call('submit')
+        ->assertRedirect();
+
+    Mail::assertSent(MagicLinkMail::class, 1);
+    expect(session('registration_outcome'))->toBe('email_taken')
+        ->and(json_encode(session()->all(), JSON_UNESCAPED_SLASHES))->not->toContain('/magic/');
 });
 
 it('normalises a +63 mobile number to the 09 form', function () {
