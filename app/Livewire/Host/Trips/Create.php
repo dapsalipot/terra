@@ -6,6 +6,7 @@ use App\Models\HostMeetupPreset;
 use App\Models\Place;
 use App\Models\Trip;
 use App\Models\TripDraft;
+use App\Services\ReservationService;
 use App\Support\HikeGrades;
 use App\Support\PackingItems;
 use App\Support\PaymentTerms;
@@ -713,6 +714,11 @@ class Create extends Component
             session()->flash('just_published', $trip->id);
         }
 
+        // A taken-down trip has no public page to land on (it is a 404), so its host goes back to their list.
+        if ($trip->status !== 'published') {
+            return $this->redirectRoute('host.trips.index', navigate: true);
+        }
+
         return $this->redirectRoute('trips.show', ['trip' => $trip->slug], navigate: true);
     }
 
@@ -745,7 +751,8 @@ class Create extends Component
             // retired key cannot survive in the column after the catalog has moved on.
             'packing_items' => array_values(array_intersect($this->packing, PackingItems::keys())) ?: null,
             'requires_id' => $this->requiresId,
-            'status' => 'published',
+            // Set once. After that moderation owns it, and a save must not put a taken-down trip back.
+            ...($neverPublished ? ['status' => 'published'] : []),
             ...$listing,
         ]);
 
@@ -804,13 +811,14 @@ class Create extends Component
             ? ['starts_at' => $existing->starts_at, 'ends_at' => $existing->ends_at]
             : ['starts_at' => $departure['starts_at'], 'ends_at' => $departure['ends_at'] ?: null];
 
-        $trip->departures()->updateOrCreate(
+        $saved = $trip->departures()->updateOrCreate(
             ['id' => $existing?->id],
-            $dates + [
-                'capacity' => (int) $departure['capacity'],
-                'status' => 'open',
-            ],
+            $dates + ['capacity' => (int) $departure['capacity']],
         );
+
+        // Open or full follows the seats, and an edit can change capacity. A new row comes out open, and a
+        // cancelled or completed one is left alone.
+        app(ReservationService::class)->syncDepartureFullness($saved);
 
         foreach ($inclusions as $i => $c) {
             $trip->inclusionItems()->create([

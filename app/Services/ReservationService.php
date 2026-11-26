@@ -473,7 +473,8 @@ class ReservationService
         }
     }
 
-    private function syncDepartureFullness(TripDeparture $departure): void
+    /** Open or full, from the seats held. Cancelled and completed are decisions about the date, so they stay. */
+    public function syncDepartureFullness(TripDeparture $departure): void
     {
         if ($departure->status === 'cancelled' || $departure->status === 'completed') {
             return;
