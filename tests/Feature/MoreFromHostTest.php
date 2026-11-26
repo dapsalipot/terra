@@ -159,6 +159,10 @@ it('shows at most six tiles, the six whose next departure is soonest', function 
 });
 
 it('dates each tile by its next open departure, not by one that has gone', function () {
+    // `M j` has no zero padding, so on some real days the date that must be absent is the front of one the page prints
+    // ("Dec 2" in "Dec 26"). On this day the shown date is "Dec 26" and the absent one "Nov 12", whenever the test runs.
+    $this->travelTo('2026-11-26 09:00:00');
+
     $host = moreFromHostUser();
     $a = moreFromHostTrip($host, 'Pulag Sunrise Climb', 7);
 
