@@ -36,7 +36,8 @@ it('renders the link, a Facebook share, the phone share hook and a QR only when 
     $html = Blade::render('<x-share-panel url="https://tarana.test/t/x" title="X" qr="https://tarana.test/qr" />');
     expect($html)->toContain('value="https://tarana.test/t/x"')
         ->toContain('https://www.facebook.com/sharer/sharer.php?u='.urlencode('https://tarana.test/t/x'))
-        ->toContain('navigator.share')->toContain('https://tarana.test/qr');
+        ->toContain('navigator.share')->toContain('https://tarana.test/qr')
+        ->toContain('wire:key="share-');
     expect(Blade::render('<x-share-panel url="https://tarana.test/t/x" title="X" />'))->not->toContain('download');
 });
 

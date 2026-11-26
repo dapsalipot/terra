@@ -23,6 +23,10 @@
     The url and the title are written into the Alpine state with @js, which leaves nothing in them that can end the
     attribute or the string. Everywhere else they go through {{ }} or urlencode().
 
+    It is keyed by its address. Livewire keeps a component's Alpine state with the element it was on, so without a key a
+    re-render that moves schedules around could hand one trip's panel, and the link its Copy puts on the clipboard, to
+    another.
+
     This only draws the panel. Whose it is to see is for the page that places it to decide.
 --}}
 @php
@@ -49,7 +53,7 @@
      x-init="canShare = typeof navigator.share === 'function'"
      @click.outside="open = false"
      @keydown.escape.window="if (open) { open = false; if ($el.contains(document.activeElement)) $refs.trigger.focus(); }"
-     {{ $attributes->class('relative inline-flex') }}>
+     {{ $attributes->class('relative inline-flex')->merge(['wire:key' => $id]) }}>
     <button type="button" x-ref="trigger" dusk="share-toggle"
             @click="open = ! open" aria-label="Share {{ $title }}" aria-expanded="{{ $open ? 'true' : 'false' }}" :aria-expanded="open" aria-controls="{{ $id }}"
             class="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-surface px-4 min-h-[44px] text-sm font-semibold hover:border-moss transition-colors">
