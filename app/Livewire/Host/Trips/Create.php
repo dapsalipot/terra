@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
@@ -667,6 +668,13 @@ class Create extends Component
 
     public function publish()
     {
+        // copyFrom() refuses a taken-down trip when the form opens. An open form, or its saved draft, can outlive that.
+        if ($this->copiedFromId && Trip::find($this->copiedFromId)?->isTakenDown()) {
+            $this->addError('copiedFromId', 'The trip this was copied from has been taken down, so this copy cannot be published.');
+
+            return null;
+        }
+
         $this->validateWhere();
         $this->validateTrip();
         $this->validateInclusions();
@@ -933,13 +941,18 @@ class Create extends Component
         'inclusions', 'packing', 'requiresId', 'hikes', 'meetups', 'dropoffs', 'departures', 'price', 'priceTiers', 'deposit',
         'downpaymentDueMode', 'downpaymentDueHours', 'downpaymentDueDate',
         'fullDueMode', 'fullDueHours', 'fullDueDate',
-        'visibility', 'followersWindow',
+        'visibility', 'followersWindow', 'copiedFromId',
     ];
 
     public bool $draftRestored = false;
 
     /** Set when editing an existing schedule rather than creating one. */
+    #[Locked]
     public ?int $editingId = null;
+
+    /** The trip this form was copied from. Saved with the draft, so a later takedown still reaches the copy. */
+    #[Locked]
+    public ?int $copiedFromId = null;
 
     public function mount(?Trip $from = null, ?Trip $trip = null): void
     {
@@ -1039,6 +1052,10 @@ class Create extends Component
     protected function copyFrom(Trip $trip, bool $editing = false): void
     {
         abort_unless($trip->host_id === Auth::id(), 403);
+        // A copy would put what moderation took down back up at a new address. Editing the trip itself is still allowed.
+        abort_if(! $editing && $trip->isTakenDown(), 403, 'This trip was taken down, so it cannot be copied.');
+
+        $this->copiedFromId = $editing ? null : $trip->id;
 
         $this->title = $editing ? $trip->title : $trip->title.' (copy)';
         $this->description = (string) $trip->description;
@@ -1209,7 +1226,8 @@ class Create extends Component
             'places' => Place::orderBy('name')->get(),
             'presets' => Auth::user()->meetupPresets()->get(),
             'pastTrips' => Trip::collapseSchedules(
-                Trip::where('host_id', Auth::id())->with('departures')->latest()->take(24)->get()
+                // a taken-down trip is nothing to start a new one from
+                Trip::where('host_id', Auth::id())->where('status', '!=', 'archived')->with('departures')->latest()->take(24)->get()
             )->take(4),
             'takenDown' => $this->isEditing && Trip::find($this->editingId)?->isTakenDown(),
         ])->layout('components.layouts.host', ['title' => 'Tarana · New trip']);

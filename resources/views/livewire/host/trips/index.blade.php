@@ -199,10 +199,14 @@
                 @endforeach
             </ul>
 
-            <div class="px-5 py-3 border-t border-ink/8 bg-cream/30 rounded-b-2xl">
-                <a href="{{ route('host.trips.duplicate', $first) }}" wire:navigate
-                   class="text-sm font-semibold text-moss hover:underline">＋ Add another schedule</a>
-            </div>
+            {{-- Copied from a schedule that is still up. A taken-down one must not come back as a new trip. --}}
+            @php($source = $group->first(fn ($t) => ! $t->isTakenDown()))
+            @if($source)
+                <div class="px-5 py-3 border-t border-ink/8 bg-cream/30 rounded-b-2xl">
+                    <a href="{{ route('host.trips.duplicate', $source) }}" wire:navigate
+                       class="text-sm font-semibold text-moss hover:underline">＋ Add another schedule</a>
+                </div>
+            @endif
         </section>
     @empty
         <div class="rounded-2xl border-2 border-dashed border-ink/15 px-6 py-12 text-center">

@@ -1010,6 +1010,8 @@
                 </section>
             </div>
 
+            @error('copiedFromId')<p class="text-terra text-sm mt-5" role="alert">{{ $message }}</p>@enderror
+
             <div class="flex gap-3 mt-7">
                 <button wire:click="back" dusk="wizard-back" class="rounded-full border border-ink/20 px-8 py-4 font-semibold hover:bg-ink/5 transition-colors">Back</button>
                 <button wire:click="publish" dusk="wizard-publish" wire:loading.attr="disabled"
