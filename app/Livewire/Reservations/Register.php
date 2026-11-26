@@ -9,6 +9,7 @@ use App\Models\TripDeparture;
 use App\Models\User;
 use App\Services\RegistrationService;
 use App\Services\WaitlistService;
+use App\Support\PageMeta;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -661,6 +662,6 @@ class Register extends Component
             'perSeat' => $this->trip->current_price,
             'total' => $this->trip->current_price * $seats,
             'payableNow' => $this->trip->payable_now * $seats,
-        ])->layout('components.layouts.site', ['tabbar' => false]);
+        ])->layout('components.layouts.site', ['tabbar' => false, 'meta' => PageMeta::join($this->trip)]);
     }
 }

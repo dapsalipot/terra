@@ -3,6 +3,7 @@
 use App\Models\HostProfile;
 use App\Models\Place;
 use App\Models\Reservation;
+use App\Models\ReservationParticipant;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
@@ -26,6 +27,21 @@ function metaHost(string $handle = 'ridgeline', string $name = 'Ridgeline', arra
 function metaCover(string $name): string
 {
     return url(Storage::disk('public')->url("covers/{$name}.jpg"));
+}
+
+/** A booking on a trip of `$host` that anyone can find, with the pass its traveller shows: the pages a booking token opens. */
+function metaBookingPages(User $host): array
+{
+    $trip = Trip::factory()->published()->create(['host_id' => $host->id]);
+    $booking = Reservation::factory()->for(TripDeparture::factory()->for($trip)->create(['starts_at' => now()->addWeek()]), 'departure')->create([
+        'joiner_id' => null, 'status' => 'confirmed', 'contact_first_name' => 'Ada', 'contact_last_name' => 'Reyes',
+    ]);
+    ReservationParticipant::factory()->for($booking)->create(['position' => 0, 'first_name' => 'Ada', 'last_name' => 'Reyes', 'pass_code' => 'TRA-META0001']);
+
+    return [
+        route('reservations.show', ['token' => $booking->public_token]),
+        route('reservations.pass', ['token' => $booking->public_token]),
+    ];
 }
 
 it('previews a trip with its title, host, price and an absolute image', function () {
@@ -147,6 +163,59 @@ it('marks any trip that is not public right now noindex', function () {
 
     $this->get(route('trips.show', $opened))->assertDontSee('noindex', false);
     expect(PageMeta::trip($opened)['noindex'])->toBeFalse();
+});
+
+it('marks the join page of a trip that is not public right now noindex, whoever opens it', function () {
+    $host = metaHost();
+    $link = Trip::factory()->published()->linkOnly()->create(['host_id' => $host->id]);
+    $early = Trip::factory()->published()->followersFirst(now()->addDays(3))->create(['host_id' => $host->id]);
+    $opened = Trip::factory()->published()->followersFirst(now()->subDay())->create(['host_id' => $host->id]);
+    $open = Trip::factory()->published()->create(['host_id' => $host->id]);
+    foreach ([$link, $early, $opened, $open] as $trip) {
+        TripDeparture::factory()->for($trip)->create();
+    }
+    $noindex = '<meta name="robots" content="noindex">';
+
+    // The join page is where a shared link goes next, so it follows the trip it joins: a guest first, then a joiner who is signed in.
+    foreach ([$link, $early] as $trip) {
+        $this->get(route('trips.join', $trip))->assertOk()->assertSee($noindex, false);
+    }
+    foreach ([$opened, $open] as $trip) {
+        $this->get(route('trips.join', $trip))->assertOk()->assertDontSee('noindex', false);
+    }
+
+    $this->actingAs(User::factory()->create(['role' => 'joiner']));
+
+    foreach ([$link, $early] as $trip) {
+        $this->get(route('trips.join', $trip))->assertOk()->assertSee($noindex, false);
+    }
+    foreach ([$opened, $open] as $trip) {
+        $this->get(route('trips.join', $trip))->assertOk()->assertDontSee('noindex', false);
+    }
+});
+
+it('keeps a join page that was open to search open, and leaves its preview as the default card', function () {
+    $trip = Trip::factory()->published()->create(['host_id' => metaHost()->id]);
+    TripDeparture::factory()->for($trip)->create();
+    $join = route('trips.join', $trip);
+
+    $this->get($join)
+        ->assertOk()
+        ->assertSee('<link rel="canonical" href="'.$join.'">', false)
+        ->assertSee('<meta property="og:title" content="Tarana">', false)
+        ->assertSee('<meta property="og:image" content="'.asset('images/og-card.png').'">', false);
+});
+
+it('marks a booking page and its pass noindex, even for a trip anyone can find', function () {
+    [$booking, $pass] = metaBookingPages(metaHost());
+
+    // They hold one person's name, contact details and pass, and are only ever reached by the token they were sent.
+    foreach ([$booking, $pass] as $page) {
+        $this->get($page)
+            ->assertOk()
+            ->assertSee('<meta name="robots" content="noindex">', false)
+            ->assertSee('<link rel="canonical" href="'.$page.'">', false);
+    }
 });
 
 it('previews a host page and falls back to the default card', function () {

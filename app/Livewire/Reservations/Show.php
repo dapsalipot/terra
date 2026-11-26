@@ -4,6 +4,7 @@ namespace App\Livewire\Reservations;
 
 use App\Models\Reservation;
 use App\Services\ReservationService;
+use App\Support\PageMeta;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -333,6 +334,6 @@ class Show extends Component
 
     public function render()
     {
-        return view('livewire.reservations.show')->layout('components.layouts.site', ['tabbar' => false]);
+        return view('livewire.reservations.show')->layout('components.layouts.site', ['tabbar' => false, 'meta' => PageMeta::booking()]);
     }
 }

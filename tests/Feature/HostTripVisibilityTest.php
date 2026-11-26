@@ -43,6 +43,21 @@ function myTripsListing(string $group): array
     ];
 }
 
+/** The rows of the "Next departures" list on a host's page, as html. The cards further down the page say the same things, so only this list is read. */
+function hostPageDepartureRows(string $html): array
+{
+    preg_match('#<section[^>]*dusk="upcoming".*?</section>#s', $html, $section);
+    preg_match_all('#<li>.*?</li>#s', $section[0] ?? '', $rows);
+
+    return $rows[0];
+}
+
+/** The row of the "Next departures" list that names `$trip`; null when the list does not. */
+function hostPageDepartureRow(string $html, Trip $trip): ?string
+{
+    return collect(hostPageDepartureRows($html))->first(fn ($row) => str_contains($row, $trip->title));
+}
+
 it('sets one visibility on every schedule of an offering', function () {
     $host = newWizardHost();
     $offering = myTripsOffering($host, 3);
@@ -169,6 +184,39 @@ it('shows the chip on the host\'s own page and not to a visitor', function () {
     $this->get(route('hosts.show', $host))->assertDontSee('Link only')->assertDontSee($trip->title);
 
     $this->actingAs($host)->get(route('hosts.show', $host))->assertSee('Link only')->assertSee($trip->title);
+});
+
+it('says how a trip is listed on its row in the host\'s next departures, to the host and to nobody else', function () {
+    $this->travelTo('2026-11-26 09:00:00');
+    $host = newWizardHost();
+    $link = Trip::factory()->published()->linkOnly()->create(['host_id' => $host->id, 'title' => 'Hidden Ridge Walk']);
+    $early = Trip::factory()->published()->followersFirst(now()->addDays(3))->create(['host_id' => $host->id, 'title' => 'Early Bird Hike']);
+    $open = Trip::factory()->published()->create(['host_id' => $host->id, 'title' => 'Open Summit Climb']);
+    foreach ([$link, $early, $open] as $week => $trip) {
+        TripDeparture::factory()->for($trip)->create(['starts_at' => now()->addWeeks($week + 1)]);
+    }
+    $follower = User::factory()->create();
+    $follower->follow($host);
+    $page = fn () => $this->get(route('hosts.show', $host))->getContent();
+
+    // A visitor is shown the one trip anyone can find, and it carries nothing about how it is listed.
+    $guest = $page();
+    expect(hostPageDepartureRows($guest))->toHaveCount(1)
+        ->and(hostPageDepartureRow($guest, $open))->not->toContain('Link only')->not->toContain('Followers first');
+
+    // A follower is also shown the head start, and still not told how the host listed it.
+    $this->actingAs($follower);
+    $member = $page();
+    expect(hostPageDepartureRows($member))->toHaveCount(2)
+        ->and(hostPageDepartureRow($member, $early))->not->toBeNull()->not->toContain('Followers first');
+
+    // The host sees all three, and the two that are not for everyone say so in the list itself, where they head their own page.
+    $this->actingAs($host);
+    $owner = $page();
+    expect(hostPageDepartureRows($owner))->toHaveCount(3)
+        ->and(hostPageDepartureRow($owner, $link))->toContain('Link only')
+        ->and(hostPageDepartureRow($owner, $early))->toContain('Followers first until 29 Nov')
+        ->and(hostPageDepartureRow($owner, $open))->not->toContain('Link only')->not->toContain('Followers first');
 });
 
 it('draws a chip on each schedule that is not public and a menu on each offering', function () {

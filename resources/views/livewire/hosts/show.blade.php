@@ -169,19 +169,25 @@
                         @foreach($upcoming as $dep)
                             @php($left = $dep->spotsLeft())
                             <li>
-                                <a href="{{ route('trips.show', $dep->trip) }}" class="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-ink/[.03]">
-                                    <span class="w-12 shrink-0 text-center leading-none">
-                                        <span class="block text-xl font-semibold tabular-nums">{{ $dep->starts_at->format('j') }}</span>
-                                        <span class="mt-1 block text-[11px] font-semibold uppercase tracking-wide text-ink/65">{{ $dep->starts_at->format('M') }}</span>
+                                <a href="{{ route('trips.show', $dep->trip) }}" class="block px-4 py-3.5 transition-colors hover:bg-ink/[.03]">
+                                    <span class="flex items-center gap-4">
+                                        <span class="w-12 shrink-0 text-center leading-none">
+                                            <span class="block text-xl font-semibold tabular-nums">{{ $dep->starts_at->format('j') }}</span>
+                                            <span class="mt-1 block text-[11px] font-semibold uppercase tracking-wide text-ink/65">{{ $dep->starts_at->format('M') }}</span>
+                                        </span>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block truncate font-semibold">{{ $dep->trip->title }}</span>
+                                            <span class="block truncate text-sm text-ink/65">{{ $dep->trip->place?->name }}@if($dep->trip->place?->country), {{ $dep->trip->place->country }}@endif</span>
+                                        </span>
+                                        <span class="shrink-0 text-right text-sm">
+                                            <span class="block font-semibold tabular-nums">{{ $user->hostProfile?->currency ?? 'PHP' }} {{ number_format($dep->trip->current_price) }}</span>
+                                            @if($left !== null)<span class="block {{ $left <= 4 ? 'font-semibold text-terra-deep' : 'text-ink/65' }}">{{ $left === 0 ? 'Full' : $left.' left' }}</span>@endif
+                                        </span>
                                     </span>
-                                    <span class="min-w-0 flex-1">
-                                        <span class="block truncate font-semibold">{{ $dep->trip->title }}</span>
-                                        <span class="block truncate text-sm text-ink/65">{{ $dep->trip->place?->name }}@if($dep->trip->place?->country), {{ $dep->trip->place->country }}@endif</span>
-                                    </span>
-                                    <span class="shrink-0 text-right text-sm">
-                                        <span class="block font-semibold tabular-nums">{{ $user->hostProfile?->currency ?? 'PHP' }} {{ number_format($dep->trip->current_price) }}</span>
-                                        @if($left !== null)<span class="block {{ $left <= 4 ? 'font-semibold text-terra-deep' : 'text-ink/65' }}">{{ $left === 0 ? 'Full' : $left.' left' }}</span>@endif
-                                    </span>
+                                    {{-- Said to the trip's host only, so most rows have none. On a line of its own under the title (ml-16 is the
+                                         date's w-12 and the gap-4 after it) because "Followers first until 29 Nov" is wider than the room the
+                                         title has beside the date and the price on a phone. --}}
+                                    <x-visibility-chip :trip="$dep->trip" class="mt-2 ml-16" />
                                 </a>
                             </li>
                         @endforeach

@@ -26,16 +26,37 @@ class PageMeta
     /**
      * What any page without a story of its own says. It answers to the address it was asked for, filters and
      * page number included: a shared search keeps its search, and page 2 is not taken for page 1.
+     *
+     * `$noindex` is for the page that still must not turn up in a search, see join() and booking().
      */
-    public static function default(): array
+    public static function default(bool $noindex = false): array
     {
         return [
             'title' => 'Tarana',
             'description' => 'Group trips led by local hosts. Hikes, islands and everywhere in between.',
             'image' => asset(self::CARD),
             'url' => url()->full(),
-            'noindex' => false,
+            'noindex' => $noindex,
         ];
+    }
+
+    /**
+     * The page where someone joins a trip: nothing of its own to say, so the default card, but no more public than
+     * the trip itself. It is where a link to a trip kept to a few people leads next, and left unmarked it could turn
+     * up in a search even though the trip does not.
+     */
+    public static function join(Trip $trip): array
+    {
+        return self::default(noindex: self::noindex($trip));
+    }
+
+    /**
+     * A booking, or the passes on it. They hold one person's name, contact details and check-in codes and are only
+     * ever reached by the token the booker was sent, so they stay out of a search whatever trip they are for.
+     */
+    public static function booking(): array
+    {
+        return self::default(noindex: true);
     }
 
     public static function trip(Trip $trip): array
@@ -55,8 +76,7 @@ class PageMeta
             ])),
             'image' => self::absolute($trip->cover_url),
             'url' => route('trips.show', $trip),
-            // A trip that opens to everyone later, or to no one, is for the people it is sent to, not for a search page.
-            'noindex' => $trip->effectiveVisibility() !== Visibility::PUBLIC,
+            'noindex' => self::noindex($trip),
         ];
     }
 
@@ -71,6 +91,12 @@ class PageMeta
             'url' => route('hosts.handle', $host),
             'noindex' => false,
         ];
+    }
+
+    /** A trip that opens to everyone later, or to no one, is for the people it is sent to, not for a search page. */
+    private static function noindex(Trip $trip): bool
+    {
+        return $trip->effectiveVisibility() !== Visibility::PUBLIC;
     }
 
     /** "Dec 14-16", "Dec 30-Jan 2", or "Dec 14" for a trip that is over in a day. Null when nothing is coming up. */

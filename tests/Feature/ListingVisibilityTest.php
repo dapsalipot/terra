@@ -82,6 +82,25 @@ it('keeps link-only trips out of Explore and shows followers-first ones to follo
     $this->actingAs($follower)->get('/trips')->assertSee($early->title)->assertDontSee($link->title);
 });
 
+it('keeps a host\'s own unlisted trips out of Explore and Home, and on their own page', function () {
+    $host = visibilityHost();
+    $open = visibilityTrip($host);
+    $early = visibilityTrip($host, 'followers');
+    $link = visibilityTrip($host, 'link');
+    $own = route('hosts.handle', $host);
+
+    // The host is signed in for every request below. Explore and Home are where trips are found, and a host finds
+    // their own there like anyone else does: the one everyone can find, and not the two they chose to hold back.
+    $this->actingAs($host);
+
+    foreach (['/trips', '/'] as $page) {
+        $this->get($page)->assertOk()->assertSee($open->title)->assertDontSee($early->title)->assertDontSee($link->title);
+    }
+
+    // Their own page is where all of them are, so that choosing to hold a trip back does not lose it.
+    $this->get($own)->assertSee($open->title)->assertSee($early->title)->assertSee($link->title);
+});
+
 it('lists a mixed-visibility offering once, counting only its listed schedules', function () {
     $host = visibilityHost();
     $group = (string) Str::uuid();

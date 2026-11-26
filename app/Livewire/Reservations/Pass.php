@@ -3,6 +3,7 @@
 namespace App\Livewire\Reservations;
 
 use App\Models\Reservation;
+use App\Support\PageMeta;
 use Livewire\Component;
 
 /**
@@ -29,6 +30,6 @@ class Pass extends Component
     public function render()
     {
         return view('livewire.reservations.pass')
-            ->layout('components.layouts.site', ['title' => 'Tarana · Check-in pass', 'tabbar' => false]);
+            ->layout('components.layouts.site', ['title' => 'Tarana · Check-in pass', 'tabbar' => false, 'meta' => PageMeta::booking()]);
     }
 }
