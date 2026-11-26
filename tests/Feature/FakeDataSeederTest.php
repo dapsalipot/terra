@@ -4,6 +4,7 @@ use App\Models\Reservation;
 use App\Models\ReservationParticipant;
 use App\Models\Trip;
 use App\Models\User;
+use App\Support\Visibility;
 use Database\Seeders\FakeDataSeeder;
 use Database\Seeders\PlaceSeeder;
 
@@ -104,6 +105,18 @@ it('produces trips a person would actually want to click', function () {
     Trip::all()->each(
         fn (Trip $t) => expect($t->departures()->where('starts_at', '<', now())->count())->toBeGreaterThan(0)
     );
+});
+
+it('marks two of the first host\'s trips for the listing choices, and no one else\'s', function () {
+    seedSmallWorld();
+
+    // Without these a demo has no "Link only" or "Followers first" chip to look at, and nothing unlisted to click through to.
+    $trips = User::where('role', 'host')->orderBy('id')->first()->trips()->orderBy('id')->get();
+
+    expect($trips[0]->visibility)->toBe(Visibility::LINK)
+        ->and($trips[1]->visibility)->toBe(Visibility::FOLLOWERS)
+        ->and($trips[1]->public_at->between(now()->addDays(3)->subMinute(), now()->addDays(3)->addMinute()))->toBeTrue()
+        ->and(Trip::where('visibility', '!=', Visibility::PUBLIC)->count())->toBe(2);
 });
 
 it('checks in only people who were actually on a trip that already ran', function () {

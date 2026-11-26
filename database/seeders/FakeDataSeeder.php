@@ -11,6 +11,7 @@ use App\Models\TripDeparture;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Services\ReservationService;
+use App\Support\Visibility;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -101,6 +102,11 @@ class FakeDataSeeder extends Seeder
                     $this->fillDeparture($departure, $host, $joiners);
                 }
             }
+        }
+
+        // The first host's page is where a demo shows the listing choices.
+        if ($first = $hosts->first()) {
+            $this->listingChoices($first);
         }
 
         $this->command?->info(sprintf(
@@ -216,6 +222,20 @@ class FakeDataSeeder extends Seeder
                 fake()->numberBetween(3, 6)
             ),
         ]);
+    }
+
+    /**
+     * Give two of a host's trips a listing choice: the first is link only, the second followers first for three days.
+     *
+     * A demo needs something to show for the "Link only" and "Followers first" chips, and for the pages that are reached
+     * by their link alone. This marks trips that already exist, so no row is added and no booking moves.
+     */
+    private function listingChoices(User $host): void
+    {
+        $trips = $host->trips()->orderBy('id')->take(2)->get();
+
+        $trips->get(0)?->update(['visibility' => Visibility::LINK]);
+        $trips->get(1)?->update(['visibility' => Visibility::FOLLOWERS, 'public_at' => Visibility::opensAt('3d')]);
     }
 
     /**
