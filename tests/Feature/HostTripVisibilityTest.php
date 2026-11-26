@@ -249,7 +249,7 @@ it('draws a chip on each schedule that is not public and a menu on each offering
         // one menu per offering, named for it, resting on its prompt and offering each choice once
         ->assertSeeHtml('dusk="visibility-'.$group.'"')
         ->assertSeeHtml('dusk="visibility-solo-'.$solo->id.'"')
-        ->assertSeeHtml('aria-label="Who can see all 2 schedules of Mount Pulag Traverse"')
+        ->assertSeeHtml('aria-label="Who can see it, for all 2 schedules of Mount Pulag Traverse"')
         ->assertSeeHtml('<option value="" selected disabled>Who can see it</option>')
         ->assertSeeHtmlInOrder([
             '<option value="public">Everyone</option>',
@@ -327,7 +327,7 @@ it('names every schedule an offering\'s control reaches, the ones the tab hides 
     foreach (['past', 'upcoming'] as $tab) {
         $page->set('filter', $tab)
             ->assertSeeHtml('dusk="visibility-'.$group.'"')
-            ->assertSeeHtml('aria-label="Who can see all 2 schedules of Pulag Sunrise"')
+            ->assertSeeHtml('aria-label="Who can see it, for all 2 schedules of Pulag Sunrise"')
             ->assertSeeHtml('aria-label="Apply to all 2 schedules of Pulag Sunrise"');
     }
 });
@@ -351,7 +351,7 @@ it('says this schedule for an offering of one', function () {
     TripDeparture::factory()->for($solo)->create(['starts_at' => now()->addWeek()]);
 
     Livewire::actingAs($host)->test(HostTripsIndex::class)
-        ->assertSeeHtml('aria-label="Who can see this schedule of Sagada Echo Valley"')
+        ->assertSeeHtml('aria-label="Who can see it, for this schedule of Sagada Echo Valley"')
         ->assertSeeHtml('aria-label="Apply to this schedule of Sagada Echo Valley"')
         ->call('setVisibility', 'solo-'.$solo->id, 'link')
         ->assertSet('announcement', 'Who can see this schedule of Sagada Echo Valley: Link only.');

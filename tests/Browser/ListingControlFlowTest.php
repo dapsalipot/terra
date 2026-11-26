@@ -46,7 +46,7 @@ class ListingControlFlowTest extends DuskTestCase
                 ->visit('/host/trips')
                 ->waitFor($menu)
                 // The control says what it reaches: all of an offering's schedules, and this one has the one
-                ->assertAttribute($menu, 'aria-label', 'Who can see this schedule of Sagada Echo Valley Hike')
+                ->assertAttribute($menu, 'aria-label', 'Who can see it, for this schedule of Sagada Echo Valley Hike')
                 ->assertAttribute($apply, 'aria-label', 'Apply to this schedule of Sagada Echo Valley Hike')
                 // Nothing to apply until something is picked, and picking is not applying: `select` fires the same
                 // `change` an arrow key does on Windows, and it must not touch the listing.
