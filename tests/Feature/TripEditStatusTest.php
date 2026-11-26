@@ -1,31 +1,16 @@
 <?php
 
-use App\Livewire\Host\Trips\Create;
 use App\Models\Place;
 use App\Models\Trip;
 use App\Services\DepartureCompletionService;
 use App\Services\ModerationService;
 use App\Services\ReservationService;
-use Livewire\Features\SupportTesting\Testable;
-use Livewire\Livewire;
 
 /*
  * The wizard saves a first publish and every later edit through the same method. Neither status is the
  * form's to decide after that first time: moderation takes a trip down, and a departure is called off
  * or completed elsewhere.
  */
-
-/** Open a schedule's edit form as its host, apply `$set` and save. */
-function saveTripEdit(Trip $trip, array $set = []): Testable
-{
-    $form = Livewire::actingAs($trip->host)->test(Create::class, ['trip' => $trip->fresh()]);
-
-    foreach ($set as $property => $value) {
-        $form->set($property, $value);
-    }
-
-    return $form->call('publish')->assertHasNoErrors();
-}
 
 it('publishes the trip and opens its departure the first time', function () {
     $trip = publishViaWizard()->sole();

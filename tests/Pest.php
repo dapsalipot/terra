@@ -134,3 +134,15 @@ function publishViaWizard(array $set = [], int $dates = 1): Collection
 
     return Trip::where('host_id', $host->id)->orderBy('id')->get();
 }
+
+/** Open a schedule's edit form as its host, apply `$set` and save. */
+function saveTripEdit(Trip $trip, array $set = []): Testable
+{
+    $form = Livewire::actingAs($trip->host)->test(Create::class, ['trip' => $trip->fresh()]);
+
+    foreach ($set as $property => $value) {
+        $form->set($property, $value);
+    }
+
+    return $form->call('publish')->assertHasNoErrors();
+}

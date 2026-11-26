@@ -7,6 +7,7 @@ use App\Models\Place;
 use App\Models\Trip;
 use App\Models\TripDraft;
 use App\Services\ReservationService;
+use App\Services\WaitlistService;
 use App\Support\HikeGrades;
 use App\Support\PackingItems;
 use App\Support\PaymentTerms;
@@ -819,6 +820,12 @@ class Create extends Component
         // Open or full follows the seats, and an edit can change capacity. A new row comes out open, and a
         // cancelled or completed one is left alone.
         app(ReservationService::class)->syncDepartureFullness($saved);
+
+        // Added seats are news to anyone waiting for one. They are told once the save has committed, so a save that
+        // fails part way mails nobody.
+        if ($existing && $saved->capacity > $existing->capacity) {
+            DB::afterCommit(fn () => app(WaitlistService::class)->notifyAvailable($saved->fresh()));
+        }
 
         foreach ($inclusions as $i => $c) {
             $trip->inclusionItems()->create([

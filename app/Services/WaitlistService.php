@@ -43,7 +43,12 @@ class WaitlistService
     {
         $free = $departure->spotsLeft();
 
-        if ($free < 1 || $departure->status === 'cancelled') {
+        // The mail sends people to the join page, so say nothing when that page would turn them away: it is a 404
+        // for a trip that is not published, and closed for a date that was called off, has run or has left.
+        if ($free < 1
+            || $departure->trip->status !== 'published'
+            || in_array($departure->status, ['cancelled', 'completed'], true)
+            || $departure->starts_at->isPast()) {
             return 0;
         }
 

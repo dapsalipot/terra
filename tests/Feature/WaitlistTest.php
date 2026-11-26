@@ -6,8 +6,10 @@ use App\Models\HostProfile;
 use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
+use App\Models\TripInclusion;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Services\ModerationService;
 use App\Services\ReservationService;
 use App\Services\WaitlistService;
 use Illuminate\Support\Facades\Mail;
@@ -116,3 +118,62 @@ it('says nothing when the departure itself was called off', function () {
     // seats are technically free, but there is no trip to offer them on
     Mail::assertNotSent(SeatOpenedMail::class);
 });
+
+/** A trip made in the wizard with `$held` of its `$capacity` seats booked, and Ada waiting. */
+function waitedOnTrip(int $capacity, int $held): Trip
+{
+    $trip = publishViaWizard(['departures.0.capacity' => $capacity])->sole();
+    app(ReservationService::class)->reserve($trip->departure, ['guest_name' => 'Ana Cruz', 'party_size' => $held]);
+    app(WaitlistService::class)->join($trip->departure, ['name' => 'Ada', 'email' => 'ada@example.com']);
+
+    return $trip;
+}
+
+it('emails the waitlist when an edit adds seats', function () {
+    Mail::fake();
+    $trip = waitedOnTrip(capacity: 2, held: 2);
+
+    saveTripEdit($trip, ['departures.0.capacity' => 3]);
+
+    Mail::assertSent(SeatOpenedMail::class, 1);
+    Mail::assertSent(SeatOpenedMail::class, fn ($m) => $m->hasTo('ada@example.com'));
+    expect(WaitlistEntry::sole()->notified_at)->not->toBeNull();
+});
+
+it('emails nobody when an edit adds no seats', function (int $newCapacity) {
+    Mail::fake();
+    // seats are free and Ada is still waiting, so only the rule about added seats keeps this quiet
+    $trip = waitedOnTrip(capacity: 4, held: 2);
+
+    saveTripEdit($trip, ['departures.0.capacity' => $newCapacity]);
+
+    Mail::assertNothingSent();
+})->with(['capacity unchanged' => 4, 'one seat fewer' => 3]);
+
+it('emails nobody when the save that added seats is rolled back', function () {
+    Mail::fake();
+    $trip = waitedOnTrip(capacity: 2, held: 2);
+    // inclusions are written after the departure, so by now the new capacity is in the transaction
+    TripInclusion::creating(fn () => throw new RuntimeException('the save fails part way'));
+
+    expect(fn () => saveTripEdit($trip, ['departures.0.capacity' => 3]))->toThrow(RuntimeException::class);
+
+    Mail::assertNothingSent();
+    expect($trip->fresh()->departure->capacity)->toBe(2);
+});
+
+it('says nothing about a seat the join page would turn someone away from', function (string $why) {
+    Mail::fake();
+    $departure = fullDeparture();
+    app(WaitlistService::class)->join($departure, ['name' => 'Ada', 'email' => 'ada@example.com']);
+    $departure->reservations()->update(['status' => 'cancelled']);   // the seat is free
+
+    match ($why) {
+        'the trip was taken down' => app(ModerationService::class)->unpublish($departure->trip),
+        'the date is marked completed' => $departure->update(['status' => 'completed']),
+        'the date has left' => $departure->update(['starts_at' => now()->subDay()]),
+    };
+
+    expect(app(WaitlistService::class)->notifyAvailable($departure->fresh()))->toBe(0);
+    Mail::assertNothingSent();
+})->with(['the trip was taken down', 'the date is marked completed', 'the date has left']);
