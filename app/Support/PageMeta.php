@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 /**
  * What a page says about itself when its link is pasted into Facebook, Messenger or a group chat.
@@ -41,13 +42,15 @@ class PageMeta
     {
         $host = $trip->host;
         $currency = $host->hostProfile?->currency ?? 'PHP';
+        $next = $trip->openDepartures->first();
 
         return [
             'title' => "{$trip->title} · {$host->name}",
             'description' => implode(' · ', array_filter([
                 implode(', ', array_filter([$trip->place?->name, $trip->place?->country])),
-                self::dates($trip->openDepartures->first()),
+                self::dates($next),
                 "from {$currency} ".number_format($trip->current_price).' per person',
+                self::spots($next),
                 "led by {$host->name}",
             ])),
             'image' => self::absolute($trip->cover_url),
@@ -84,6 +87,18 @@ class PageMeta
         }
 
         return $from->format('M j').'-'.$to->format($to->isSameMonth($from) ? 'j' : 'M j');
+    }
+
+    /** "4 spots left", "1 spot left", or "Full": the site's own wording for the departure coming up. Null when nothing is coming up. */
+    private static function spots(?TripDeparture $departure): ?string
+    {
+        if (! $departure) {
+            return null;
+        }
+
+        $left = $departure->spotsLeft();
+
+        return $left === 0 ? 'Full' : $left.' '.Str::plural('spot', $left).' left';
     }
 
     /**

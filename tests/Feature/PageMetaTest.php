@@ -2,6 +2,7 @@
 
 use App\Models\HostProfile;
 use App\Models\Place;
+use App\Models\Reservation;
 use App\Models\Trip;
 use App\Models\TripDeparture;
 use App\Models\User;
@@ -35,11 +36,11 @@ it('previews a trip with its title, host, price and an absolute image', function
         'title' => 'Pulag Traverse',
         'price' => 2500,
     ]);
-    TripDeparture::factory()->for($trip)->create(['starts_at' => '2026-12-14 06:00:00', 'ends_at' => '2026-12-16 18:00:00']);
+    TripDeparture::factory()->for($trip)->create(['starts_at' => '2026-12-14 06:00:00', 'ends_at' => '2026-12-16 18:00:00', 'capacity' => 12]);
 
     $this->get(route('trips.show', $trip))
         ->assertSee('<meta property="og:title" content="Pulag Traverse · Ridgeline">', false)
-        ->assertSee('<meta property="og:description" content="Mount Pulag, Philippines · Dec 14-16 · from PHP 2,500 per person · led by Ridgeline">', false)
+        ->assertSee('<meta property="og:description" content="Mount Pulag, Philippines · Dec 14-16 · from PHP 2,500 per person · 12 spots left · led by Ridgeline">', false)
         ->assertSee('<meta property="og:url" content="'.route('trips.show', $trip).'">', false)
         ->assertSee('<link rel="canonical" href="'.route('trips.show', $trip).'">', false)
         ->assertSee('<meta property="og:image" content="'.$trip->cover_url.'">', false)
@@ -59,6 +60,41 @@ it('previews a trip with no dates yet without leaving a gap in the description',
         'price' => 2500,
     ]);
 
+    expect(PageMeta::trip($trip)['description'])->toBe('Mount Pulag, Philippines · from PHP 2,500 per person · led by Ridgeline');
+});
+
+it('says how many spots are left, in the singular for one and Full for none', function () {
+    $this->travelTo('2026-12-01 10:00:00');
+    $trip = Trip::factory()->published()->create([
+        'host_id' => metaHost()->id,
+        'place_id' => Place::factory()->create(['name' => 'Mount Pulag', 'country' => 'Philippines'])->id,
+        'price' => 2500,
+    ]);
+    $departure = TripDeparture::factory()->for($trip)->create(['starts_at' => '2026-12-14 06:00:00', 'ends_at' => '2026-12-16 18:00:00', 'capacity' => 4]);
+    $says = fn (string $seats) => "Mount Pulag, Philippines · Dec 14-16 · from PHP 2,500 per person · {$seats} · led by Ridgeline";
+    $hold = fn (int $party, string $status) => Reservation::factory()->create(['trip_departure_id' => $departure->id, 'party_size' => $party, 'status' => $status]);
+
+    expect(PageMeta::trip($trip->fresh())['description'])->toBe($says('4 spots left'));
+
+    $hold(3, 'confirmed');
+    expect(PageMeta::trip($trip->fresh())['description'])->toBe($says('1 spot left'));
+
+    $hold(1, 'pending');
+    expect(PageMeta::trip($trip->fresh())['description'])->toBe($says('Full'));
+});
+
+it('leaves the dates and the spots out of a trip with nothing open to join', function () {
+    $this->travelTo('2026-12-01 10:00:00');
+    $trip = Trip::factory()->published()->create([
+        'host_id' => metaHost()->id,
+        'place_id' => Place::factory()->create(['name' => 'Mount Pulag', 'country' => 'Philippines'])->id,
+        'price' => 2500,
+    ]);
+    TripDeparture::factory()->for($trip)->create(['starts_at' => '2026-11-20 06:00:00', 'capacity' => 8]);
+    TripDeparture::factory()->for($trip)->create(['starts_at' => '2026-12-14 06:00:00', 'capacity' => 8, 'status' => 'cancelled']);
+    TripDeparture::factory()->for($trip)->create(['starts_at' => '2026-12-20 06:00:00', 'capacity' => 8, 'status' => 'full']);
+
+    // One that already left, one called off, one with no room left: none of them is something to join.
     expect(PageMeta::trip($trip)['description'])->toBe('Mount Pulag, Philippines · from PHP 2,500 per person · led by Ridgeline');
 });
 
