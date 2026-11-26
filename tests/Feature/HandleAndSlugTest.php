@@ -163,6 +163,53 @@ it('falls back to a numbered slug only when two schedules share a month', functi
         ->toBe(['twice-in-august-aug-2026', 'twice-in-august-aug-2026-2']);
 });
 
+it('keeps a published trip’s page and join links working after its title and date are edited', function () {
+    $this->travelTo('2027-01-10 09:00:00');
+    $host = handleHost();
+    $place = Place::factory()->create();
+
+    Livewire::actingAs($host)->test(Create::class)
+        ->call('addDestination', $place->id)
+        ->call('next')->set('title', 'Sea Of Clouds')->set('price', '900')
+        ->call('next')->call('next')
+        ->set('departures', [['starts_at' => '2027-03-14', 'ends_at' => '', 'capacity' => 10]])
+        ->call('next')->call('publish');
+
+    $trip = Trip::where('title', 'Sea Of Clouds')->sole();
+    $shared = $trip->slug;   // what is in the chat message and on the printed QR
+
+    // The wizard locks the date on an edit, so it is moved underneath: a new month must not move the address either.
+    $trip->departure->update(['starts_at' => '2027-05-09']);
+
+    Livewire::actingAs($host)->test(Create::class, ['trip' => $trip->fresh()])
+        ->set('title', 'Sea Of Clouds via Ambangeg')
+        ->call('publish')
+        ->assertHasNoErrors();
+
+    test()->actingAsGuest();   // a shared link is opened by someone else, and a host is bounced off the join page
+
+    test()->get('/t/'.$shared)->assertOk()->assertSee('Sea Of Clouds via Ambangeg');
+    test()->get('/t/'.$shared.'/join')->assertOk()->assertSee('Sea Of Clouds via Ambangeg');
+});
+
+it('rewrites the slug on a wizard save only for a trip that was never published', function (string $status, string $slug) {
+    $host = handleHost();
+    $place = Place::factory()->create();
+    $trip = Trip::factory()->for($host, 'host')->create(['title' => 'Ridge Walk', 'status' => $status]);
+
+    Livewire::actingAs($host)->test(Create::class, ['trip' => $trip])
+        ->call('addDestination', $place->id)
+        ->set('departures', [['starts_at' => '2027-03-14', 'ends_at' => '', 'capacity' => 10]])
+        ->call('publish')
+        ->assertHasNoErrors();
+
+    expect($trip->fresh()->slug)->toBe($slug);
+})->with([
+    'a draft gets the descriptive form at first publish' => ['draft', 'ridge-walk-mar-2027'],
+    // archived is an admin takedown, so the address was already out in the world
+    'a taken-down trip keeps the one already shared' => ['archived', 'ridge-walk'],
+]);
+
 it('lists every reserved word as unusable', function () {
     // the route file registers these at the root, so they can never be handles
     expect(Handles::RESERVED)->toContain('host', 'trips', 'login', 'settings', 't', 'livewire');

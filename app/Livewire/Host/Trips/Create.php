@@ -725,6 +725,8 @@ class Create extends Component
      */
     private function applyTo(Trip $trip, array $departure, array $inclusions, array $meetups, array $dropoffs, bool $saveToLibrary, array $listing): Trip
     {
+        // Read before the fill below overwrites it. An unsaved row has no status yet; "archived" was published once.
+        $neverPublished = in_array($trip->status, [null, 'draft'], true);
 
         $trip->fill([
             'place_id' => $this->destinations[0]['place_id'],
@@ -875,8 +877,11 @@ class Create extends Component
             }
         }
 
-        // the departure exists now, so the URL can carry its date
-        $trip->refreshSlug();
+        // The departure exists now, so the URL can carry its date. First publish only: after that the address is on
+        // shared links and printed QR codes, so no edit moves it.
+        if ($neverPublished) {
+            $trip->refreshSlug();
+        }
 
         return $trip;
 

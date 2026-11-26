@@ -53,7 +53,9 @@ class Trip extends Model
      *
      *     mount-pulag-2-day-hike-aug-2026
      *
-     * Called after the departure is written, and safe to call repeatedly.
+     * First publish only, once the departure is written. Never call it on a trip that has been
+     * published: its address is on shared links and printed QR codes, and nothing redirects an
+     * old one.
      */
     public function refreshSlug(): void
     {
