@@ -22,14 +22,17 @@ class PageMeta
     /** The one card every page without a photograph of its own shows, 1200 x 630. */
     private const CARD = 'images/og-card.png';
 
-    /** What any page without a story of its own says. It names itself as its own address, a filter or page number left off. */
+    /**
+     * What any page without a story of its own says. It answers to the address it was asked for, filters and
+     * page number included: a shared search keeps its search, and page 2 is not taken for page 1.
+     */
     public static function default(): array
     {
         return [
             'title' => 'Tarana',
             'description' => 'Group trips led by local hosts. Hikes, islands and everywhere in between.',
             'image' => asset(self::CARD),
-            'url' => url()->current(),
+            'url' => url()->full(),
             'noindex' => false,
         ];
     }
@@ -67,7 +70,7 @@ class PageMeta
         ];
     }
 
-    /** "Dec 14-16", "Dec 30-Jan 2", or "Dec 14" for a trip that is over in a day. Null with nothing to leave for. */
+    /** "Dec 14-16", "Dec 30-Jan 2", or "Dec 14" for a trip that is over in a day. Null when nothing is coming up. */
     private static function dates(?TripDeparture $departure): ?string
     {
         if (! $departure) {

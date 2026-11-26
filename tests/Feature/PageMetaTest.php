@@ -177,10 +177,20 @@ it('gives every other page the default card', function () {
         ->assertSee('<title>Tarana</title>', false)
         ->assertDontSee('noindex', false);
 
-    // A page names itself as its own canonical address, a filter or a page number left off.
-    $this->get(route('trips.index', ['category' => 'hike']))
-        ->assertSee('<link rel="canonical" href="'.route('trips.index').'">', false)
+    // A page answers to the address it was asked for, filters and page number included: a shared search keeps
+    // its search, and page 2 is not taken for page 1.
+    $explore = route('trips.index', ['category' => 'hike']);
+
+    $this->get($explore)
+        ->assertSee('<link rel="canonical" href="'.$explore.'">', false)
+        ->assertSee('<meta property="og:url" content="'.$explore.'">', false)
         ->assertSee('<meta property="og:image" content="'.asset('images/og-card.png').'">', false);
+});
+
+it('keeps a query string from breaking out of the tags it is echoed into', function () {
+    $this->get('/trips?search='.urlencode('"><script>alert(1)</script>'))
+        ->assertOk()
+        ->assertDontSee('<script>alert(1)', false);
 });
 
 it('ships the default card at the size every network wants', function () {
