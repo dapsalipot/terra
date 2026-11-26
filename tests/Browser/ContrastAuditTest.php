@@ -49,6 +49,13 @@ class ContrastAuditTest extends DuskTestCase
         $open = TripDeparture::factory()->for($trip)->create(['capacity' => 12, 'starts_at' => now()->addDays(10)]);
         $later = TripDeparture::factory()->for($trip)->create(['capacity' => 12, 'starts_at' => now()->addDays(25)]);
 
+        // Another offering of the host's that anyone can find, so every pass over their trip page draws its
+        // "More from Ridgeline" row and the audit reads the tile's text, not only the host's own chips.
+        $more = Trip::factory()->published()->create([
+            'host_id' => $host->id, 'place_id' => $trip->place_id, 'title' => 'Sagada Cave Connection', 'price' => 1800,
+        ]);
+        TripDeparture::factory()->for($more)->create(['capacity' => 12, 'starts_at' => now()->addDays(12)]);
+
         $make = function (TripDeparture $dep, array $extra = [], ?User $who = null) use ($joiner) {
             $r = Reservation::factory()->for($dep, 'departure')->create(array_merge([
                 'joiner_id' => ($who ?? $joiner)->id, 'status' => 'confirmed', 'confirmed_at' => now(), 'party_size' => 1,
@@ -182,6 +189,9 @@ JS;
         $w = $this->world();
 
         $this->browse(function (Browser $browser) use ($w) {
+            // The audit judges only what is drawn, so first make sure the guest's trip page draws the row.
+            $browser->visit('/t/'.$w['trip']->slug)->assertSee('More from Ridgeline');
+
             $this->assertClean($this->audit($browser, [
                 'home' => '/',
                 'trips' => '/trips',
