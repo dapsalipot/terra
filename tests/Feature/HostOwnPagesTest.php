@@ -54,7 +54,8 @@ it('never shows another host on a host\'s own pages, and never takes Explore awa
         'join page' => [route('trips.join', $mine['trip']), ['Pulag Sea of Clouds']],
         'booking page' => [route('reservations.show', ['token' => $booking->public_token]), ['Pulag Sea of Clouds']],
     ];
-    $absent = ['Summit Co', 'Rinjani Crater Rim', route('trips.show', $other['trip']), route('hosts.handle', $other['host'])];
+    // The handle bare: a host is linked as /@handle (hosts.show) and also lives at /handle (hosts.handle), and either contains it.
+    $absent = ['Summit Co', 'Rinjani Crater Rim', route('trips.show', $other['trip']), $other['host']->handle];
     $exploreLink = '#<a href="'.preg_quote(route('trips.index'), '#').'"[^>]*>Explore</a>#';
 
     // The other host is on the site for anyone to find, or their absence below would prove nothing.
