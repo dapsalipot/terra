@@ -41,6 +41,17 @@ it('renders the link, a Facebook share, the phone share hook and a QR only when 
     expect(Blade::render('<x-share-panel url="https://tarana.test/t/x" title="X" />'))->not->toContain('download');
 });
 
+it('closes itself when keyboard focus moves outside it, so it never sits over the tab stops after it', function () {
+    expect(Blade::render('<x-share-panel url="https://tarana.test/t/x" title="X" />'))
+        ->toContain('@focusin.window="if (open && ! $el.contains($event.target)) open = false"');
+});
+
+it('says so when the share sheet fails, and stays quiet when it is only closed', function () {
+    expect(Blade::render('<x-share-panel url="https://tarana.test/t/x" title="X" />'))
+        ->toContain("e.name !== 'AbortError'")
+        ->toContain('Could not open sharing. Copy the link instead.');
+});
+
 it('keeps a quote or a tag in a title or a link inside its attribute and its script', function () {
     $html = Blade::render(
         '<x-share-panel :url="$url" :title="$title" :qr="$url" />',
@@ -53,6 +64,15 @@ it('keeps a quote or a tag in a title or a link inside its attribute and its scr
         ->not->toContain('Clouds" &')
         ->toContain('Pulag &quot;Sea of Clouds&quot; &amp; &lt;b&gt;Beyond&lt;/b&gt;')
         ->toContain('u='.urlencode('https://tarana.test/t/x?a=1&b="2"'));
+
+    // The Alpine state is the one place a browser turns entities back into the characters it then runs as script: an
+    // &#039; there is a bare ' and ends the string. @js writes each quote, ampersand and bracket as a \uXXXX escape instead.
+    preg_match('/x-data="([^"]*)"/', $html, $state);
+    expect($state[1])
+        ->toContain('title: \'Pulag \u0022Sea of Clouds\u0022 \u0026 \u003Cb\u003EBeyond\u003C\/b\u003E \u002725\'')
+        ->toContain('url: \'https:\/\/tarana.test\/t\/x?a=1\u0026b=\u00222\u0022\'')
+        ->not->toContain('title: \'Pulag &quot;')
+        ->not->toMatch('/&(?:quot|#0?39|amp|lt|gt);/');
 });
 
 it('shows the trip page share panel to its host and to nobody else', function () {

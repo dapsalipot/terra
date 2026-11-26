@@ -227,6 +227,8 @@ JS;
                 'host dashboard' => '/host',
                 'host trips' => '/host/trips',
                 'own page' => '/@'.$w['host']->handle,
+                // as its own host the trip page carries the share bar, which the guest and joiner passes never draw
+                'own trip' => '/t/'.$w['trip']->slug,
                 'new trip' => '/host/trips/create',
                 'host profile' => '/host/profile',
                 'meetup points' => '/host/meetup-points',

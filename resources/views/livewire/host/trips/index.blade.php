@@ -120,9 +120,14 @@
                         about 700px of nothing in the middle of every schedule. The same space now
                         answers the two questions a host opens this page with: what does it cost,
                         and how full is it.
+
+                        The four columns want about 950px of screen beside the console's sidebar
+                        (176 + 112 + 144 of columns, the buttons, the gaps, and 368px of sidebar and
+                        margins), so they start at `lg`. Started lower they overflow the card, which clips
+                        the actions column and every action in it. Below `lg` a row stacks as it does on a phone.
                     --}}
                     <li class="grid gap-x-5 gap-y-3 px-5 py-4
-                               sm:grid-cols-[minmax(11rem,1.3fr)_minmax(7rem,.8fr)_minmax(9rem,1fr)_auto] sm:items-center">
+                               lg:grid-cols-[minmax(11rem,1.3fr)_minmax(7rem,.8fr)_minmax(9rem,1fr)_auto] lg:items-center">
                         <div class="min-w-0">
                             <p class="text-[11px] uppercase tracking-wide text-ink/65 font-semibold mb-0.5">When</p>
                             <p class="font-semibold">
@@ -165,7 +170,7 @@
                             <div></div>
                         @endif
 
-                        <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <div class="flex flex-wrap items-center gap-2 lg:justify-end">
                             <a href="{{ route('trips.show', $trip) }}" wire:navigate
                                class="rounded-full border border-ink/15 px-4 min-h-[44px] inline-flex items-center text-sm font-semibold hover:border-ink/30 transition-colors">View</a>
                             <a href="{{ route('host.trips.edit', $trip) }}" wire:navigate dusk="edit-{{ $trip->id }}"

@@ -8,9 +8,10 @@
 {{--
     Where a host gets the link to one of their pages, to hand out.
 
-    A button that opens a small panel (Escape and a click anywhere else close it) with the address to copy, the
-    phone's own share sheet where the browser has one, a Facebook share and, when it is given a `qr`, that code to
-    download. Nothing is sent through Tarana: Facebook opens in the host's own tab and the share sheet is their phone's.
+    A button that opens a small panel with the address to copy, the phone's own share sheet where the browser has
+    one, a Facebook share and, when it is given a `qr`, that code to download. Escape, a click anywhere else and
+    keyboard focus moving on to anything outside it all close it, so it never sits over the tab stops after it.
+    Nothing is sent through Tarana: Facebook opens in the host's own tab and the share sheet is their phone's.
 
     The panel exists only while it is open (x-if, not x-show). My trips draws one per schedule, and x-anchor keeps a
     panel's position current as the page scrolls and resizes, which is not worth doing for those nobody is looking at.
@@ -40,18 +41,29 @@
         title: @js($title),
         canShare: false,
         note: '',
+        timer: null,
         copy() {
             const done = () => this.say('Copied');
             const select = () => { this.$refs.field.select(); document.execCommand('copy') ? done() : this.say('Select the link, then copy it'); };
             navigator.clipboard ? navigator.clipboard.writeText(this.url).then(done, select) : select();
         },
-        say(text) {
+        async share() {
+            try {
+                await navigator.share({ title: this.title, url: this.url });
+            } catch (e) {
+                // Closing the sheet is an answer, not a failure. Anything else is one, and a button that just does nothing is worse.
+                if (e.name !== 'AbortError') this.say('Could not open sharing. Copy the link instead.', 6000);
+            }
+        },
+        say(text, ms = 2500) {
+            clearTimeout(this.timer);
             this.note = text;
-            setTimeout(() => this.note = '', 2500);
+            this.timer = setTimeout(() => this.note = '', ms);
         },
     }"
      x-init="canShare = typeof navigator.share === 'function'"
      @click.outside="open = false"
+     @focusin.window="if (open && ! $el.contains($event.target)) open = false"
      @keydown.escape.window="if (open) { open = false; if ($el.contains(document.activeElement)) $refs.trigger.focus(); }"
      {{ $attributes->class('relative inline-flex')->merge(['wire:key' => $id]) }}>
     <button type="button" x-ref="trigger" dusk="share-toggle"
@@ -67,7 +79,7 @@
             <div class="flex items-center justify-between gap-3 mb-1.5">
                 <label for="{{ $id }}-url" class="text-xs font-semibold text-ink/65">Link</label>
                 {{-- Said aloud as well as shown: the one place a copy that worked, or did not, is told. --}}
-                <span class="text-xs font-semibold text-pine" role="status" aria-live="polite" x-text="note"></span>
+                <span class="text-xs font-semibold text-pine text-right" role="status" aria-live="polite" x-text="note"></span>
             </div>
             <div class="flex gap-2">
                 <input id="{{ $id }}-url" type="text" readonly value="{{ $url }}" dusk="share-url" x-ref="field" @focus="$el.select()"
@@ -77,7 +89,7 @@
             </div>
 
             <div class="mt-3 -mx-2 flex flex-col">
-                <button type="button" x-show="canShare" dusk="share-native" @click="navigator.share({ title, url }).catch(() => {})" class="{{ $row }}">
+                <button type="button" x-show="canShare" dusk="share-native" @click="share()" class="{{ $row }}">
                     <svg viewBox="0 0 24 24" class="w-5 h-5 shrink-0 text-ink/65" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
                     Share…
                 </button>
