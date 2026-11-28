@@ -13,6 +13,7 @@ use App\Services\WaitlistService;
 use App\Support\PageMeta;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -545,18 +546,31 @@ class Register extends Component
         $this->error = null;
         $this->validate();
 
-        // After validation, so a typo costs nothing. Before the call below, whose arguments
-        // include storing ID photos that a refused attempt must not leave behind.
+        // After validation, so a typo costs nothing. Before any ID photo is saved.
         if (! $this->claimBooking()) {
             return null;
         }
 
+        $participants = $this->normalisedParticipants();
+        $result = null;
+
         try {
+            // Only the rows register() will write: after a "full" refusal lowers the seat count,
+            // the form still holds more travellers than that. Each path goes into $participants as
+            // its photo is saved, so the clean-up below knows of it even if a later one fails.
+            for ($seat = 0; $seat < (int) $this->partySize; $seat++) {
+                if (isset($participants[$seat], $this->ids[$seat])) {
+                    // Private disk, like every other identity document here.
+                    $participants[$seat]['id_image'] = $this->ids[$seat]->store('ids', 'local');
+                    $participants[$seat]['id_uploaded_at'] = now();
+                }
+            }
+
             $result = $service->register($this->departure, [
                 'party_size' => (int) $this->partySize,
                 'contact' => $this->normalisedContact(),
                 'booker_is_traveling' => $this->bookerIsTraveling,
-                'participants' => $this->normalisedParticipants(),
+                'participants' => $participants,
                 'create_account' => $this->isSignedIn ? false : $this->createAccount,
                 'actor' => Auth::user(),
             ]);
@@ -571,6 +585,13 @@ class Register extends Component
             $this->partySize = max(1, (int) $this->departure->fresh()->spotsLeft());
 
             return null;
+        } finally {
+            // A rollback undoes rows, not files. With no booking, however that came about, its
+            // photos go. The form still holds the uploads, so another try saves them again.
+            // ponytail: a request killed outright never gets here. If that shows up, sweep ids/ for files no traveller points to.
+            if ($result === null) {
+                Storage::disk('local')->delete(array_filter(array_column($participants, 'id_image')));
+            }
         }
 
         session()->forget($this->draftKey());
@@ -659,12 +680,6 @@ class Register extends Component
             }
 
             return [
-                // Private disk, like every other identity document here. Stored at the moment
-                // the booking is written so a half-finished registration leaves nothing behind.
-                'id_image' => isset($this->ids[$i])
-                    ? $this->ids[$i]->store('ids', 'local')
-                    : null,
-                'id_uploaded_at' => isset($this->ids[$i]) ? now() : null,
                 'first_name' => trim($p['first_name'] ?? '') ?: null,
                 'middle_name' => trim($p['middle_name'] ?? '') ?: null,
                 'last_name' => trim($p['last_name'] ?? '') ?: null,
