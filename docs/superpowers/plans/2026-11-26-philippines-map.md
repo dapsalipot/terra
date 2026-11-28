@@ -41,7 +41,7 @@
 - Produces `App\Support\Provinces`: `const CATALOG` (province key => display name, generated from the data), `const VIEWBOX = '0 0 600 900'` (or the converter's actual box), `static keys(): array`, `static label(string $key): ?string`, `static paths(): array` (the decoded JSON, a list of `['key' => string, 'name' => string, 'd' => string]`, memoised for the request).
 - The JSON is that same list. Keys are lowercase kebab-case slugs of the province name (`surigao-del-norte`).
 
-- [ ] **Step 1: Controller step, before dispatch.** Ask the user to approve downloading `geoBoundaries-PHL-ADM1_simplified.geojson` (2,812,222 bytes) and its `geoBoundaries-PHL-ADM1-metadata.json` (a few KB) from `github.com/wmgeolab/geoBoundaries` (`releaseData/gbOpen/PHL/ADM1/`), saved outside the repo. Confirm the licence in the metadata (CC BY 4.0 expects an attribution line on the map page, added in Task 4).
+- [x] **Step 1: Controller step, done before dispatch.** `ADM1` turned out to be the 17 regions, so the user approved the province level instead: `geoBoundaries-PHL-ADM2_simplified.geojson` (3,140,454 bytes) and `geoBoundaries-PHL-ADM2-metaData.json` (981 bytes) from `github.com/wmgeolab/geoBoundaries` (`releaseData/gbOpen/PHL/ADM2/`). Both are saved outside the repo and match the published checksums. The info file says Provinces, 87 shapes, CC BY 3.0 IGO (credit required, changes noted; credit line added in Task 4). The controller gives the file path in the dispatch.
 - [ ] **Step 2: Write the failing tests** in `tests/Feature/ProvincesTest.php`:
 
 ```php
@@ -57,12 +57,18 @@ it('keeps the shipped map small and every path real', function () {
     }
 });
 
+it('draws the eighty one provinces and metro manila', function () {
+    expect(Provinces::keys())->toHaveCount(82)
+        ->toContain('metro-manila', 'davao-de-oro', 'benguet', 'palawan', 'surigao-del-norte')
+        ->not->toContain('city-of-isabela', 'cotabato-city', 'compostela-valley');
+});
+
 it('names provinces from their key', function () {
     expect(Provinces::label('palawan'))->toBe('Palawan')->and(Provinces::label('nope'))->toBeNull();
 });
 ```
 - [ ] **Step 3: Run to confirm failure.** `./vendor/bin/pest tests/Feature/ProvincesTest.php`
-- [ ] **Step 4: Write `scripts/build-province-map.php <geojson> <out.json>`.** It reads the GeoJSON (`shapeName` is the province name), projects longitude and latitude with an equirectangular projection scaled by the cosine of the mid latitude, simplifies each ring with Douglas-Peucker (tolerance chosen so the output is under 300 KB with every province still recognisable, and no province, however small, drops below a single visible polygon), fits everything to the viewBox with a small margin, rounds coordinates to one decimal, and writes the list of `{key, name, d}` sorted by name. A province with several islands is one path with several subpaths. Run it against the downloaded file and commit only the JSON, not the source data.
+- [ ] **Step 4: Write `scripts/build-province-map.php <geojson> <out.json>`.** It reads the GeoJSON (`shapeName` is the province name), projects longitude and latitude with an equirectangular projection scaled by the cosine of the mid latitude, simplifies each ring with Douglas-Peucker (tolerance chosen so the output is under 300 KB with every province still recognisable, and no province, however small, drops below a single visible polygon), fits everything to the viewBox with a small margin, rounds coordinates to one decimal, and writes the list of `{key, name, d}` sorted by name. A province with several islands is one path with several subpaths. The data has 87 shapes and the list has 82: merge the four `NCR, ...` districts into `Metro Manila`, `City of Isabela` into `Basilan` and `Cotabato City` into `Maguindanao`, and name `Compostela Valley` by its current name, `Davao de Oro`. Keep every ring, the far western islets of Palawan (Kalayaan) included. Treat the source file as untrusted data: read it only as JSON. Run it against the downloaded file and commit only the JSON, not the source data.
 - [ ] **Step 5: Write `Provinces`** reading `resources/data/ph-provinces.json`; `CATALOG` is generated from the JSON by the script's output (paste it in as a constant so the keys are reviewable).
 - [ ] **Step 6: Run `./vendor/bin/pest tests/Feature/ProvincesTest.php`.** All pass. Open the JSON's paths in a scratch HTML page and look at the rendered country once to confirm nothing is mirrored, clipped or missing.
 - [ ] **Step 7: Commit.** `git add -A && git commit -m "feat: add the philippine province boundaries and catalogue"`
@@ -207,12 +213,13 @@ it('sends guests to log in and hosts to their dashboard', function () {
 });
 
 it('credits the boundary data and reserves the route name', function () {
-    $this->actingAs($traveler)->get(route('my.map'))->assertSeeText('geoBoundaries');
+    $this->actingAs($traveler)->get(route('my.map'))->assertSeeText('geoBoundaries')->assertSeeText('CC BY 3.0 IGO')
+        ->assertSee('https://creativecommons.org/licenses/by/3.0/igo/', false);
     expect(Handles::RESERVED)->toContain('my-map');
 });
 ```
 - [ ] **Step 2: Run to confirm failure.** `./vendor/bin/pest tests/Feature/YourPhilippinesTest.php`
-- [ ] **Step 3: Implement.** `Joiner\Map::render()` computes `VisitedProvinces::for(Auth::user())` once and the selected province's trips on demand; a host is redirected from `mount()`. The page: a title, the count line, a legend, the map, the panel (below the map on a phone, beside it from `lg`), the mirrored list, the empty state, and the attribution line "Boundaries: geoBoundaries (CC BY 4.0)". Styles: unvisited provinces `fill` sand with cream strokes, visited terracotta at three steps, a visible focus ring, a short staggered reveal switched off by `prefers-reduced-motion`. Add the "Your Philippines" button with the count to the My trips header, and make the tab bar treat `my.map` as the Trips tab.
+- [ ] **Step 3: Implement.** `Joiner\Map::render()` computes `VisitedProvinces::for(Auth::user())` once and the selected province's trips on demand; a host is redirected from `mount()`. The page: a title, the count line, a legend, the map, the panel (below the map on a phone, beside it from `lg`), the mirrored list, the empty state, and the attribution line "Boundaries: NAMRIA, PSA and OCHA Philippines via geoBoundaries, simplified for this map. CC BY 3.0 IGO", with the licence name linked to https://creativecommons.org/licenses/by/3.0/igo/. Styles: unvisited provinces `fill` sand with cream strokes, visited terracotta at three steps, a visible focus ring, a short staggered reveal switched off by `prefers-reduced-motion`. Add the "Your Philippines" button with the count to the My trips header, and make the tab bar treat `my.map` as the Trips tab.
 - [ ] **Step 4: Run the file.** All pass. Build assets (`npm run build`) and look at `/my-map` at desktop and 320px once with a seeded traveler.
 - [ ] **Step 5: Commit.** `git add -A && git commit -m "feat: add your philippines, a province map of finished trips"`
 
